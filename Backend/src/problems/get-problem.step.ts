@@ -25,17 +25,23 @@ export const config: ApiRouteConfig = {
 };
 
 export const handler: any = async (req: any, { logger }: { logger: any }) => {
-  const { id } = req.pathParams;
+  try {
+    const { id } = req.pathParams;
 
-  const problem = await prisma.problem.findFirst({
-    where: { OR: [{ id }, { slug: id }], isActive: true },
-    include: {
-      testCases: { where: { isHidden: false }, orderBy: { order: "asc" } },
-    },
-  });
+    const problem = await prisma.problem.findFirst({
+      where: { OR: [{ id }, { slug: id }], isActive: true },
+      include: {
+        testCases: { where: { isHidden: false }, orderBy: { order: "asc" } },
+      },
+    });
 
-  if (!problem) return { status: 404, body: { error: "Problem not found" } };
+    if (!problem) return { status: 404, body: { error: "Problem not found" } };
 
-  logger.info("Problem fetched", { problemId: problem.id });
-  return { status: 200, body: { ...problem, createdAt: undefined, updatedAt: undefined } as any };
+    logger.info("Problem fetched", { problemId: problem.id });
+    return { status: 200, body: { ...problem, createdAt: undefined, updatedAt: undefined } as any };
+  } catch (err: any) {
+    logger.error("Get problem failed", { error: err.message, stack: err.stack });
+    return { status: 500, body: { error: "Internal server error fetching problem" } };
+  }
 };
+

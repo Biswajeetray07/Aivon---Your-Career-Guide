@@ -10,6 +10,7 @@ import {
   formatErrorOutput,
   parseExecutionOutput,
   judgeStatusToVerdictCode,
+  computeOverallVerdict,
   runSpjChecker,
   type JudgeMode,
 } from "../utils/judge0";
@@ -112,9 +113,9 @@ export const handler: any = async (req: any, { logger }: any) => {
     };
     const testResults: TestResult[] = [];
 
-    let overallStatus = "ACCEPTED";
     let totalRuntime = 0;
     let maxMemory = 0;
+    let isCompilationError = false;
 
     for (const tc of problem.testCases) {
       const formattedInput = formatStdin(tc.input);
@@ -172,20 +173,12 @@ export const handler: any = async (req: any, { logger }: any) => {
         } : null,
       });
 
-      // Update overall status using canonical verdict codes
-      if (result.status.id !== 3) {
-        overallStatus = judgeStatusToVerdictCode(result.status.id);
-      } else if (!passed) {
-        overallStatus = "WRONG_ANSWER";
+      if (result.status.id === 6 || result.status.id === 14) {
+        isCompilationError = true;
       }
     }
 
-    // Final check: if all passed → ACCEPTED, otherwise keep first failure
-    if (testResults.every((r) => r.passed)) {
-      overallStatus = "ACCEPTED";
-    } else if (overallStatus === "ACCEPTED") {
-      overallStatus = "WRONG_ANSWER";
-    }
+    const overallStatus = computeOverallVerdict(testResults, isCompilationError);
 
     logger.info("Run completed", { problemId, status: overallStatus, type: effectiveProblemType });
 
@@ -202,8 +195,20 @@ export const handler: any = async (req: any, { logger }: any) => {
     };
   } catch (err: any) {
     logger.error("Run failed", { error: err.message, stack: err.stack?.slice(0, 300) });
-    const isTimeout = err.message?.includes("timed out");
-    const statusText = isTimeout ? "TIME_LIMIT_EXCEEDED" : "INTERNAL_ERROR";
+
+    // Distinguish infrastructure failures from actual code time limits
+    const isApiTimeout =
+      err.message?.includes("[JUDGE0_POLL_TIMEOUT]") ||
+      err.message?.includes("[JUDGE0_API_ERROR]") ||
+      err.message?.includes("ECONNABORTED") ||
+      err.message?.includes("ETIMEDOUT");
+
+    // API timeouts are NOT the user's fault → INTERNAL_ERROR, never TLE
+    const statusText = "INTERNAL_ERROR";
+    const verdictLabel = isApiTimeout ? "Judge Unavailable" : "Internal Error";
+    const userMessage = isApiTimeout
+      ? "The judge server did not respond in time. This is NOT a problem with your code — please try again."
+      : err.message;
 
     return {
       status: 200,
@@ -215,13 +220,13 @@ export const handler: any = async (req: any, { logger }: any) => {
         totalCases: 1,
         testResults: [{
           input: "", expected: "", actual: null, stdout: null,
-          stderr: String(err.message), compileOutput: null,
+          stderr: userMessage, compileOutput: null,
           passed: false, runtime: null,
           errorDetails: {
-            verdict: isTimeout ? "Time Limit Exceeded" : "Internal Error",
-            errorType: isTimeout ? "TLE" : "SystemError",
+            verdict: verdictLabel,
+            errorType: isApiTimeout ? "JudgeTimeout" : "SystemError",
             line: null,
-            message: err.message,
+            message: userMessage,
           },
         }],
       },

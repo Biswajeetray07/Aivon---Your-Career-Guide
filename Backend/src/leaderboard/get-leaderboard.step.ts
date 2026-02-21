@@ -26,24 +26,36 @@ export const config: ApiRouteConfig = {
 export const handler: any = async (req: any, { logger }: { logger: any }) => {
   const limit = Math.min(100, parseInt((req.queryParams.limit as string) ?? "20"));
 
-  // Count distinct accepted problems per user
+  // Fetch top users and their ACCEPTED submissions
   const topUsers = await prisma.user.findMany({
     take: limit,
     orderBy: [{ rating: "desc" }],
     select: {
-      id: true, name: true, email: true, rating: true,
-      submissions: { where: { status: "ACCEPTED" }, distinct: ["problemId"], select: { problemId: true } },
+      id: true,
+      name: true,
+      email: true,
+      rating: true,
+      submissions: {
+        where: { status: "ACCEPTED" },
+        select: { problemId: true },
+      },
     },
   });
 
-  const leaderboard = topUsers.map((u: any, i: number) => ({
-    rank: i + 1,
-    userId: u.id,
-    name: u.name,
-    email: u.email,
-    rating: u.rating,
-    solved: u.submissions.length,
-  }));
+  // Calculate distinct solved problems in memory
+  const leaderboard = topUsers.map((u: any, i: number) => {
+    const uniqueSolved = new Set(u.submissions.map((s: any) => s.problemId)).size;
+    return {
+      rank: i + 1,
+      userId: u.id,
+      name: u.name,
+      email: u.email,
+      rating: u.rating,
+      solved: uniqueSolved,
+    };
+  });
+
+
 
   logger.info("Leaderboard generated", { count: leaderboard.length });
   return { status: 200, body: { leaderboard } };

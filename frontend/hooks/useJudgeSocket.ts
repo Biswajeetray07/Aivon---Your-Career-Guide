@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 
-// The standalone Socket.IO server runs on port 3003
 const SOCKET_URL = "http://localhost:3003";
 
 export type JudgeEvent =
@@ -10,46 +9,45 @@ export type JudgeEvent =
   | { status: "DONE"; submission: any }
   | { status: "ERROR"; message: string };
 
-export function useJudgeSocket(submissionId: string | null, onUpdate?: (event: JudgeEvent) => void) {
-  const [socket, setSocket] = useState<Socket | null>(null);
+export function useJudgeSocket(
+  submissionId: string | null,
+  onUpdate?: (event: JudgeEvent) => void,
+) {
   const [connected, setConnected] = useState(false);
   const [lastEvent, setLastEvent] = useState<JudgeEvent | null>(null);
+  const onUpdateRef = useRef(onUpdate);
+
+  // Keep ref in sync without causing the socket effect to re-run
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+  }, [onUpdate]);
 
   useEffect(() => {
     if (!submissionId) return;
 
-    // Connect to the Socket.IO server
-    const s = io(SOCKET_URL, {
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-    });
+    const s = io(SOCKET_URL, { reconnectionAttempts: 5, reconnectionDelay: 1000 });
 
     s.on("connect", () => {
-      console.log(`[Socket] Connected to realtime judge server`);
+      console.log("[Socket] Connected");
       setConnected(true);
       s.emit("subscribe", submissionId);
     });
 
     s.on("disconnect", () => {
-      console.log(`[Socket] Disconnected from realtime judge server`);
+      console.log("[Socket] Disconnected");
       setConnected(false);
     });
 
     s.on("judge-update", (data: JudgeEvent) => {
-      console.log(`[Socket] Update received:`, data);
+      console.log("[Socket] Update:", data);
       setLastEvent(data);
-      if (onUpdate) onUpdate(data);
+      onUpdateRef.current?.(data);
     });
-
-    setSocket(s);
 
     return () => {
       s.disconnect();
-      setSocket(null);
-      setConnected(false);
-      setLastEvent(null);
     };
-  }, [submissionId, onUpdate]);
+  }, [submissionId]);  // socket only re-connects when submissionId changes
 
   return { connected, lastEvent };
 }

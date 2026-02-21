@@ -20,7 +20,14 @@ export const config: ApiRouteConfig = {
   middleware: [authMiddleware()],
   bodySchema,
   responseSchema: {
-    200: z.object({ feedback: z.string(), timeComplexity: z.string(), spaceComplexity: z.string() }),
+    200: z.object({
+      feedback: z.string(),
+      timeComplexity: z.string(),
+      spaceComplexity: z.string(),
+      isOptimal: z.boolean().optional(),
+      improvementTip: z.string().optional(),
+      interviewNote: z.string().optional(),
+    }),
     400: z.object({ error: z.string() }),
     404: z.object({ error: z.string() }),
   },
@@ -44,18 +51,32 @@ export const handler: any = async (req: any, { logger }: { logger: any }) => {
       contents: `Problem: ${problem.title} (${problem.difficulty})
 Language: ${language}
 
-Student Code:
+Accepted Solution:
 \`\`\`${language}
 ${code}
 \`\`\`
 
-Review this code and provide structured feedback.`,
+Analyse this accepted solution.`,
       config: {
-        systemInstruction: `You are a senior software engineer doing a code review. 
-Provide actionable feedback on code quality, correctness, time complexity, and space complexity.
-Be specific, educational, and encouraging. Format your response as JSON with keys: 
-"feedback" (string), "timeComplexity" (string like "O(n)"), "spaceComplexity" (string like "O(1)").`,
+        systemInstruction: `You are a competitive programming performance analyst doing a post-AC review.
+
+Analyse the user's accepted solution and provide structured performance feedback.
+
+Rules:
+- Be concise and educational.
+- Do NOT provide alternative full code.
+- Give a single actionable improvement tip.
+- Include an interview-readiness note.
+
+Format your response as JSON with keys:
+"feedback" (2-3 sentence analysis of the approach),
+"timeComplexity" (e.g. "O(n log n)"),
+"spaceComplexity" (e.g. "O(n)"),
+"isOptimal" (boolean — is this the best known complexity?),
+"improvementTip" (one concrete tip to improve without full code),
+"interviewNote" (one sentence on interview readiness)`,
         responseMimeType: "application/json",
+        temperature: 0.3,
       },
     });
 
@@ -64,9 +85,12 @@ Be specific, educational, and encouraging. Format your response as JSON with key
     return {
       status: 200,
       body: {
-        feedback: parsed.feedback ?? "No feedback available.",
+        feedback: parsed.feedback ?? "Good solution.",
         timeComplexity: parsed.timeComplexity ?? "Unknown",
         spaceComplexity: parsed.spaceComplexity ?? "Unknown",
+        isOptimal: parsed.isOptimal ?? null,
+        improvementTip: parsed.improvementTip ?? null,
+        interviewNote: parsed.interviewNote ?? null,
       },
     };
   } catch (err: any) {

@@ -15,21 +15,31 @@ function headers(extra: Record<string, string> = {}) {
   };
 }
 
+async function safeJson(res: Response): Promise<any> {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    // Server returned non-JSON (HTML error page, plain text, etc.)
+    throw new Error(text.slice(0, 200) || `HTTP ${res.status}`);
+  }
+}
+
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${API}${path}`, {
     method: "POST",
     headers: headers(),
     body: JSON.stringify(body),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Request failed");
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error(data?.error || data?.message || `HTTP ${res.status}`);
   return data as T;
 }
 
 export async function apiGet<T>(path: string): Promise<T> {
   const res = await fetch(`${API}${path}`, { headers: headers() });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Request failed");
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error(data?.error || data?.message || `HTTP ${res.status}`);
   return data as T;
 }
 
@@ -96,6 +106,21 @@ export const getSubmission = (id: string) =>
     `/api/submissions/${id}`
   );
 
+export interface SubmissionHistoryItem {
+  id: string; status: string; language: string;
+  runtime: number | null; memory: number | null;
+  details: { passedCases?: number; totalCases?: number } | null;
+  createdAt: string;
+  problem: { id: string; title: string; slug: string };
+}
+
+export const getMySubmissions = (params?: { limit?: number }) => {
+  const qs = new URLSearchParams();
+  if (params?.limit) qs.set("limit", String(params.limit));
+  return apiGet<{ submissions: SubmissionHistoryItem[] }>(`/api/submissions/my?${qs}`);
+};
+
+
 // Leaderboard
 export const getLeaderboard = () =>
   apiGet<{ leaderboard: Array<{ rank: number; userId: string; name: string | null; email: string; rating: number; solved: number }> }>(
@@ -116,4 +141,29 @@ export const getExplanation = (problemId: string) =>
   apiPost<{ explanation: string; approach: string; keyInsights: string[] }>("/api/ai/explain", { problemId });
 
 export const getCodeFeedback = (problemId: string, language: string, code: string) =>
-  apiPost<{ feedback: string; timeComplexity: string; spaceComplexity: string }>("/api/ai/code-feedback", { problemId, language, code });
+  apiPost<{
+    feedback: string; timeComplexity: string; spaceComplexity: string;
+    isOptimal?: boolean; improvementTip?: string; interviewNote?: string;
+  }>("/api/ai/code-feedback", { problemId, language, code });
+
+export interface ErrorExplanationResult {
+  summary: string; rootCause: string; fixSteps: string[]; conceptToReview: string;
+}
+
+export const explainError = (
+  problemId: string, language: string, code: string,
+  errorDetails: { verdict: string; errorType: string; line: number | null; message: string },
+  testcase?: { input?: string; expected?: string; received?: string | null },
+) =>
+  apiPost<ErrorExplanationResult>("/api/ai/explain-error", { problemId, language, code, errorDetails, testcase });
+
+export const getAlternativeApproach = (problemId: string, language: string, code: string) =>
+  apiPost<{ hint: string }>("/api/ai/hint", {
+    problemId,
+    userCode: `CONTEXT: The user has already solved this problem correctly with the code below. 
+Suggest an ALTERNATIVE approach or optimization. Do NOT provide full implementation code — give only high-level pseudocode if necessary.
+
+\`\`\`${language}
+${code}
+\`\`\``,
+  });

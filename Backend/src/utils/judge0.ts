@@ -54,6 +54,27 @@ export function judgeStatusToVerdictCode(statusId: number): string {
   return "INTERNAL_ERROR";
 }
 
+// ─── Deterministic Verdict Normalizer ──────────────────────────────────────────
+// Priority: INTERNAL_ERROR > COMPILATION_ERROR > RUNTIME_ERROR > TIME_LIMIT_EXCEEDED > MEMORY_LIMIT_EXCEEDED > WRONG_ANSWER > ACCEPTED
+export function computeOverallVerdict(
+  testResults: { passed: boolean; errorDetails?: { verdict: string } | null }[],
+  isCompilationError: boolean = false
+): string {
+  if (isCompilationError) return "COMPILATION_ERROR";
+  if (testResults.length === 0) return "INTERNAL_ERROR";
+
+  const verdicts = testResults.map(r => r.errorDetails?.verdict ?? (r.passed ? "ACCEPTED" : "WRONG_ANSWER"));
+
+  if (verdicts.includes("Internal Error") || verdicts.includes("INTERNAL_ERROR") || verdicts.includes("Judge Unavailable")) return "INTERNAL_ERROR";
+  if (verdicts.includes("Compile Error") || verdicts.includes("COMPILATION_ERROR")) return "COMPILATION_ERROR";
+  if (verdicts.includes("Runtime Error") || verdicts.includes("RUNTIME_ERROR")) return "RUNTIME_ERROR";
+  if (verdicts.includes("Time Limit Exceeded") || verdicts.includes("TIME_LIMIT_EXCEEDED")) return "TIME_LIMIT_EXCEEDED";
+  if (verdicts.includes("Memory Limit Exceeded") || verdicts.includes("MEMORY_LIMIT_EXCEEDED")) return "MEMORY_LIMIT_EXCEEDED";
+  if (verdicts.includes("Wrong Answer") || verdicts.includes("WRONG_ANSWER")) return "WRONG_ANSWER";
+
+  return testResults.every(r => r.passed) ? "ACCEPTED" : "WRONG_ANSWER";
+}
+
 // Keep backward-compat alias
 export const judgeStatusToSubmissionStatus = judgeStatusToVerdictCode;
 
@@ -67,45 +88,66 @@ export async function runCode(
   const languageId = LANGUAGE_IDS[language.toLowerCase()];
   if (!languageId) throw new Error(`Unsupported language: ${language}`);
 
-  // 1. Submit async (wait=false)
-  const submitRes = await axios.post(
-    `https://${process.env.JUDGE0_API_HOST}/submissions?base64_encoded=false&wait=false`,
-    {
-      source_code: code,
-      language_id: languageId,
-      stdin,
-      cpu_time_limit: 2,
-      memory_limit: 262144,
-      wall_time_limit: 5,
-    },
-    {
-      headers: {
-        "X-RapidAPI-Key": process.env.JUDGE0_API_KEY!,
-        "X-RapidAPI-Host": process.env.JUDGE0_API_HOST!,
-        "Content-Type": "application/json",
-      },
-      timeout: 8000,
+  const apiHeaders = {
+    "X-RapidAPI-Key": process.env.JUDGE0_API_KEY!,
+    "X-RapidAPI-Host": process.env.JUDGE0_API_HOST!,
+    "Content-Type": "application/json",
+  };
+
+  // Helper: retry a request once on transient network/rate-limit failures
+  async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+    try {
+      return await fn();
+    } catch (err: any) {
+      const isRetriable =
+        err.code === "ECONNABORTED" ||
+        err.code === "ETIMEDOUT" ||
+        err.response?.status === 429;
+      if (isRetriable) {
+        await new Promise((r) => setTimeout(r, 2000));
+        return fn();
+      }
+      throw err;
     }
+  }
+
+  // 1. Submit async (wait=false)
+  const submitRes = await withRetry(() =>
+    axios.post(
+      `https://${process.env.JUDGE0_API_HOST}/submissions?base64_encoded=false&wait=false`,
+      {
+        source_code: code,
+        language_id: languageId,
+        stdin,
+        cpu_time_limit: 2,
+        memory_limit: 262144,
+        wall_time_limit: 5,
+      },
+      { headers: apiHeaders, timeout: 15000 }
+    )
   );
 
   const token = submitRes.data.token;
   if (!token) throw new Error("Failed to get submission token from Judge0");
 
-  // 2. Poll for result (max 20 attempts, 1s delay each = 20s total)
+  // 2. Poll for result (max 20 attempts, 1.0s delay each ≈ 20s total)
+  //    This must finish well within the 30s frontend timeout.
   for (let attempt = 0; attempt < 20; attempt++) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    const resultRes = await axios.get(
-      `https://${process.env.JUDGE0_API_HOST}/submissions/${token}?base64_encoded=false`,
-      {
-        headers: {
-          "X-RapidAPI-Key": process.env.JUDGE0_API_KEY!,
-          "X-RapidAPI-Host": process.env.JUDGE0_API_HOST!,
-        },
-        timeout: 8000,
-      }
-    );
 
-    const data = resultRes.data;
+    let data: any;
+    try {
+      const resultRes = await axios.get(
+        `https://${process.env.JUDGE0_API_HOST}/submissions/${token}?base64_encoded=false`,
+        { headers: apiHeaders, timeout: 15000 }
+      );
+      data = resultRes.data;
+    } catch (pollErr: any) {
+      // Network/rate-limit error while polling — retry, don't give up
+      if (attempt < 24) continue;
+      throw new Error(`[JUDGE0_API_ERROR] Judge0 API unreachable: ${pollErr.message}`);
+    }
+
     // Status 1 (In Queue) or Status 2 (Processing) means we wait
     if (data.status?.id === 1 || data.status?.id === 2) {
       continue;
@@ -114,7 +156,9 @@ export async function runCode(
     return data as RunCodeResult;
   }
 
-  throw new Error("Execution timed out waiting for Judge0");
+  // ⚠ IMPORTANT: This is an infrastructure timeout, NOT a code TLE.
+  // The error message prefix [JUDGE0_POLL_TIMEOUT] lets catch blocks distinguish it.
+  throw new Error("[JUDGE0_POLL_TIMEOUT] Execution timed out waiting for Judge0 response");
 }
 
 // ─── Execution Output Parser ──────────────────────────────────────────────────
@@ -365,6 +409,24 @@ except Exception as _e:
   }
 }
 
+// ─── Template header line count ───────────────────────────────────────────────
+//
+// When user code is wrapped in a template, Python traces report absolute line
+// numbers. We need to subtract the header lines ABOVE ###USERCODE### to show
+// the user's actual line number.
+//
+// Python templates: line 1 = import, line 2 = import, line 3 = blank, line 4 = ###USERCODE###
+//   → 3 header lines
+// JS templates: line 1 = ###USERCODE###
+//   → 0 header lines
+
+export function getTemplateHeaderLines(language: string): number {
+  const lang = language.toLowerCase();
+  if (lang === "python" || lang === "python3") return 3;
+  // JS templates put ###USERCODE### at line 1
+  return 0;
+}
+
 // ─── Structured error parser ──────────────────────────────────────────────────
 
 export function parseStructuredError(
@@ -382,12 +444,14 @@ export function parseStructuredError(
   if (statusId === 6 || statusId === 14) verdict = "Compile Error";
   if (statusId >= 7 && statusId <= 12) verdict = "Runtime Error";
 
+  const headerOffset = getTemplateHeaderLines(language);
+
   try {
     if (lang === "python" || lang === "python3") {
-      return parsePythonError(raw, verdict);
+      return parsePythonError(raw, verdict, headerOffset);
     }
     if (lang === "javascript" || lang === "nodejs") {
-      return parseJavaScriptError(raw, verdict);
+      return parseJavaScriptError(raw, verdict, headerOffset);
     }
   } catch { /* fallthrough */ }
 
@@ -400,7 +464,7 @@ export function parseStructuredError(
   };
 }
 
-function parsePythonError(raw: string, verdict: string): StructuredError {
+function parsePythonError(raw: string, verdict: string, headerOffset: number = 0): StructuredError {
   const lines = raw.split("\n");
 
   // The last non-empty line is typically the exception type + message
@@ -437,7 +501,9 @@ function parsePythonError(raw: string, verdict: string): StructuredError {
     const contextLine = lines[i + 1] ?? "";
     const isTemplateLine = TEMPLATE_MARKERS.some(m => contextLine.includes(m));
     if (!isTemplateLine) {
-      userLine = parseInt(lineMatch[1], 10);
+      const rawLineNum = parseInt(lineMatch[1], 10);
+      // ⚠ CRITICAL: Subtract the template header lines to get the user's actual line
+      userLine = Math.max(1, rawLineNum - headerOffset);
       break;
     }
   }
@@ -445,7 +511,7 @@ function parsePythonError(raw: string, verdict: string): StructuredError {
   return { verdict, errorType, line: userLine, message, raw };
 }
 
-function parseJavaScriptError(raw: string, verdict: string): StructuredError {
+function parseJavaScriptError(raw: string, verdict: string, headerOffset: number = 0): StructuredError {
   const lines = raw.split("\n");
   // Find the first line containing "Error:"
   const errLine = lines.find(l => /\bError:/i.test(l));
@@ -465,9 +531,13 @@ function parseJavaScriptError(raw: string, verdict: string): StructuredError {
   // Grab the first user stack frame (skip node internals and template code)
   let userLine: number | null = null;
   for (const l of lines) {
-    if (l.includes("at ") && !l.includes("node:") && !l.includes("__main")) {
+    if (l.includes("at ") && !l.includes("node:") && !l.includes("__main") && !l.includes("__serialize")) {
       const m = l.match(/:(\d+):\d+/);
-      if (m) { userLine = parseInt(m[1], 10); break; }
+      if (m) {
+        const rawLineNum = parseInt(m[1], 10);
+        userLine = Math.max(1, rawLineNum - headerOffset);
+        break;
+      }
     }
   }
 

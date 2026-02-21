@@ -19,16 +19,22 @@ export const config: ApiRouteConfig = {
 };
 
 export const handler: any = async (req: any, { logger }: { logger: any }) => {
-  const submissionId = req.pathParams?.id as string;
-  const userId = req.headers["x-user-id"] as string;
+  try {
+    const submissionId = req.pathParams?.id as string;
+    const userId = req.headers["x-user-id"] as string;
 
-  const submission = await prisma.submission.findFirst({
-    where: { id: submissionId, userId },
-    include: { problem: { select: { id: true, title: true, slug: true } } },
-  });
+    const submission = await prisma.submission.findFirst({
+      where: { id: submissionId, userId },
+      include: { problem: { select: { id: true, title: true, slug: true } } },
+    });
 
-  if (!submission) return { status: 404, body: { error: "Submission not found" } };
+    if (!submission) return { status: 404, body: { error: "Submission not found" } };
 
-  logger.info("Submission fetched", { submissionId });
-  return { status: 200, body: submission };
+    logger.info("Submission fetched", { submissionId });
+    return { status: 200, body: submission };
+  } catch (err: any) {
+    logger.error("Get submission failed", { error: err.message });
+    return { status: 500, body: { error: "Internal server error fetching submission" } };
+  }
 };
+

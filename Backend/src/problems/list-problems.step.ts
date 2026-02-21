@@ -29,25 +29,31 @@ export const config: ApiRouteConfig = {
 };
 
 export const handler: any = async (req: any, { logger }: { logger: any }) => {
-  const { difficulty, tags, page = "1", limit = "20" } = req.queryParams as Record<string, string>;
+  try {
+    const { difficulty, tags, page = "1", limit = "20" } = req.queryParams as Record<string, string>;
 
-  const pageNum = Math.max(1, parseInt(page));
-  const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
-  const skip = (pageNum - 1) * limitNum;
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
+    const skip = (pageNum - 1) * limitNum;
 
-  const where: any = { isActive: true };
-  if (difficulty) where.difficulty = difficulty.toUpperCase();
-  if (tags) where.tags = { hasSome: tags.split(",").map((t) => t.trim()) };
+    const where: any = { isActive: true };
+    if (difficulty) where.difficulty = difficulty.toUpperCase();
+    if (tags) where.tags = { hasSome: tags.split(",").map((t) => t.trim()) };
 
-  const [problems, total] = await Promise.all([
-    prisma.problem.findMany({
-      where, skip, take: limitNum,
-      select: { id: true, title: true, slug: true, difficulty: true, tags: true, _count: { select: { submissions: true } } },
-      orderBy: { createdAt: "asc" },
-    }),
-    prisma.problem.count({ where }),
-  ]);
+    const [problems, total] = await Promise.all([
+      prisma.problem.findMany({
+        where, skip, take: limitNum,
+        select: { id: true, title: true, slug: true, difficulty: true, tags: true, _count: { select: { submissions: true } } },
+        orderBy: { createdAt: "asc" },
+      }),
+      prisma.problem.count({ where }),
+    ]);
 
-  logger.info("Problems listed", { page: pageNum, count: problems.length });
-  return { status: 200, body: { problems, total, page: pageNum, limit: limitNum } };
+    logger.info("Problems listed", { page: pageNum, count: problems.length });
+    return { status: 200, body: { problems, total, page: pageNum, limit: limitNum } };
+  } catch (err: any) {
+    logger.error("List problems failed", { error: err.message });
+    return { status: 500, body: { error: "Internal server error listing problems" } };
+  }
 };
+

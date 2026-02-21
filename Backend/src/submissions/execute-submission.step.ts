@@ -10,6 +10,7 @@ import {
   formatErrorOutput,
   parseExecutionOutput,
   runSpjChecker,
+  computeOverallVerdict,
   type JudgeMode,
 } from "../utils/judge0";
 
@@ -108,11 +109,11 @@ export const handler: any = async (
     };
     const testResults: TestResult[] = [];
 
-    let finalStatus: string = "ACCEPTED";
     let totalRuntime = 0;
     let maxMemory = 0;
     let failedCaseIndex: number | null = null;
     let message: string | null = null;
+    let isCompilationError = false;
 
     logger.info(`Starting batched execution for submission ${submissionId}`);
 
@@ -181,32 +182,43 @@ export const handler: any = async (
 
         // Hard errors (CE / TLE / MLE / RE) — stop immediately
         if (result.status.id !== 3 && result.status.id !== 4) {
-          finalStatus = judgeStatusToVerdictCode(result.status.id);
           failedCaseIndex = i;
+          if (result.status.id === 6 || result.status.id === 14) isCompilationError = true;
           break;
         }
 
         // Wrong Answer — continue to show how many pass, then stop
         if (!passed) {
-          finalStatus = "WRONG_ANSWER";
           failedCaseIndex = i;
           break;
         }
       } catch (err: any) {
         logger.error("Judge0 call failed for test case", { submissionId, caseIndex: i, error: err.message });
-        const isTimeout = err.message?.includes("timed out");
-        finalStatus = isTimeout ? "TIME_LIMIT_EXCEEDED" : "RUNTIME_ERROR";
-        const verdict = isTimeout ? "Time Limit Exceeded" : "Internal Error";
+
+        // Distinguish infrastructure failures from actual code time limits
+        const isApiTimeout =
+          err.message?.includes("[JUDGE0_POLL_TIMEOUT]") ||
+          err.message?.includes("[JUDGE0_API_ERROR]") ||
+          err.message?.includes("ECONNABORTED") ||
+          err.message?.includes("ETIMEDOUT");
+        const finalVerdict = isApiTimeout ? "INTERNAL_ERROR" : "RUNTIME_ERROR";
+        const verdictLabel = isApiTimeout ? "Judge Unavailable" : "Internal Error";
+
         testResults.push({
           input: tc.input, expected: tc.expected,
           actual: null, stdout: null,
-          stderr: String(err.message), compileOutput: null,
+          stderr: isApiTimeout
+            ? "The judge server is temporarily slow. Please try again."
+            : String(err.message),
+          compileOutput: null,
           passed: false, runtime: null,
           errorDetails: {
-            verdict,
-            errorType: isTimeout ? "TLE" : "SystemError",
+            verdict: verdictLabel,
+            errorType: isApiTimeout ? "JudgeTimeout" : "SystemError",
             line: null,
-            message: err.message,
+            message: isApiTimeout
+              ? "The judge API did not respond in time. This is NOT a problem with your code."
+              : err.message,
           },
         });
         failedCaseIndex = i;
@@ -214,11 +226,7 @@ export const handler: any = async (
       }
     }
 
-    // All test cases executed successfully
-    if (testResults.length === testCases.length && testResults.every((r) => r.passed)) {
-      finalStatus = "ACCEPTED";
-    }
-
+    const finalStatus = computeOverallVerdict(testResults, isCompilationError);
     const passedCases = testResults.filter((r) => r.passed).length;
 
     logger.info("Submission executed", {
