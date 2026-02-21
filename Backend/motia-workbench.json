@@ -1,0 +1,46 @@
+[
+  {
+    "id": "hello-world-flow",
+    "config": {
+      "src/hello/log-greeting.step.js": {
+        "x": 409,
+        "y": 44
+      },
+      "src/hello/hello-api.step.ts": {
+        "x": -477,
+        "y": -1,
+        "sourceHandlePosition": "right"
+      },
+      "src/hello/process_greeting_step.py": {
+        "x": 0,
+        "y": 34,
+        "sourceHandlePosition": "right"
+      }
+    }
+  },
+  {
+    "id": "submission-flow",
+    "config": {
+      "src/submissions/run-code.step.ts": {
+        "x": 0,
+        "y": 0
+      },
+      "src/submissions/my-submissions.step.ts": {
+        "x": 5,
+        "y": 0
+      },
+      "src/submissions/get-submission.step.ts": {
+        "x": 0,
+        "y": 152
+      },
+      "src/submissions/execute-submission.step.ts": {
+        "x": 260,
+        "y": 302
+      },
+      "src/submissions/create-submission.step.ts": {
+        "x": 13,
+        "y": 304
+      }
+    }
+  }
+]

@@ -1,0 +1,116 @@
+// DSA Coding Platform — Prisma Schema
+// Supabase PostgreSQL + Prisma Client
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum SubmissionStatus {
+  PENDING
+  QUEUED
+  RUNNING
+  ACCEPTED
+  WRONG_ANSWER
+  TIME_LIMIT_EXCEEDED
+  RUNTIME_ERROR
+  COMPILATION_ERROR
+  INTERNAL_ERROR
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  passwordHash String
+  name         String?
+  role         Role         @default(USER)
+  rating       Int          @default(1200)
+  submissions  Submission[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([rating])
+  @@map("users")
+}
+
+model Problem {
+  id          String       @id @default(cuid())
+  title       String       @unique
+  slug        String       @unique
+  difficulty  Difficulty
+  description String       @db.Text
+  starterCode Json // { javascript: "...", python: "...", java: "..." }
+  entryPoint  String
+  problemType String       @default("array") // array | string | binary_tree | linked_list | matrix | graph
+  judgeMode   String       @default("exact") // exact | unordered | float | multiline | spj
+  spjCode     String?      @db.Text // Python checker code for SPJ judge mode
+  tags        String[]
+  examples    Json? // [{ input: "...", output: "...", explanation: "..." }]
+  constraints String?      @db.Text
+  isActive    Boolean      @default(true)
+  // Private AI context — never exposed via API, used only for AI hints/explanation
+  aiContext   Json? // { completion: "...", prompt: "...", query: "...", response: "..." }
+  testCases   TestCase[]
+  submissions Submission[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([difficulty])
+  @@index([isActive])
+  @@map("problems")
+}
+
+model TestCase {
+  id        String   @id @default(cuid())
+  problemId String
+  problem   Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  input     String   @db.Text
+  expected  String   @db.Text
+  isHidden  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([problemId])
+  @@index([problemId, isHidden])
+  @@map("test_cases")
+}
+
+model Submission {
+  id        String           @id @default(cuid())
+  userId    String
+  problemId String
+  code      String           @db.Text
+  language  String // javascript | python | java | cpp
+  status    SubmissionStatus @default(PENDING)
+  runtime   Int? // milliseconds
+  memory    Int? // kilobytes
+  details   Json? // { testResults: [...], failedAt: ... }
+  user      User             @relation(fields: [userId], references: [id])
+  problem   Problem          @relation(fields: [problemId], references: [id])
+  createdAt DateTime         @default(now())
+
+  @@index([userId])
+  @@index([problemId])
+  @@index([userId, problemId])
+  @@index([status])
+  @@map("submissions")
+}
