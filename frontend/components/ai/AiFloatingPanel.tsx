@@ -42,7 +42,9 @@ export default function AiFloatingPanel({
   mode, loading, errorData, performanceData, improveData, onClose,
 }: AiFloatingPanelProps) {
   const [minimized, setMinimized] = useState(false);
+  // pos tracks the full-panel position; minimized chip always renders at fixed top-left dock
   const [pos, setPos] = useState({ x: 20, y: 80 });
+  const DOCK = { x: 16, y: 80 }; // top-left dock position when minimized
   const dragRef = useRef<{ dragging: boolean; sx: number; sy: number }>({ dragging: false, sx: 0, sy: 0 });
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -67,13 +69,13 @@ export default function AiFloatingPanel({
 
   const t = TITLES[mode];
 
-  // ── Minimized → dock to top-left as a modern chip ─────────────────────
+  // ── Minimized → floating chip ─────────────
   if (minimized) {
     return (
       <div
         style={{
           position: "fixed",
-          top: pos.y, left: pos.x,
+          top: pos.y, left: pos.x,  // respects drag position instead of DOCK
           zIndex: 9999,
           height: 36,
           background: "rgba(15,15,25,0.97)",
@@ -153,7 +155,7 @@ export default function AiFloatingPanel({
       >
         <span style={{ fontSize: 15 }}>{t.icon}</span>
         <span style={{ fontSize: 13, fontWeight: 700, color: t.color, flex: 1 }}>{t.label}</span>
-        <button onClick={() => setMinimized(true)} style={headerBtn} title="Minimize to dock">▼</button>
+        <button onClick={() => setMinimized(true)} style={headerBtn} title="Minimize">▼</button>
         <button onClick={onClose} style={headerBtn} title="Close">✕</button>
       </div>
 

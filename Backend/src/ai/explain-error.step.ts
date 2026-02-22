@@ -1,6 +1,6 @@
 import type { ApiRouteConfig } from "motia";
 import { z } from "zod";
-import { GoogleGenAI } from "@google/genai";
+import { ollamaChat, MODELS } from "../services/ollama";
 import prisma from "../services/prisma";
 import { authMiddleware } from "../middlewares/auth.middleware";
 
@@ -37,7 +37,6 @@ export const config: ApiRouteConfig = {
       rootCause: z.string(),
       fixSteps: z.array(z.string()),
       conceptToReview: z.string(),
-      // WA-specific fields
       likelyIssue: z.string().optional(),
       whyItHappens: z.string().optional(),
       debugSteps: z.array(z.string()).optional(),
@@ -46,7 +45,7 @@ export const config: ApiRouteConfig = {
     400: z.object({ error: z.string() }),
     404: z.object({ error: z.string() }),
   },
-  includeFiles: ["../services/prisma.ts", "../utils/jwt.ts", "../middlewares/auth.middleware.ts"],
+  includeFiles: ["../services/prisma.ts", "../utils/jwt.ts", "../middlewares/auth.middleware.ts", "../services/ollama.ts"],
 };
 
 export const handler: any = async (req: any, { logger }: { logger: any }) => {
@@ -59,7 +58,7 @@ export const handler: any = async (req: any, { logger }: { logger: any }) => {
     });
     if (!problem) return { status: 404, body: { error: "Problem not found" } };
 
-    const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
+
 
     const isWA = errorDetails.verdict === "WRONG_ANSWER" || errorDetails.errorType === "WrongAnswer";
     const isHidden = testcase?.isHidden ?? false;
@@ -68,7 +67,6 @@ export const handler: any = async (req: any, { logger }: { logger: any }) => {
     let systemInstruction: string;
 
     if (isWA) {
-      // ── Wrong Answer specialised prompt ──────────────────────────────────
       const diffSection = isHidden
         ? `The failing test case is hidden. Reason from common patterns and edge cases for this problem type.`
         : `\nOutput Comparison:\n  Expected: ${testcase?.expected ?? "N/A"}\n  User got: ${testcase?.received ?? "(no output)"}\n  Input:    ${testcase?.input ?? "N/A"}`;
@@ -99,17 +97,16 @@ Your job:
 - DO NOT provide corrected full code. At most one short inline snippet.
 - Keep tone educational and supportive.
 
-Format your response as JSON with keys:
+Respond ONLY with a JSON object (no markdown, no extra text) with keys:
 "summary" (one-sentence description of the failure),
 "likelyIssue" (most probable root cause),
 "whyItHappens" (why this occurs in their specific code, 1-2 sentences),
 "debugSteps" (array of 3-4 actionable debugging steps),
 "edgeCasesToCheck" (array of 2-3 edge cases to test),
 "conceptToReview" (one concept name),
-"rootCause" (same as likelyIssue, for backward compat),
-"fixSteps" (same as debugSteps, for backward compat)`;
+"rootCause" (same as likelyIssue),
+"fixSteps" (same as debugSteps)`;
     } else {
-      // ── CE / RE / TLE prompt ─────────────────────────────────────────────
       const testcaseInfo = testcase
         ? `\nTest Case:\n  Input: ${testcase.input ?? "N/A"}\n  Expected: ${testcase.expected ?? "N/A"}\n  Received: ${testcase.received ?? "(no output)"}`
         : "";
@@ -144,24 +141,19 @@ Rules:
 - Suggest what concept the student should review.
 - Keep tone supportive, concise, and educational.
 
-Format your response as JSON with keys:
+Respond ONLY with a JSON object (no markdown, no extra text) with keys:
 "summary" (one-sentence error explanation),
 "rootCause" (why this happened, 1-2 sentences),
 "fixSteps" (array of 2-4 short actionable steps),
 "conceptToReview" (one concept name),
-"likelyIssue" (same as rootCause, for compat),
-"whyItHappens" (same as rootCause, for compat),
-"debugSteps" (same as fixSteps, for compat),
+"likelyIssue" (same as rootCause),
+"whyItHappens" (same as rootCause),
+"debugSteps" (same as fixSteps),
 "edgeCasesToCheck" ([])`;
     }
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-      config: { systemInstruction, responseMimeType: "application/json", temperature: 0.4 },
-    });
-
-    const parsed = JSON.parse(response.text ?? "{}");
+    const raw = await ollamaChat(MODELS.FAST, systemInstruction, prompt, { temperature: 0.4, format: "json" });
+    const parsed = JSON.parse(raw);
     logger.info("Error explanation generated", { problemId, verdict: errorDetails.verdict, isWA });
 
     return {

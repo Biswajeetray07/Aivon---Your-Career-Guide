@@ -48,7 +48,10 @@ if __name__ == '__main__':
             val = line
         args.append(val)
     try:
-        result = Solution().###ENTRYPOINT###(*args)
+        if 'Solution' in globals() and hasattr(Solution, '###ENTRYPOINT###'):
+            result = getattr(Solution(), '###ENTRYPOINT###')(*args)
+        else:
+            result = globals()['###ENTRYPOINT###'](*args)
         print("###AIVON_RES###", flush=True)
         print(json.dumps(__serialize(result), ensure_ascii=False), flush=True)
     except Exception:
@@ -111,7 +114,10 @@ if __name__ == '__main__':
         else:
             args.append(val)
     try:
-        result = Solution().###ENTRYPOINT###(*args)
+        if 'Solution' in globals() and hasattr(Solution, '###ENTRYPOINT###'):
+            result = getattr(Solution(), '###ENTRYPOINT###')(*args)
+        else:
+            result = globals()['###ENTRYPOINT###'](*args)
         print("###AIVON_RES###", flush=True)
         print(json.dumps(__serialize(result), ensure_ascii=False), flush=True)
     except Exception:
@@ -163,7 +169,10 @@ if __name__ == '__main__':
         else:
             args.append(val)
     try:
-        result = Solution().###ENTRYPOINT###(*args)
+        if 'Solution' in globals() and hasattr(Solution, '###ENTRYPOINT###'):
+            result = getattr(Solution(), '###ENTRYPOINT###')(*args)
+        else:
+            result = globals()['###ENTRYPOINT###'](*args)
         print("###AIVON_RES###", flush=True)
         print(json.dumps(__serialize(result), ensure_ascii=False), flush=True)
     except Exception:

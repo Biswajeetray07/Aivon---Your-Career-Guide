@@ -1,6 +1,6 @@
-import type { ApiRouteConfig, Handlers } from "motia";
+import type { ApiRouteConfig } from "motia";
 import { z } from "zod";
-import { GoogleGenAI } from "@google/genai";
+import { ollamaChat, MODELS } from "../services/ollama";
 import prisma from "../services/prisma";
 import { authMiddleware } from "../middlewares/auth.middleware";
 
@@ -31,7 +31,7 @@ export const config: ApiRouteConfig = {
     400: z.object({ error: z.string() }),
     404: z.object({ error: z.string() }),
   },
-  includeFiles: ["../services/prisma.ts", "../utils/jwt.ts", "../middlewares/auth.middleware.ts"],
+  includeFiles: ["../services/prisma.ts", "../utils/jwt.ts", "../middlewares/auth.middleware.ts", "../services/ollama.ts"],
 };
 
 export const handler: any = async (req: any, { logger }: { logger: any }) => {
@@ -44,11 +44,9 @@ export const handler: any = async (req: any, { logger }: { logger: any }) => {
     });
     if (!problem) return { status: 404, body: { error: "Problem not found" } };
 
-    const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: `Problem: ${problem.title} (${problem.difficulty})
+
+    const prompt = `Problem: ${problem.title} (${problem.difficulty})
 Language: ${language}
 
 Accepted Solution:
@@ -56,9 +54,9 @@ Accepted Solution:
 ${code}
 \`\`\`
 
-Analyse this accepted solution.`,
-      config: {
-        systemInstruction: `You are a competitive programming performance analyst doing a post-AC review.
+Analyse this accepted solution.`;
+
+    const systemInstruction = `You are a competitive programming performance analyst doing a post-AC review.
 
 Analyse the user's accepted solution and provide structured performance feedback.
 
@@ -68,20 +66,18 @@ Rules:
 - Give a single actionable improvement tip.
 - Include an interview-readiness note.
 
-Format your response as JSON with keys:
+Respond ONLY with a JSON object (no markdown, no extra text) with keys:
 "feedback" (2-3 sentence analysis of the approach),
 "timeComplexity" (e.g. "O(n log n)"),
 "spaceComplexity" (e.g. "O(n)"),
 "isOptimal" (boolean — is this the best known complexity?),
 "improvementTip" (one concrete tip to improve without full code),
-"interviewNote" (one sentence on interview readiness)`,
-        responseMimeType: "application/json",
-        temperature: 0.3,
-      },
-    });
+"interviewNote" (one sentence on interview readiness)`;
 
-    const parsed = JSON.parse(response.text ?? "{}");
+    const raw = await ollamaChat(MODELS.CODER, systemInstruction, prompt, { temperature: 0.3, format: "json" });
+    const parsed = JSON.parse(raw);
     logger.info("Code feedback generated", { problemId });
+
     return {
       status: 200,
       body: {

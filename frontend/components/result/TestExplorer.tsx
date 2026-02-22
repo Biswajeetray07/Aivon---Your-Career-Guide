@@ -23,15 +23,24 @@ interface TestExplorerProps {
   mode?: "run" | "submit";
   /** For submit mode, index >= this value means hidden test */
   visibleCount?: number;
+  /** Optional controlled active index (for failure-first selection from parent) */
+  activeIndex?: number;
+  onSelect?: (idx: number) => void;
+  /** For PerformancePanel integration */
+  totalRuntime?: number | null;
+  memory?: number | null;
 }
 
 type Tab = "detail" | "console";
 
 const CODE_BG = "rgba(0,0,0,0.28)";
 
-export default function TestExplorer({ testResults, mode, visibleCount }: TestExplorerProps) {
-  const [activeIdx, setActiveIdx] = useState(0);
+export default function TestExplorer({ testResults, mode, visibleCount, activeIndex, onSelect, totalRuntime, memory }: TestExplorerProps) {
+  const [internalIdx, setInternalIdx] = useState(0);
   const [tab, setTab] = useState<Tab>("detail");
+  // Use controlled index if provided, else internal
+  const activeIdx = activeIndex !== undefined ? activeIndex : internalIdx;
+  const setActiveIdx = (i: number) => { setInternalIdx(i); onSelect?.(i); };
 
   if (!testResults || testResults.length === 0) {
     return (
