@@ -1,8 +1,8 @@
 import type { ApiRouteConfig, Handlers } from "motia";
 import { z } from "zod";
-import { ollamaChat, MODELS } from "../services/ollama";
 import prisma from "../services/prisma";
 import { authMiddleware } from "../middlewares/auth.middleware";
+import { askOllama, extractOllamaText } from "../utils/ai/ollamaPipeline";
 
 const bodySchema = z.object({ problemId: z.string() });
 
@@ -20,7 +20,7 @@ export const config: ApiRouteConfig = {
     400: z.object({ error: z.string() }),
     404: z.object({ error: z.string() }),
   },
-  includeFiles: ["../services/prisma.ts", "../utils/jwt.ts", "../middlewares/auth.middleware.ts", "../services/ollama.ts"],
+  includeFiles: ["../services/prisma.ts", "../utils/jwt.ts", "../middlewares/auth.middleware.ts", "../utils/ai/ollamaPipeline.ts"],
 };
 
 export const handler: any = async (req: any, { logger }: { logger: any }) => {
@@ -46,15 +46,30 @@ ${problem.description.substring(0, 1500)}
 
 Provide a clear explanation of the approach to solve it.`;
 
-    const raw = await ollamaChat(MODELS.FAST, systemInstruction, prompt, { format: "json" });
-    const parsed = JSON.parse(raw);
+    const rawResponse = await askOllama({
+      taskType: "concept",
+      prompt: `${systemInstruction}\n\n${prompt}`
+    });
+    
+    const rawText = extractOllamaText(rawResponse.data);
+    const jsonReadyText = rawText.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+    const jsonMatch = jsonReadyText.match(/\{[\s\S]*\}/);
+    let parsed: any = {};
+    
+    try {
+      parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(jsonReadyText);
+    } catch (e) {
+      logger.warn("Failed to parse JSON explanation directly from Ollama response", { raw: jsonReadyText });
+      parsed = { explanation: jsonReadyText.substring(0, 200), approach: jsonReadyText, keyInsights: [] };
+    }
+    
     logger.info("Explanation generated", { problemId });
     return {
       status: 200,
       body: {
         explanation: parsed.explanation ?? "",
         approach: parsed.approach ?? "",
-        keyInsights: parsed.keyInsights ?? [],
+        keyInsights: Array.isArray(parsed.keyInsights) ? parsed.keyInsights : [],
       },
     };
   } catch (err: any) {

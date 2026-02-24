@@ -64,6 +64,11 @@ export function detectProblemTypeFromInput(
     return "binary_tree";
   }
 
+  // Graph indicators: adjList, graph, edges, node
+  if (/\b(adjList|graph|edges|node)\s*=/.test(trimmed)) {
+    return "graph";
+  }
+
   return problemType;
 }
 

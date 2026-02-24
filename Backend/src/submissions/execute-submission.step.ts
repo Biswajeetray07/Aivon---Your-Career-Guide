@@ -2,17 +2,11 @@ import type { EventConfig } from "motia";
 import { z } from "zod";
 import prisma from "../services/prisma";
 import { wrapCode, formatStdin, detectProblemTypeFromInput } from "../utils/code-runner";
-import {
-  runCode,
-  compareElite,
-  judgeStatusToVerdictCode,
-  parseStructuredError,
-  formatErrorOutput,
-  parseExecutionOutput,
-  runSpjChecker,
-  computeOverallVerdict,
-  type JudgeMode,
-} from "../utils/judge0";
+import { runCode, runSpjChecker, runRawPython } from "../utils/judge0";
+import { runSingleTest } from "../utils/judge-core/runSingleTest";
+import { aggregateResults } from "../utils/judge-core/aggregateResults";
+import { safeJudge } from "../utils/judge-core/safeJudge";
+import type { JudgeMode } from "../utils/judge-core/outputComparator";
 
 export const config: EventConfig = {
   type: "event",
@@ -31,17 +25,56 @@ export const config: EventConfig = {
   ],
 };
 
+async function safeExec<T>(promise: Promise<T>, ms = 25000): Promise<T> {
+  let timer: any;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error("[JUDGE0_POLL_TIMEOUT] Execution timeout")), ms);
+  });
+  return Promise.race([
+    promise.finally(() => clearTimeout(timer)),
+    timeout
+  ]);
+}
+
+function mapToPrismaStatus(verdict: string): any {
+  switch (verdict) {
+    case "Accepted": return "ACCEPTED";
+    case "Wrong Answer": return "WRONG_ANSWER";
+    case "Wrong Answer on Hidden Test": return "WRONG_ANSWER_ON_HIDDEN_TEST";
+    case "Time Limit Exceeded": return "TIME_LIMIT_EXCEEDED";
+    case "Memory Limit Exceeded": return "RUNTIME_ERROR"; 
+    case "Runtime Error": return "RUNTIME_ERROR";
+    case "Compile Error": return "COMPILATION_ERROR";
+    default: return "INTERNAL_ERROR";
+  }
+}
+
 export const handler: any = async (
-  { data: { submissionId } }: { data: { submissionId: string } },
+  payload: any,
   { logger, emit }: { logger: any; emit: any }
 ) => {
+  let submissionId = "UNKNOWN";
+  
+  try {
+    submissionId = payload?.data?.submissionId || payload?.submissionId;
+    if (!submissionId) {
+      throw new Error(`Invalid payload, missing submissionId: ${JSON.stringify(payload)}`);
+    }
+  } catch (e: any) {
+    logger.error("ExecuteSubmission init failed (Malformatted payload)", { error: e.message });
+    return; // We cannot update the DB to SYSTEM_ERROR because we don't have the submissionId
+  }
+
   logger.info("ExecuteSubmission started", { submissionId });
 
   const submission = await prisma.submission.findUnique({
     where: { id: submissionId },
     include: {
       problem: {
-        include: { testCases: { orderBy: { order: "asc" } } },
+        include: { 
+          testCases: { orderBy: { order: "asc" } },
+          judgeMeta: true
+        },
       },
     },
   });
@@ -104,7 +137,7 @@ export const handler: any = async (
     type TestResult = {
       input: string; expected: string; actual: string | null; stdout?: string | null;
       stderr: string | null; compileOutput: string | null;
-      passed: boolean; runtime: number | null;
+      passed: boolean; runtime: number | null; verdict: string;
       errorDetails?: { verdict: string; errorType: string; line: number | null; message: string } | null;
     };
     const testResults: TestResult[] = [];
@@ -113,7 +146,6 @@ export const handler: any = async (
     let maxMemory = 0;
     let failedCaseIndex: number | null = null;
     let message: string | null = null;
-    let isCompilationError = false;
 
     logger.info(`Starting batched execution for submission ${submissionId}`);
 
@@ -130,64 +162,49 @@ export const handler: any = async (
         const formattedInput = formatStdin(tc.input);
 
         logger.info("Running test case", { submissionId, caseIndex: i, input: tc.input.slice(0, 60) });
-        const result = await runCode(wrappedCode, submission.language, formattedInput);
+        const result = await safeExec(runCode(wrappedCode, submission.language, formattedInput), 20000);
         logger.info("Judge0 result", { submissionId, caseIndex: i, statusId: result.status.id, statusDesc: result.status.description });
 
-        const { stdout, actual } = parseExecutionOutput(result.stdout);
-        const runtime = result.time ? Math.round(parseFloat(result.time) * 1000) : null;
+        const singleResult = await runSingleTest({
+          rawExec: result,
+          expectedOutput: tc.expected,
+          testInput: tc.input,
+          language: submission.language,
+          judgeMode,
+          spjCode
+        });
 
-        // Determine pass using the problem's judge mode
-        let passed = false;
-        if (result.status.id === 3) {
-          if (judgeMode === "spj" && spjCode) {
-            const spjResult = await runSpjChecker(spjCode, tc.input, actual ?? "", tc.expected);
-            passed = spjResult.ok;
-          } else {
-            passed = compareElite(actual, tc.expected, judgeMode);
-          }
-        }
+        if (singleResult.runtimeMs) totalRuntime += singleResult.runtimeMs;
+        if (singleResult.memoryKb && singleResult.memoryKb > maxMemory) maxMemory = singleResult.memoryKb;
 
-        if (runtime) totalRuntime += runtime;
-        if (result.memory && result.memory > maxMemory) maxMemory = result.memory;
-
-        const rawErr = result.stderr || result.compile_output;
-        const errorDetails = rawErr
-          ? parseStructuredError(rawErr, submission.language, result.status.id)
-          : null;
+        const passed = singleResult.verdict === "Accepted";
 
         logger.info("Test case verdict", {
           submissionId,
           caseIndex: i,
           passed,
-          actual: actual?.slice(0, 100),
-          expected: tc.expected?.slice(0, 100),
+          verdict: singleResult.verdict
         });
 
         testResults.push({
           input: tc.input,
           expected: tc.expected,
-          actual,
-          stdout,
-          stderr: formatErrorOutput(result.stderr, submission.language),
-          compileOutput: formatErrorOutput(result.compile_output, submission.language),
+          actual: singleResult.actualOutput,
+          stdout: singleResult.stdout,
+          stderr: singleResult.rawError || null,
+          compileOutput: null,
           passed,
-          runtime,
-          errorDetails: errorDetails ? {
-            verdict: errorDetails.verdict,
-            errorType: errorDetails.errorType,
-            line: errorDetails.line,
-            message: errorDetails.message,
+          runtime: singleResult.runtimeMs,
+          errorDetails: (singleResult.errorType && singleResult.verdict !== "Accepted") ? {
+            verdict: singleResult.verdict,
+            errorType: singleResult.errorType,
+            line: singleResult.errorLine,
+            message: singleResult.errorMessage || "",
           } : null,
+          verdict: singleResult.verdict
         });
 
-        // Hard errors (CE / TLE / MLE / RE) — stop immediately
-        if (result.status.id !== 3 && result.status.id !== 4) {
-          failedCaseIndex = i;
-          if (result.status.id === 6 || result.status.id === 14) isCompilationError = true;
-          break;
-        }
-
-        // Wrong Answer — continue to show how many pass, then stop
+        // Hard errors (CE / TLE / MLE / RE / WA) — stop immediately in SUBMIT mode
         if (!passed) {
           failedCaseIndex = i;
           break;
@@ -207,32 +224,121 @@ export const handler: any = async (
         testResults.push({
           input: tc.input, expected: tc.expected,
           actual: null, stdout: null,
-          stderr: isApiTimeout
-            ? "The judge server is temporarily slow. Please try again."
-            : String(err.message),
-          compileOutput: null,
-          passed: false, runtime: null,
+          stderr: null, compileOutput: null,
+          passed: false, runtime: null, verdict: finalVerdict,
           errorDetails: {
             verdict: verdictLabel,
-            errorType: isApiTimeout ? "JudgeTimeout" : "SystemError",
+            errorType: "SystemError",
             line: null,
-            message: isApiTimeout
-              ? "The judge API did not respond in time. This is NOT a problem with your code."
-              : err.message,
+            message: err.message,
           },
         });
         failedCaseIndex = i;
-        break;
+        break; // Stop execution on infrastructure error
+      }
+    } // ─── End Visible Test Cases Loop ───
+
+    // ─── Phase D: Differential Testing Framework (The Universal Judge) ───
+    // Only run stress tests if the previous visible cases passed, 
+    // AND the problem supports it, AND there is no runtime API failure yet.
+    const isSubmitAttempt = true; // For now assuming it's a full submit
+    
+    if (isSubmitAttempt && failedCaseIndex === null && submission.problem.hasOracle && submission.problem.judgeMeta) {
+      const { generatorCode, oracleCode } = submission.problem.judgeMeta;
+
+      if (generatorCode && oracleCode) {
+        logger.info(`Starting Differential Testing Framework for ${submissionId}`);
+        await pushUpdate({
+          status: "RUNNING",
+          progress: { current: testCases.length, total: testCases.length + 5 },
+          message: `Visible tests passed. Generating rigorous randomized boundary cases...`,
+        });
+
+        try {
+           // 1. Ask Generator.py to blast out 5 random boundary cases
+           const genRes = await safeExec(runRawPython(generatorCode), 15000);
+           
+           if (genRes.status.id === 3 && genRes.stdout) {
+              // 2. We assume the generator separated each test block by a double newline \n\n
+              // Or if it's one test, just one block.
+              const rawGenInputs = genRes.stdout.split('\n\n').map(s => s.trim()).filter(Boolean);
+              
+              // We'll iterate over up to 5 generated cases 
+              for (let stressIdx = 0; stressIdx < Math.min(rawGenInputs.length, 5); stressIdx++) {
+                 const stressInput = rawGenInputs[stressIdx];
+                 
+                 // 3. Oracle runs the Ground Truth
+                 const oracleRes = await safeExec(runRawPython(oracleCode, stressInput), 15000);
+                 
+                 if (oracleRes.status.id === 3 && oracleRes.stdout) {
+                     const expectedOracleOutput = oracleRes.stdout.trim();
+                     
+                     await pushUpdate({
+                        status: "RUNNING",
+                        progress: { current: testCases.length + stressIdx + 1, total: testCases.length + 5 },
+                        message: `Differential verification on randomized hidden case ${stressIdx + 1}...`,
+                     });
+
+                     const formattedStressInput = formatStdin(stressInput);
+                     const userRes = await safeExec(runCode(wrappedCode, submission.language, formattedStressInput), 20000);
+
+                     const singleResult = await runSingleTest({
+                        rawExec: userRes,
+                        expectedOutput: expectedOracleOutput,
+                        testInput: stressInput,
+                        language: submission.language,
+                        judgeMode,
+                        spjCode
+                     });
+
+                     if (singleResult.runtimeMs) totalRuntime += singleResult.runtimeMs;
+                     if (singleResult.memoryKb && singleResult.memoryKb > maxMemory) maxMemory = singleResult.memoryKb;
+
+                     if (singleResult.verdict !== "Accepted") {
+                        // We caught them on a hidden adversarial case!
+                        testResults.push({
+                           input: "<Hidden Generative Edge Case>\n" + stressInput.slice(0, 100) + "...",
+                           expected: expectedOracleOutput.slice(0, 100) + "...",
+                           actual: (singleResult.actualOutput ?? null) as string | null,
+                           stdout: singleResult.stdout,
+                           stderr: singleResult.rawError || null,
+                           compileOutput: null,
+                           passed: false,
+                           runtime: singleResult.runtimeMs,
+                           errorDetails: {
+                             verdict: singleResult.verdict === "Wrong Answer" ? "Wrong Answer on Hidden Test" : singleResult.verdict,
+                             errorType: singleResult.errorType || "RuntimeError",
+                             line: singleResult.errorLine,
+                             message: "Your code failed on a randomly generated adversarial hidden test case.\n" + (singleResult.errorMessage || ""),
+                           },
+                           verdict: singleResult.verdict
+                        });
+                        failedCaseIndex = testCases.length + stressIdx;
+                        break;
+                     } 
+                 } else {
+                   logger.error(`Oracle failed to resolve Ground Truth for generative test: ${oracleRes.stderr}`);
+                 }
+              }
+           } else {
+             logger.error(`Generator failed to create inputs: ${genRes.stderr}`);
+           }
+        } catch (stressErr: any) {
+           logger.error(`Differential Testing Engine failure: ${stressErr.message}`);
+        }
       }
     }
 
-    const finalStatus = computeOverallVerdict(testResults, isCompilationError);
-    const passedCases = testResults.filter((r) => r.passed).length;
+    // Now compute the overall status based on testResults using the uniform aggregate logic
+    const { verdict: overallStatus } = aggregateResults(testResults as any, "submit");
+
+    const passedCount = testResults.filter(r => r.passed).length;
+    const isAccepted = overallStatus === "Accepted";
 
     logger.info("Submission executed", {
       submissionId,
-      status: finalStatus,
-      passedCases,
+      status: mapToPrismaStatus(overallStatus),
+      passedCases: passedCount,
       totalCases: testCases.length,
       totalRuntime,
       failedCaseIndex,
@@ -240,7 +346,7 @@ export const handler: any = async (
 
     const finalDetails = {
       testResults,
-      passedCases: testResults.filter((r) => r.passed).length,
+      passedCount: testResults.filter((r) => r.passed).length,
       totalCases: submission.problem.testCases.length,
       failedCaseIndex,
       message,
@@ -249,7 +355,7 @@ export const handler: any = async (
     const finalSub = await prisma.submission.update({
       where: { id: submissionId },
       data: {
-        status: finalStatus as any,
+        status: mapToPrismaStatus(overallStatus),
         runtime: totalRuntime > 0 ? totalRuntime : null,
         memory: maxMemory > 0 ? maxMemory : null,
         details: finalDetails,
@@ -266,7 +372,7 @@ export const handler: any = async (
 
     await emit({
       topic: "submission-complete",
-      data: { submissionId, status: finalStatus, userId: submission.userId },
+      data: { submissionId, status: mapToPrismaStatus(overallStatus), userId: submission.userId },
     });
 
   } catch (globalErr: any) {
@@ -278,8 +384,8 @@ export const handler: any = async (
         status: "INTERNAL_ERROR" as any,
         details: {
           testResults: [{
-            input: "", expected: "", actual: null, stdout: null,
-            stderr: String(globalErr.message), compileOutput: null,
+            input: "", expected: "", actual: null as string | null, stdout: null,
+            stderr: globalErr.message ? String(globalErr.message) : null, compileOutput: null,
             passed: false, runtime: null,
             errorDetails: {
               verdict: "Internal Error",

@@ -128,7 +128,7 @@ export default function PerformancePanel({ testResults, totalRuntime, memory }: 
         {/* Stats column */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10, flex: 1, minWidth: 140 }}>
           <StatRow label="Success Rate" value={total ? `${Math.round((passed / total) * 100)}%` : "—"} color={passed === total ? "#22c55e" : "#eab308"} />
-          {avgRuntime != null && <StatRow label="Avg Runtime" value={`${avgRuntime} ms`} color="#a78bfa" />}
+          {avgRuntime != null && <StatRow label="Avg Runtime" value={`${avgRuntime} ms`} color="#00FFFF" />}
           {totalRuntime != null && totalRuntime > 0 && <StatRow label="Total Runtime" value={`${totalRuntime} ms`} color="#60a5fa" />}
           {memory != null && memory > 0 && <StatRow label="Peak Memory" value={`${(memory / 1024).toFixed(1)} MB`} color="#34d399" />}
         </div>

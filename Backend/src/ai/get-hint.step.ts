@@ -1,8 +1,8 @@
 import type { ApiRouteConfig, Handlers } from "motia";
 import { z } from "zod";
-import { ollamaChat, MODELS } from "../services/ollama";
 import prisma from "../services/prisma";
 import { authMiddleware } from "../middlewares/auth.middleware";
+import { askOllama, extractOllamaText } from "../utils/ai/ollamaPipeline";
 
 const bodySchema = z.object({
   problemId: z.string(),
@@ -23,7 +23,7 @@ export const config: ApiRouteConfig = {
     400: z.object({ error: z.string() }),
     404: z.object({ error: z.string() }),
   },
-  includeFiles: ["../services/prisma.ts", "../utils/jwt.ts", "../middlewares/auth.middleware.ts", "../services/ollama.ts"],
+  includeFiles: ["../services/prisma.ts", "../utils/jwt.ts", "../middlewares/auth.middleware.ts", "../utils/ai/ollamaPipeline.ts"],
 };
 
 export const handler: any = async (req: any, { logger }: { logger: any }) => {
@@ -52,9 +52,18 @@ ${problem.description.substring(0, 1500)}${userCodeSection}
 
 Give me a helpful hint to solve this problem.`;
 
-    const hint = await ollamaChat(MODELS.FAST, systemInstruction, prompt, { temperature: 0.7 }) || "Think about the problem constraints and what data structures match best.";
+    const rawResponse = await askOllama({
+      taskType: "hint",
+      prompt: `${systemInstruction}\n\n${prompt}`
+    });
+    
+    const rawText = extractOllamaText(rawResponse.data);
+    
+    // For pure hint, we want exactly what the model returns, but we can strip <think> for cleanliness
+    const hint = rawText.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+
     logger.info("Hint generated", { problemId });
-    return { status: 200, body: { hint } };
+    return { status: 200, body: { hint: hint || "Think about the problem constraints and what data structures match best." } };
   } catch (err: any) {
     logger.error("Hint generation failed", { error: err.message });
     return { status: 400, body: { error: err.message ?? "Could not generate hint" } };

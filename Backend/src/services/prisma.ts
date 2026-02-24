@@ -24,3 +24,16 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 export default prisma;
+
+// Process crash guards
+if (typeof process !== "undefined") {
+  process.on("uncaughtException", (err) => {
+    console.error("💥 UNCAUGHT EXCEPTION:", err);
+  });
+  
+  process.on("unhandledRejection", (err) => {
+    console.error("💥 UNHANDLED REJECTION:", err);
+  });
+}
+
+// Prisma Health Check removed to prevent worker console spam

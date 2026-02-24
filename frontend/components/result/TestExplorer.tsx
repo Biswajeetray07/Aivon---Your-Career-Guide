@@ -26,16 +26,13 @@ interface TestExplorerProps {
   /** Optional controlled active index (for failure-first selection from parent) */
   activeIndex?: number;
   onSelect?: (idx: number) => void;
-  /** For PerformancePanel integration */
-  totalRuntime?: number | null;
-  memory?: number | null;
 }
 
 type Tab = "detail" | "console";
 
 const CODE_BG = "rgba(0,0,0,0.28)";
 
-export default function TestExplorer({ testResults, mode, visibleCount, activeIndex, onSelect, totalRuntime, memory }: TestExplorerProps) {
+export default function TestExplorer({ testResults, mode, visibleCount, activeIndex, onSelect }: TestExplorerProps) {
   const [internalIdx, setInternalIdx] = useState(0);
   const [tab, setTab] = useState<Tab>("detail");
   // Use controlled index if provided, else internal
@@ -56,15 +53,35 @@ export default function TestExplorer({ testResults, mode, visibleCount, activeIn
   const hasConsole = !!(active.compileOutput || active.stderr);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%", overflow: "hidden" }}>
+      <style>{`
+        .test-cases-scrollbar::-webkit-scrollbar {
+          height: 6px;
+        }
+        .test-cases-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .test-cases-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.15);
+          border-radius: 10px;
+        }
+        .test-cases-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.25);
+        }
+      `}</style>
       {/* Case pill row */}
-      <div style={{
+      <div 
+        className="test-cases-scrollbar"
+        style={{
         display: "flex", gap: 6, padding: "12px 20px",
-        overflowX: "auto", borderBottom: "1px solid rgba(255,255,255,0.06)",
-        scrollbarWidth: "none",
+        height: "56px",
+        overflowX: "auto", overflowY: "hidden", borderBottom: "1px solid rgba(255,255,255,0.06)",
+        scrollbarWidth: "auto",
+        scrollbarColor: "rgba(255,255,255,0.15) transparent",
+        width: "100%",
+        flexShrink: 0
       }}>
         {testResults.map((tr, i) => {
-          const hidden = mode === "submit" && visibleCount !== undefined && i >= visibleCount;
           return (
             <button
               key={i}
@@ -108,7 +125,7 @@ export default function TestExplorer({ testResults, mode, visibleCount, activeIn
               padding: "10px 14px", fontSize: 13, fontWeight: 600, fontFamily: "inherit",
               cursor: "pointer", border: "none", background: "transparent",
               color: tab === t ? "#f1f0ff" : "#6b7280",
-              borderBottom: tab === t ? "2px solid #7c3aed" : "2px solid transparent",
+              borderBottom: tab === t ? "2px solid #00E5FF" : "2px solid transparent",
               transition: "all var(--transition-fast)",
             }}
             onMouseEnter={e => { if (tab !== t) e.currentTarget.style.color = "#d1d5db"; }}

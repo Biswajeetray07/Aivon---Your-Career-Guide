@@ -25,23 +25,55 @@ export const config: ApiRouteConfig = {
 };
 
 export const handler: any = async (req: any, { logger }: { logger: any }) => {
+  const start = Date.now();
+  console.log(`➡️ GET /api/problems/${req.pathParams.id}`);
+
   try {
     const { id } = req.pathParams;
 
+    console.log(`🔍 Fetching problem ${id} from DB...`);
     const problem = await prisma.problem.findFirst({
       where: { OR: [{ id }, { slug: id }], isActive: true },
       include: {
         testCases: { where: { isHidden: false }, orderBy: { order: "asc" } },
       },
     });
+    console.log(`✅ Problem fetched: ${problem ? 'Found' : 'Not Found'} (${Date.now() - start}ms)`);
 
-    if (!problem) return { status: 404, body: { error: "Problem not found" } };
+    if (!problem) {
+      console.log(`⬅️ GET 404 Not Found`);
+      return { status: 404, body: { error: "Problem not found" } };
+    }
 
     logger.info("Problem fetched", { problemId: problem.id });
-    return { status: 200, body: { ...problem, createdAt: undefined, updatedAt: undefined } as any };
+
+    // Map safely to avoid Zod schema validation errors causing unhandled rejections
+    const safeProblem = {
+      id: problem.id,
+      title: problem.title,
+      slug: problem.slug,
+      difficulty: problem.difficulty,
+      description: problem.description,
+      starterCode: problem.starterCode,
+      entryPoint: problem.entryPoint,
+      judgeMode: problem.judgeMode,
+      tags: problem.tags,
+      examples: problem.examples,
+      constraints: problem.constraints,
+      testCases: problem.testCases.map((tc: any) => ({
+        id: tc.id,
+        input: String(tc.input),
+        expected: String(tc.expected),
+        order: Number(tc.order)
+      }))
+    };
+
+    console.log(`⬅️ GET 200 OK (${Date.now() - start}ms)`);
+    return { status: 200, body: safeProblem as any };
   } catch (err: any) {
+    console.error("❌ getProblem FAILED:", err);
     logger.error("Get problem failed", { error: err.message, stack: err.stack });
-    return { status: 500, body: { error: "Internal server error fetching problem" } };
+    return { status: 500, body: { error: "Internal server error fetching problem", message: err.message } };
   }
 };
 

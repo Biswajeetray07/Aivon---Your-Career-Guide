@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { io, Socket } from "socket.io-client";
+import { io } from "socket.io-client";
 
 const SOCKET_URL = "http://localhost:3003";
 
 export type JudgeEvent =
   | { status: "QUEUED" | "PENDING" }
   | { status: "RUNNING"; progress: { current: number; total: number }; message: string }
-  | { status: "DONE"; submission: any }
+  | { status: "DONE"; submission: unknown }
   | { status: "ERROR"; message: string };
 
 export function useJudgeSocket(

@@ -3,17 +3,11 @@ import { z } from "zod";
 import prisma from "../services/prisma";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import { wrapCode, formatStdin, detectProblemTypeFromInput } from "../utils/code-runner";
-import {
-  runCode,
-  compareElite,
-  parseStructuredError,
-  formatErrorOutput,
-  parseExecutionOutput,
-  judgeStatusToVerdictCode,
-  computeOverallVerdict,
-  runSpjChecker,
-  type JudgeMode,
-} from "../utils/judge0";
+import { runCode, runSpjChecker } from "../utils/judge0";
+import { runSingleTest } from "../utils/judge-core/runSingleTest";
+import { aggregateResults } from "../utils/judge-core/aggregateResults";
+import { safeJudge } from "../utils/judge-core/safeJudge";
+import type { JudgeMode } from "../utils/judge-core/outputComparator";
 
 const bodySchema = z.object({
   problemId: z.string(),
@@ -69,6 +63,17 @@ export const config: ApiRouteConfig = {
   ],
 };
 
+async function safeExec<T>(promise: Promise<T>, ms = 25000): Promise<T> {
+  let timer: any;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error("[JUDGE0_POLL_TIMEOUT] Execution timeout")), ms);
+  });
+  return Promise.race([
+    promise.finally(() => clearTimeout(timer)),
+    timeout
+  ]);
+}
+
 export const handler: any = async (req: any, { logger }: any) => {
   try {
     const { problemId, language, code } = bodySchema.parse(req.body);
@@ -108,77 +113,57 @@ export const handler: any = async (req: any, { logger }: any) => {
     type TestResult = {
       input: string; expected: string; actual: string | null; stdout?: string | null;
       stderr: string | null; compileOutput: string | null;
-      passed: boolean; runtime: number | null;
+      passed: boolean; runtime: number | null; verdict: string;
       errorDetails?: { verdict: string; errorType: string; line: number | null; message: string } | null;
     };
     const testResults: TestResult[] = [];
 
     let totalRuntime = 0;
     let maxMemory = 0;
-    let isCompilationError = false;
 
     for (const tc of problem.testCases) {
       const formattedInput = formatStdin(tc.input);
 
       logger.info("Running test case", { input: tc.input.slice(0, 80) });
-      const result = await runCode(wrappedCode, language, formattedInput);
+      const result = await safeExec(runCode(wrappedCode, language, formattedInput), 20000);
       logger.info("Judge0 result", { statusId: result.status.id, statusDesc: result.status.description });
 
-      const { stdout, actual } = parseExecutionOutput(result.stdout);
-      const runtime = result.time ? Math.round(parseFloat(result.time) * 1000) : null;
-
-      // Determine pass: judge0 must report OK (status 3) AND comparator must agree
-      let passed = false;
-      let spjMessage: string | undefined;
-      if (result.status.id === 3) {
-        if (judgeMode === "spj" && problem.spjCode) {
-          const spjResult = await runSpjChecker(problem.spjCode, tc.input, actual ?? "", tc.expected);
-          passed = spjResult.ok;
-          spjMessage = spjResult.message;
-        } else {
-          passed = compareElite(actual, tc.expected, judgeMode);
-        }
-      }
-
-      if (runtime) totalRuntime += runtime;
-      if (result.memory && result.memory > maxMemory) maxMemory = result.memory;
-
-      const rawErr = result.stderr || result.compile_output;
-      const errorDetails = rawErr
-        ? parseStructuredError(rawErr, language, result.status.id)
-        : null;
-
-      logger.info("Test case result", {
-        passed,
-        actual: actual?.slice(0, 100),
-        expected: tc.expected?.slice(0, 100),
-        stdout: stdout?.slice(0, 100),
-        verdictId: result.status.id,
+      const singleResult = await runSingleTest({
+        rawExec: result,
+        expectedOutput: tc.expected,
+        testInput: tc.input,
+        language,
+        judgeMode,
+        spjCode: problem.spjCode
       });
+
+      if (singleResult.runtimeMs) totalRuntime += singleResult.runtimeMs;
+      if (singleResult.memoryKb && singleResult.memoryKb > maxMemory) maxMemory = singleResult.memoryKb;
+
+      const passed = singleResult.verdict === "Accepted";
+      
+      logger.info("Test case result", { passed, verdict: singleResult.verdict });
 
       testResults.push({
         input: tc.input,
         expected: tc.expected,
-        actual,
-        stdout,
-        stderr: formatErrorOutput(result.stderr, language),
-        compileOutput: formatErrorOutput(result.compile_output, language),
+        actual: singleResult.actualOutput,
+        stdout: singleResult.stdout,
+        stderr: singleResult.rawError || null,
+        compileOutput: null,
         passed,
-        runtime,
-        errorDetails: errorDetails ? {
-          verdict: errorDetails.verdict,
-          errorType: errorDetails.errorType,
-          line: errorDetails.line,
-          message: errorDetails.message,
+        runtime: singleResult.runtimeMs,
+        errorDetails: (singleResult.errorType && singleResult.verdict !== "Accepted") ? {
+          verdict: singleResult.verdict,
+          errorType: singleResult.errorType,
+          line: singleResult.errorLine,
+          message: singleResult.errorMessage || "",
         } : null,
+        verdict: singleResult.verdict // Added manually
       });
-
-      if (result.status.id === 6 || result.status.id === 14) {
-        isCompilationError = true;
-      }
     }
 
-    const overallStatus = computeOverallVerdict(testResults, isCompilationError);
+    const { verdict: overallStatus } = aggregateResults(testResults as any, "run");
 
     logger.info("Run completed", { problemId, status: overallStatus, type: effectiveProblemType });
 

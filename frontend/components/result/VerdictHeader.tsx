@@ -2,7 +2,7 @@
 
 export type VerdictStatus =
   | "ACCEPTED" | "WRONG_ANSWER" | "TIME_LIMIT_EXCEEDED" | "MEMORY_LIMIT_EXCEEDED"
-  | "COMPILATION_ERROR" | "RUNTIME_ERROR" | "INTERNAL_ERROR"
+  | "COMPILATION_ERROR" | "RUNTIME_ERROR" | "INTERNAL_ERROR" | "WRONG_ANSWER_ON_HIDDEN_TEST"
   | "PENDING" | "QUEUED" | "RUNNING" | "REQUEST_ERROR" | "ERROR";
 
 interface VerdictHeaderProps {
@@ -18,12 +18,13 @@ interface VerdictHeaderProps {
 }
 
 const VERDICTS: Record<string, { label: string; color: string; bg: string; emoji: string }> = {
-  ACCEPTED:              { label: "Accepted",              color: "#22c55e", bg: "rgba(34,197,94,0.1)",    emoji: "✅" },
-  WRONG_ANSWER:          { label: "Wrong Answer",          color: "#ef4444", bg: "rgba(239,68,68,0.1)",   emoji: "❌" },
-  TIME_LIMIT_EXCEEDED:   { label: "Time Limit Exceeded",   color: "#eab308", bg: "rgba(234,179,8,0.1)",   emoji: "⏱️" },
-  MEMORY_LIMIT_EXCEEDED: { label: "Memory Limit Exceeded", color: "#eab308", bg: "rgba(234,179,8,0.1)",   emoji: "🧠" },
-  COMPILATION_ERROR:     { label: "Compile Error",         color: "#ef4444", bg: "rgba(239,68,68,0.1)",   emoji: "🔴" },
-  RUNTIME_ERROR:         { label: "Runtime Error",         color: "#f97316", bg: "rgba(249,115,22,0.1)",  emoji: "💥" },
+  ACCEPTED:                    { label: "Accepted",            color: "#22c55e", bg: "rgba(34,197,94,0.1)",    emoji: "✅" },
+  WRONG_ANSWER:                { label: "Wrong Answer",        color: "#ef4444", bg: "rgba(239,68,68,0.1)",   emoji: "❌" },
+  WRONG_ANSWER_ON_HIDDEN_TEST: { label: "Hidden Test Failed",  color: "#f43f5e", bg: "rgba(244,63,94,0.1)",   emoji: "🕵️‍♂️" },
+  TIME_LIMIT_EXCEEDED:         { label: "Time Limit Exceeded", color: "#eab308", bg: "rgba(234,179,8,0.1)",   emoji: "⏱️" },
+  MEMORY_LIMIT_EXCEEDED:       { label: "Memory Limit Exceeded", color: "#eab308", bg: "rgba(234,179,8,0.1)",   emoji: "🧠" },
+  COMPILATION_ERROR:           { label: "Compile Error",       color: "#ef4444", bg: "rgba(239,68,68,0.1)",   emoji: "🔴" },
+  RUNTIME_ERROR:               { label: "Runtime Error",       color: "#f97316", bg: "rgba(249,115,22,0.1)",  emoji: "💥" },
   INTERNAL_ERROR:        { label: "Internal Error",        color: "#6b7280", bg: "rgba(107,114,128,0.1)", emoji: "⚠️" },
   ERROR:                 { label: "Error",                 color: "#6b7280", bg: "rgba(107,114,128,0.1)", emoji: "⚠️" },
   PENDING:               { label: "Queued…",              color: "#3b82f6", bg: "rgba(59,130,246,0.1)",   emoji: "⌛" },
@@ -33,14 +34,17 @@ const VERDICTS: Record<string, { label: string; color: string; bg: string; emoji
 };
 
 function getVerdict(status: string) {
-  return VERDICTS[status] ?? {
+  const normalizedStatus = status.toUpperCase().replace(/\s/g, "_");
+  return VERDICTS[normalizedStatus] ?? {
     label: status.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase()),
     color: "#ef4444", bg: "rgba(239,68,68,0.1)", emoji: "❌",
   };
 }
 
-const isTerminal = (s: string) =>
-  !["PENDING", "QUEUED", "RUNNING"].includes(s);
+const isTerminal = (s: string) => {
+  const norm = s.toUpperCase().replace(/\s/g, "_");
+  return !["PENDING", "QUEUED", "RUNNING"].includes(norm);
+}
 
 export default function VerdictHeader({
   status, runtime, memory, passedCases, totalCases,
@@ -91,7 +95,7 @@ export default function VerdictHeader({
             />
           )}
           {runtime != null && (
-            <Pill value={`${runtime} ms`} label="runtime" color="#a78bfa" />
+            <Pill value={`${runtime} ms`} label="runtime" color="#00FFFF" />
           )}
           {memory != null && (
             <Pill value={`${(memory / 1024).toFixed(1)} MB`} label="memory" color="#60a5fa" />
@@ -125,7 +129,7 @@ export default function VerdictHeader({
           <div style={{ height: 6, background: "rgba(255,255,255,0.07)", borderRadius: 99, overflow: "hidden" }}>
             <div style={{
               height: "100%", width: `${pct}%`, borderRadius: 99,
-              background: `linear-gradient(90deg, #7c3aed, #3b82f6)`,
+              background: `linear-gradient(90deg, #00E5FF, #3b82f6)`,
               transition: "width 300ms cubic-bezier(0.2, 0.8, 0.2, 1)",
               boxShadow: "0 0 8px rgba(124,58,237,0.6)",
             }} />

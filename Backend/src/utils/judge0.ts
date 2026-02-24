@@ -70,6 +70,7 @@ export function computeOverallVerdict(
   if (verdicts.includes("Runtime Error") || verdicts.includes("RUNTIME_ERROR")) return "RUNTIME_ERROR";
   if (verdicts.includes("Time Limit Exceeded") || verdicts.includes("TIME_LIMIT_EXCEEDED")) return "TIME_LIMIT_EXCEEDED";
   if (verdicts.includes("Memory Limit Exceeded") || verdicts.includes("MEMORY_LIMIT_EXCEEDED")) return "MEMORY_LIMIT_EXCEEDED";
+  if (verdicts.includes("Wrong Answer on Hidden Test") || verdicts.includes("WRONG_ANSWER_ON_HIDDEN_TEST")) return "WRONG_ANSWER_ON_HIDDEN_TEST";
   if (verdicts.includes("Wrong Answer") || verdicts.includes("WRONG_ANSWER")) return "WRONG_ANSWER";
 
   return testResults.every(r => r.passed) ? "ACCEPTED" : "WRONG_ANSWER";
@@ -159,6 +160,47 @@ export async function runCode(
   // ⚠ IMPORTANT: This is an infrastructure timeout, NOT a code TLE.
   // The error message prefix [JUDGE0_POLL_TIMEOUT] lets catch blocks distinguish it.
   throw new Error("[JUDGE0_POLL_TIMEOUT] Execution timed out waiting for Judge0 response");
+}
+
+// ─── Execute raw Python script (Generator / Oracle) ──────────────────────────
+export async function runRawPython(code: string, stdin: string = ""): Promise<RunCodeResult> {
+  const languageId = LANGUAGE_IDS["python"];
+  const apiHeaders = {
+    "X-RapidAPI-Key": process.env.JUDGE0_API_KEY!,
+    "X-RapidAPI-Host": process.env.JUDGE0_API_HOST!,
+    "Content-Type": "application/json",
+  };
+
+  const submitRes = await axios.post(
+    `https://${process.env.JUDGE0_API_HOST}/submissions?base64_encoded=false&wait=false`,
+    {
+      source_code: code,
+      language_id: languageId,
+      stdin,
+      cpu_time_limit: 3, 
+      memory_limit: 262144,
+      wall_time_limit: 6,
+    },
+    { headers: apiHeaders, timeout: 15000 }
+  );
+
+  const token = submitRes.data.token;
+  if (!token) throw new Error("Failed to get submission token from Judge0 for Raw Script");
+
+  for (let attempt = 0; attempt < 15; attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    let data: any;
+    try {
+      const resultRes = await axios.get(
+        `https://${process.env.JUDGE0_API_HOST}/submissions/${token}?base64_encoded=false`,
+        { headers: apiHeaders, timeout: 10000 }
+      );
+      data = resultRes.data;
+    } catch { continue; }
+    if (data.status?.id === 1 || data.status?.id === 2) continue;
+    return data as RunCodeResult;
+  }
+  throw new Error("[JUDGE0_POLL_TIMEOUT] Raw Python Script Timeout");
 }
 
 // ─── Execution Output Parser ──────────────────────────────────────────────────

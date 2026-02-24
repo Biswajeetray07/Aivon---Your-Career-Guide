@@ -29,6 +29,7 @@ enum SubmissionStatus {
   RUNNING
   ACCEPTED
   WRONG_ANSWER
+  WRONG_ANSWER_ON_HIDDEN_TEST
   TIME_LIMIT_EXCEEDED
   RUNTIME_ERROR
   COMPILATION_ERROR
@@ -38,41 +39,48 @@ enum SubmissionStatus {
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 model User {
-  id           String       @id @default(cuid())
-  email        String       @unique
-  passwordHash String
-  name         String?
-  role         Role         @default(USER)
-  rating       Int          @default(1200)
-  submissions  Submission[]
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id                  String       @id @default(cuid())
+  email               String       @unique
+  passwordHash        String
+  name                String?
+  username            String?      @unique
+  avatar              String?
+  role                Role         @default(USER)
+  rating              Int          @default(1200)
+  provider            String?
+  onboardingCompleted Boolean      @default(false)
+  goals               String[]
+  submissions         Submission[]
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
 
   @@index([rating])
   @@map("users")
 }
 
 model Problem {
-  id          String       @id @default(cuid())
-  title       String       @unique
-  slug        String       @unique
+  id          String            @id @default(cuid())
+  title       String            @unique
+  slug        String            @unique
   difficulty  Difficulty
-  description String       @db.Text
+  description String            @db.Text
   starterCode Json // { javascript: "...", python: "...", java: "..." }
   entryPoint  String
-  problemType String       @default("array") // array | string | binary_tree | linked_list | matrix | graph
-  judgeMode   String       @default("exact") // exact | unordered | float | multiline | spj
-  spjCode     String?      @db.Text // Python checker code for SPJ judge mode
+  problemType String            @default("array") // array | string | binary_tree | linked_list | matrix | graph
+  judgeMode   String            @default("exact") // exact | unordered | float | multiline | spj
+  spjCode     String?           @db.Text // Python checker code for SPJ judge mode
+  hasOracle   Boolean           @default(false) // Phase D: Feature flag for Universal Differential Oracle testing
+  judgeMeta   ProblemJudgeMeta?
   tags        String[]
   examples    Json? // [{ input: "...", output: "...", explanation: "..." }]
-  constraints String?      @db.Text
-  isActive    Boolean      @default(true)
+  constraints String?           @db.Text
+  isActive    Boolean           @default(true)
   // Private AI context — never exposed via API, used only for AI hints/explanation
   aiContext   Json? // { completion: "...", prompt: "...", query: "...", response: "..." }
   testCases   TestCase[]
   submissions Submission[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   @@index([difficulty])
   @@index([isActive])
@@ -92,6 +100,17 @@ model TestCase {
   @@index([problemId])
   @@index([problemId, isHidden])
   @@map("test_cases")
+}
+
+model ProblemJudgeMeta {
+  id            String   @id @default(cuid())
+  problemId     String   @unique
+  problem       Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  oracleCode    String?  @db.Text // Python brute-force trusted solution
+  generatorCode String?  @db.Text // Python structured random test generator 
+  updatedAt     DateTime @updatedAt
+
+  @@map("problem_judge_meta")
 }
 
 model Submission {

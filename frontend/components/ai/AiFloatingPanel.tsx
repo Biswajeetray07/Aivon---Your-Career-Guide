@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
+import ParsedMarkdown from "../ui/ParsedMarkdown";
 
 export type AiPanelMode = "explain-error" | "performance" | "improve";
 
@@ -9,7 +10,6 @@ export interface ErrorExplanation {
   fixSteps: string[];
   conceptToReview: string;
   likelyIssue?: string;
-  whyItHappens?: string;
   debugSteps?: string[];
   edgeCasesToCheck?: string[];
 }
@@ -18,33 +18,39 @@ export interface PerformanceReview {
   feedback: string;
   timeComplexity: string;
   spaceComplexity: string;
-  isOptimal?: boolean;
   improvementTip?: string;
   interviewNote?: string;
 }
 
-interface AiFloatingPanelProps {
+export interface ImproveExplanation {
+  feedback: string;
+  alternativeApproach: string;
+  timeComplexity: string;
+  spaceComplexity: string;
+}
+
+export interface AiFloatingPanelProps {
   mode: AiPanelMode;
   loading: boolean;
   errorData?: ErrorExplanation | null;
   performanceData?: PerformanceReview | null;
-  improveData?: string | null;
+  improveData?: ImproveExplanation | null;
+  apiError?: string | null;
   onClose: () => void;
 }
 
 const TITLES: Record<AiPanelMode, { icon: string; label: string; color: string }> = {
   "explain-error": { icon: "✨", label: "Error Analysis",      color: "#f97316" },
   performance:     { icon: "📊", label: "Performance Review",  color: "#22c55e" },
-  improve:         { icon: "🔀", label: "Alt Approach",        color: "#a78bfa" },
+  improve:         { icon: "🔀", label: "Alt Approach",        color: "#00FFFF" },
 };
 
 export default function AiFloatingPanel({
-  mode, loading, errorData, performanceData, improveData, onClose,
+  mode, loading, errorData, performanceData, improveData, apiError, onClose,
 }: AiFloatingPanelProps) {
   const [minimized, setMinimized] = useState(false);
   // pos tracks the full-panel position; minimized chip always renders at fixed top-left dock
   const [pos, setPos] = useState({ x: 20, y: 80 });
-  const DOCK = { x: 16, y: 80 }; // top-left dock position when minimized
   const dragRef = useRef<{ dragging: boolean; sx: number; sy: number }>({ dragging: false, sx: 0, sy: 0 });
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -163,19 +169,26 @@ export default function AiFloatingPanel({
       <div style={{ padding: "20px", overflowY: "auto", maxHeight: "calc(75vh - 54px)", display: "flex", flexDirection: "column", gap: 16 }}>
         {loading && <LoadingDots color={t.color} />}
 
-        {!loading && mode === "explain-error" && errorData && (
+        {!loading && apiError && (
+          <div style={{ background: "rgba(220,38,38,0.1)", border: "1px solid rgba(220,38,38,0.3)", borderRadius: 8, padding: 14 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#f87171", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Generation Failed</div>
+            <div style={{ fontSize: 13, color: "#fca5a5" }}>{apiError}</div>
+          </div>
+        )}
+
+        {!loading && !apiError && mode === "explain-error" && errorData && (
           <ErrorContent data={errorData} />
         )}
 
-        {!loading && mode === "performance" && performanceData && (
+        {!loading && !apiError && mode === "performance" && performanceData && (
           <PerformanceContent data={performanceData} />
         )}
 
-        {!loading && mode === "improve" && improveData && (
-          <ImproveContent text={improveData} />
+        {!loading && !apiError && mode === "improve" && improveData && (
+          <ImproveContent data={improveData} />
         )}
 
-        {!loading && !errorData && !performanceData && !improveData && (
+        {!loading && !apiError && !errorData && !performanceData && !improveData && (
           <div style={{ color: "#4a4a6a", fontSize: 13, textAlign: "center", padding: 20 }}>
             No data available.
           </div>
@@ -194,13 +207,15 @@ function ErrorContent({ data }: { data: ErrorExplanation }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div style={{
-        background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.2)",
-        borderRadius: 10, padding: "10px 14px",
+        background: "linear-gradient(135deg, rgba(249,115,22,0.15), rgba(249,115,22,0.05))", 
+        border: "1px solid rgba(249,115,22,0.25)",
+        boxShadow: "0 4px 12px rgba(249,115,22,0.1)",
+        borderRadius: 10, padding: "12px 14px",
       }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "#f97316", marginBottom: 4 }}>
-          {isWA ? "Why Your Output is Wrong" : "What happened"}
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#fdba74", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          🚨 {isWA ? "Why Your Output is Wrong" : "What Happened"}
         </div>
-        <div style={{ fontSize: 13, color: "#e0e0e0", lineHeight: 1.6 }}>{data.summary}</div>
+        <div style={{ fontSize: 13, color: "#e0e0e0", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{data.summary}</div>
       </div>
 
       <div>
@@ -241,11 +256,13 @@ function ErrorContent({ data }: { data: ErrorExplanation }) {
       )}
 
       <div style={{
-        background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)",
-        borderRadius: 8, padding: "8px 12px", display: "flex", alignItems: "center", gap: 8,
+        background: "linear-gradient(135deg, rgba(124,58,237,0.15), rgba(124,58,237,0.05))", 
+        border: "1px solid rgba(124,58,237,0.25)",
+        boxShadow: "0 4px 12px rgba(124,58,237,0.1)",
+        borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10,
       }}>
-        <span style={{ fontSize: 14 }}>📚</span>
-        <span style={{ fontSize: 12, color: "#a78bfa" }}>Review: <strong>{data.conceptToReview}</strong></span>
+        <span style={{ fontSize: 16 }}>📚</span>
+        <span style={{ fontSize: 12, color: "#00FFFF" }}>Concept to Review: <strong style={{color: "#fff"}}>{data.conceptToReview}</strong></span>
       </div>
     </div>
   );
@@ -270,15 +287,46 @@ function PerformanceContent({ data }: { data: PerformanceReview }) {
       )}
       {data.interviewNote && (
         <div style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)", borderRadius: 8, padding: "8px 12px" }}>
-          <span style={{ fontSize: 12, color: "#a78bfa" }}>🎯 {data.interviewNote}</span>
+          <span style={{ fontSize: 12, color: "#00FFFF" }}>🎯 {data.interviewNote}</span>
         </div>
       )}
     </div>
   );
 }
 
-function ImproveContent({ text }: { text: string }) {
-  return <div style={{ fontSize: 13, color: "#c0c0d0", lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{text}</div>;
+function ImproveContent({ data }: { data: ImproveExplanation }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      
+      <div>
+         <SectionLabel color="#22c55e">Feedback on Current Approach</SectionLabel>
+         <div style={{ fontSize: 13, color: "#c0c0d0", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+           {data.feedback}
+         </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 10 }}>
+        <ComplexityBadge label="Optimal Time" value={data.timeComplexity ?? "?"} color="#60a5fa" />
+        <ComplexityBadge label="Optimal Space" value={data.spaceComplexity ?? "?"} color="#34d399" />
+      </div>
+      
+      <div style={{
+        background: "linear-gradient(135deg, rgba(167,139,250,0.1), rgba(167,139,250,0.02))", 
+        border: "1px solid rgba(167,139,250,0.2)",
+        boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+        borderRadius: 12, padding: "16px 18px"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+          <span style={{ fontSize: 16 }}>🔀</span>
+          <span style={{ fontSize: 12, fontWeight: 800, color: "#00FFFF", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "'Space Grotesk', sans-serif" }}>
+            Alternative Approach
+          </span>
+        </div>
+        <ParsedMarkdown text={data.alternativeApproach} />
+      </div>
+
+    </div>
+  );
 }
 
 function ComplexityBadge({ label, value, color }: { label: string; value: string; color: string }) {

@@ -1,14 +1,16 @@
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+@import "tailwindcss";
+@source "../components";
 
 :root {
   --bg-primary: #0a0a0f;
   --bg-secondary: #111118;
   --bg-card: #16161f;
   --bg-hover: #1e1e2e;
-  --accent-purple: #7c3aed;
-  --accent-purple-light: #a855f7;
+  --accent-cyan: #00e5ff;
+  --accent-cyan-light: #00b8d4;
   --accent-blue: #3b82f6;
-  --accent-glow: rgba(124, 58, 237, 0.3);
+  --accent-glow: rgba(0, 229, 255, 0.3);
   --text-primary: #f1f0ff;
   --text-secondary: #8b8ca7;
   --text-muted: #4a4a6a;
@@ -50,13 +52,14 @@ a {
   background: var(--bg-secondary);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--accent-purple);
+  background: var(--accent-cyan);
   border-radius: 3px;
+  min-height: 48px;
 }
 
 /* Cards */
 .card {
-  background: var(--bg-card);
+  background: var(--bg-card); /* aria-label */
   border: 1px solid var(--border);
   border-radius: 12px;
   backdrop-filter: blur(10px);
@@ -94,8 +97,8 @@ a {
 .btn-primary {
   background: linear-gradient(
     135deg,
-    var(--accent-purple),
-    var(--accent-purple-light)
+    var(--accent-cyan),
+    var(--accent-cyan-light)
   );
   color: white;
   border: none;
@@ -132,8 +135,8 @@ a {
   transition: all var(--transition-fast);
 }
 .btn-secondary:hover {
-  border-color: var(--accent-purple);
-  color: var(--accent-purple-light);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan-light);
   background: rgba(124, 58, 237, 0.05);
 }
 .btn-secondary:active {
@@ -175,7 +178,7 @@ a {
 .sidebar .logo-icon {
   width: 32px;
   height: 32px;
-  background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -208,7 +211,7 @@ a {
 }
 .nav-item.active {
   background: rgba(124, 58, 237, 0.15);
-  color: var(--accent-purple-light);
+  color: var(--accent-cyan-light);
 }
 
 .main {
