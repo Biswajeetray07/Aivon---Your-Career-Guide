@@ -18,14 +18,14 @@ export async function middleware(req: NextRequest) {
 
   // 🔒 protect dashboard/app routes
   if (!isLoggedIn && isProtectedRoute) {
-    const callbackUrl = encodeURIComponent(pathname + req.nextUrl.search);
-    return NextResponse.redirect(new URL(`/sign-in?callbackUrl=${callbackUrl}`, req.url));
+    return NextResponse.redirect(new URL("/", req.url));
   }
 
-  // 🚫 prevent logged-in users from visiting auth pages or the marketing landing page
-  if (isLoggedIn && (isAuthRoute || isPublicRoute)) {
+  // 🚫 prevent logged-in users from visiting auth pages
+  if (isLoggedIn && isAuthRoute) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
+  
 
   return NextResponse.next();
 }

@@ -12,6 +12,7 @@ export const config: ApiRouteConfig = {
   queryParams: [
     { name: "difficulty", description: "Filter by difficulty: EASY | MEDIUM | HARD" },
     { name: "tags", description: "Comma-separated tags to filter by" },
+    { name: "search", description: "Search term to match against problem title" },
     { name: "page", description: "Page number (default: 1)" },
     { name: "limit", description: "Items per page (default: 20, max: 50)" },
   ],
@@ -30,7 +31,7 @@ export const config: ApiRouteConfig = {
 
 export const handler: any = async (req: any, { logger }: { logger: any }) => {
   try {
-    const { difficulty, tags, page = "1", limit = "20" } = req.queryParams as Record<string, string>;
+    const { difficulty, tags, search, page = "1", limit = "20" } = req.queryParams as Record<string, string>;
 
     const pageNum = Math.max(1, parseInt(page));
     const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
@@ -39,6 +40,9 @@ export const handler: any = async (req: any, { logger }: { logger: any }) => {
     const where: any = { isActive: true };
     if (difficulty) where.difficulty = difficulty.toUpperCase();
     if (tags) where.tags = { hasSome: tags.split(",").map((t) => t.trim()) };
+    if (search) {
+      where.title = { contains: search, mode: "insensitive" };
+    }
 
     const [problems, total] = await Promise.all([
       prisma.problem.findMany({

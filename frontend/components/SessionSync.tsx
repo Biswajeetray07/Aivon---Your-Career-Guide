@@ -24,11 +24,13 @@ export default function SessionSync() {
       if (currentToken !== nextToken) {
         console.log("[AuthSync] Syncing backend token to localStorage");
         localStorage.setItem("aivon_token", nextToken);
+        window.dispatchEvent(new Event("aivon_token_changed"));
       }
     } else if (status === "unauthenticated") {
       if (localStorage.getItem("aivon_token")) {
         console.log("[AuthSync] Clearing backend token from localStorage");
         localStorage.removeItem("aivon_token");
+        window.dispatchEvent(new Event("aivon_token_changed"));
       }
     }
   }, [session, status]);

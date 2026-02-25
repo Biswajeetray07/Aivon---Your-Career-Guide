@@ -2,10 +2,9 @@
 "use client";
 import { useEffect, useState, use, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
-import Sidebar, { useSidebarState } from "@/components/Sidebar";
 import {
   getProblem, createSubmission, getSubmission,
-  getHint, getCodeFeedback, getExplanation,
+  getCodeFeedback,
   runCodeApi, explainError, getAlternativeApproach, chatWithAI,
   type Problem, type RunResult,
 } from "@/lib/api";
@@ -15,6 +14,10 @@ import TestExplorer from "@/components/result/TestExplorer";
 
 import AiFloatingPanel, { type AiPanelMode, type ErrorExplanation, type PerformanceReview, type ImproveExplanation } from "@/components/ai/AiFloatingPanel";
 import ParsedMarkdown from "@/components/ui/ParsedMarkdown";
+import { GlassCard } from "@/components/ui/glass-card";
+import { StatusDot } from "@/components/ui/badge";
+import { Play, UploadCloud, Terminal as TerminalIcon, Sparkles, BookOpen, SearchCode, Bug } from "lucide-react";
+
 const Editor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 
 const LANGUAGES = ["javascript", "python", "java", "cpp"];
@@ -44,8 +47,8 @@ function getFirstFailingIndex(testResults: TestResult[]): number {
 function useHorizontalResize(
   ref: React.RefObject<HTMLDivElement | null>,
   initial: number,
-  min = 250,
-  max = 680
+  min = 300,
+  max = 800
 ) {
   const [width, setWidth] = useState(initial);
   const startResize = useCallback(
@@ -74,7 +77,7 @@ function useVerticalResize(
   containerRef: React.RefObject<HTMLDivElement | null>,
   initial: number,
   min = 140,
-  max = 520
+  max = 600
 ) {
   const [height, setHeight] = useState(initial);
   const startResize = useCallback(
@@ -107,9 +110,6 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
   const [submitting, setSubmitting] = useState(false);
   const [running, setRunning] = useState(false);
 
-  // Sidebar
-  const sidebar = useSidebarState();
-
   // Results
   const [resultMode, setResultMode] = useState<"run" | "submit" | null>(null);
   const [result, setResult] = useState<SubmissionResult | RunResult | null>(null);
@@ -122,9 +122,9 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
   const descRef = useRef<HTMLDivElement>(null);
 
   // Resizable description panel
-  const desc = useHorizontalResize(descRef, 420, 260, 680);
+  const desc = useHorizontalResize(descRef, 500, 300, 800);
   // Resizable terminal
-  const term = useVerticalResize(containerRef, 300, 140, 520);
+  const term = useVerticalResize(containerRef, 300, 140, 600);
 
   // Active tabs
   const [descTab, setDescTab] = useState<"description" | "ai">("description");
@@ -160,18 +160,6 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
-
-  // Keyboard shortcut: Ctrl+B toggles sidebar
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
-        e.preventDefault();
-        sidebar.toggle();
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [sidebar]);
 
   // Socket
   useJudgeSocket(activeSubmissionId, (event: JudgeEvent) => {
@@ -225,10 +213,8 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
     const status = (result as { status?: string }).status;
     const testResults = getTestResults();
 
-    // Auto-show terminal
     setTerminalOpen(true);
 
-    // Failure-first: jump to first failing test
     if (testResults && testResults.length > 0 && status !== "ACCEPTED") {
       const firstFail = getFirstFailingIndex(testResults);
       setActiveTestIndex(firstFail);
@@ -420,287 +406,173 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
   const totalCount = resultMode === "submit" ? (result as SubmissionResult)?.details?.totalCases : (result as RunResult)?.totalCases;
 
   if (!problem) return (
-    <div style={{ display: "flex", height: "100vh", alignItems: "center", justifyContent: "center", background: "var(--bg-primary)" }}>
-      <div style={{ color: "var(--text-muted)", fontSize: 16 }}>Loading problem...</div>
+    <div className="min-h-screen pt-24 bg-[var(--background)] text-[var(--text-primary)] relative flex items-center justify-center">
+      <div className="font-mono text-sm tracking-widest uppercase animate-pulse flex items-center gap-3">
+        <StatusDot animate colorClass="bg-[var(--primary)]" /> Loading System Parameters...
+      </div>
     </div>
   );
 
   return (
-    <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "#050505", color: "#fff", position: "relative" }}>
-      {/* Interactive Cyber Background */}
-      <div style={{
-        position: "fixed",
-        inset: 0,
-        background: "radial-gradient(circle at 50% -20%, rgba(138,43,226,0.15), transparent 60%), radial-gradient(circle at 120% 50%, rgba(0,255,255,0.08), transparent 50%)",
-        pointerEvents: "none",
-        zIndex: 0,
-      }} />
-      <div style={{
-        position: "fixed",
-        inset: 0,
-        backgroundImage: "linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)",
-        backgroundSize: "48px 48px",
-        pointerEvents: "none",
-        zIndex: 0,
-      }} />
-      {/* Sidebar */}
-      <Sidebar
-        sidebarState={sidebar.state}
-        currentWidth={sidebar.currentWidth}
-        onToggle={sidebar.toggle}
-      />
+    <div className="h-screen w-full pt-[72px] bg-[var(--background)] text-[var(--text-primary)] font-space-grotesk overflow-hidden relative">
 
-      {/* Main area */}
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: isSmallScreen ? "column" : "row",
-          overflow: isSmallScreen ? "auto" : "hidden",
-          transition: "margin-left 220ms cubic-bezier(0.4,0,0.2,1)",
-          minWidth: 0,
-        }}
-      >
+      <div className="flex h-full w-full max-w-[1920px] mx-auto overflow-hidden">
+        
         {/* ── Description panel ─────────────────────────────────────────── */}
         <div
           ref={descRef}
+          className="flex flex-col shrink-0 border-r border-[var(--border)] glass"
           style={{
             width: isSmallScreen ? "100%" : desc.width,
-            minWidth: isSmallScreen ? "100%" : 260,
-            maxWidth: isSmallScreen ? "100%" : 680,
-            display: "flex",
-            flexDirection: "column",
-            borderRight: isSmallScreen ? "none" : "1px solid rgba(255,255,255,0.05)",
-            borderBottom: isSmallScreen ? "1px solid rgba(255,255,255,0.05)" : "none",
-            background: "rgba(20, 20, 25, 0.4)",
-            backdropFilter: "blur(12px)",
-            flexShrink: 0,
-            overflow: "hidden",
+            height: "100%",
           }}
         >
           {/* Description tab bar */}
-          <div style={{ display: "flex", height: 60, borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.4)", flexShrink: 0, position: "relative", zIndex: 10 }}>
+          <div className="flex h-12 bg-[var(--background)]/80 border-b border-[var(--border)] shrink-0 font-mono text-xs uppercase tracking-widest relative z-10">
             {(["description", "ai"] as const).map((tab) => (
               <button key={tab} onClick={() => setDescTab(tab)}
-                style={{
-                  flex: 1, height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600,
-                  fontFamily: "inherit", cursor: "pointer", border: "none",
-                  background: descTab === tab ? "rgba(138,43,226,0.15)" : "transparent",
-                  color: descTab === tab ? "#00FFFF" : "#a1a1aa",
-                  borderBottom: descTab === tab ? "2px solid #00FFFF" : "2px solid transparent",
-                  textShadow: descTab === tab ? "0 0 10px rgba(0,255,255,0.5)" : "none",
-                  transition: "all 0.18s ease",
-                }}>
-                {tab === "description" ? "📄 Description" : "✨ AI Assistant"}
+                className={`flex-1 h-full flex items-center justify-center gap-2 font-bold transition-all duration-300 border-b-2 ${descTab === tab ? "text-[var(--primary)] border-[var(--primary)] bg-[var(--primary)]/10 shadow-[inset_0_-2px_10px_rgba(138,43,226,0.2)]" : "text-[var(--text-secondary)] border-transparent hover:bg-[var(--background)] hover:text-[var(--text-primary)]"}`}>
+                {tab === "description" ? <><BookOpen size={14} /> Description</> : <><Sparkles size={14} /> AI Assistant</>}
               </button>
             ))}
           </div>
 
           {/* Description content */}
-          <div style={{ flex: 1, overflowY: descTab === "ai" ? "hidden" : "auto", padding: descTab === "ai" ? 0 : 20, display: "flex", flexDirection: "column" }}>
+          <div className="flex-1 overflow-y-auto w-full relative">
             {descTab === "description" ? (
-              <>
-                <h1 style={{ fontSize: 20, fontWeight: 700, marginBottom: 14, lineHeight: 1.3 }}>
+              <div className="p-6 md:p-8 w-full prose prose-invert prose-p:text-[var(--text-secondary)] prose-h2:text-[var(--text-primary)] prose-h3:text-[var(--text-primary)] prose-a:text-[var(--accent-cyan)] prose-code:text-[var(--primary)] max-w-none">
+                <h1 className="text-2xl font-bold mb-4 tracking-tight text-gradient">
                   {problem.title.replace(/-/g, " ")}
                 </h1>
 
                 {/* Badges */}
-                <div style={{ display: "flex", gap: 10, marginBottom: 18, flexWrap: "wrap", alignItems: "center" }}>
-                  <span className={`badge-${problem.difficulty.toLowerCase()}`}>{problem.difficulty}</span>
+                <div className="flex flex-wrap items-center gap-2 mb-6">
+                  <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded border ${
+                    problem.difficulty.toUpperCase() === "EASY" ? "text-green-400 border-green-500/30 bg-green-500/10" :
+                    problem.difficulty.toUpperCase() === "MEDIUM" ? "text-yellow-400 border-yellow-500/30 bg-yellow-500/10" :
+                    "text-red-400 border-red-500/30 bg-red-500/10"
+                  }`}>
+                    {problem.difficulty}
+                  </span>
                   {(problem.tags || []).map((tag) => (
-                    <span key={tag} style={{ fontSize: 11, padding: "3px 10px", background: "rgba(255,255,255,0.05)", borderRadius: 12, color: "var(--text-secondary)" }}>{tag}</span>
+                    <span key={tag} className="text-[10px] bg-[var(--background)]/50 border border-[var(--border)] rounded px-2 py-1 text-[var(--text-secondary)] uppercase font-mono tracking-wider">{tag}</span>
                   ))}
                 </div>
 
-                {/* AI action buttons — context-aware */}
-                <div style={{ display: "flex", gap: 10, marginBottom: 24, flexWrap: "wrap" }}>
-                  <button onClick={() => handleSideAI("hint")} style={{...glassBtnStyle, background: "linear-gradient(135deg, rgba(0,255,255,0.15), rgba(0,255,255,0.05))", border: "1px solid rgba(0,255,255,0.25)", color: "#00FFFF", boxShadow: "0 4px 12px rgba(0,255,255,0.1)"}}>
-                    💡 Hint
+                {/* AI action buttons */}
+                <div className="flex flex-wrap gap-3 mb-8">
+                  <button onClick={() => handleSideAI("hint")} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--primary)]/30 bg-[var(--primary)]/10 text-[var(--primary)] text-[11px] font-bold uppercase tracking-widest hover:bg-[var(--primary)] hover:text-[var(--background)] transition-all shadow-[0_0_10px_var(--glow-color)]">
+                    <Sparkles size={12} /> Hint
                   </button>
-                  <button onClick={() => handleSideAI("explain")} style={{...glassBtnStyle, background: "linear-gradient(135deg, rgba(96,165,250,0.15), rgba(96,165,250,0.05))", border: "1px solid rgba(96,165,250,0.25)", color: "#93c5fd", boxShadow: "0 4px 12px rgba(96,165,250,0.1)"}}>
-                    📖 Explain
+                  <button onClick={() => handleSideAI("explain")} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--accent-cyan)]/30 bg-[var(--accent-cyan)]/10 text-[var(--accent-cyan)] text-[11px] font-bold uppercase tracking-widest hover:bg-[var(--accent-cyan)] hover:text-[var(--background)] transition-all shadow-[0_0_10px_rgba(0,229,255,0.3)]">
+                    <BookOpen size={12} /> Explain
                   </button>
                 </div>
 
                 {/* Problem description */}
-                <div style={{ fontSize: 14, lineHeight: 1.85, color: "var(--text-primary)", whiteSpace: "pre-wrap", opacity: 0.9 }}>
+                <div className="text-sm leading-relaxed text-[var(--text-secondary)] whitespace-pre-wrap">
                   {problem.description}
                 </div>
 
                 {problem.constraints && (
-                  <div style={{ marginTop: 28 }}>
-                    <h3 style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, color: "var(--text-primary)", opacity: 0.8 }}>Constraints</h3>
-                    <div style={{ background: "rgba(0,0,0,0.2)", borderRadius: 8, padding: "12px 14px", fontSize: 13, color: "var(--text-secondary)", fontFamily: "'JetBrains Mono', monospace" }}>
+                  <div className="mt-10 pt-8 border-t border-[var(--border)]">
+                    <h3 className="text-sm font-bold mb-4 text-[var(--text-primary)] uppercase tracking-widest">System Constraints</h3>
+                    <div className="bg-[var(--background)]/80 border border-[var(--border)] rounded-xl p-4 textxs text-[var(--text-secondary)] font-mono leading-relaxed">
                       {problem.constraints}
                     </div>
                   </div>
                 )}
-              </>
+              </div>
             ) : (
               /* AI Chat Interface */
-              <div style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%", overflow: "hidden", background: "rgba(0,0,0,0.2)" }}>
-                <div className="test-cases-scrollbar" style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 20, padding: "24px 20px" }}>
+              <div className="flex flex-col h-full bg-[var(--background)]/40 relative">
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
                   {chatHistory.length === 1 && chatHistory[0].role === "assistant" ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 24, padding: "20px 10px", alignItems: "center", justifyContent: "center", height: "100%" }}>
-                      <div style={{ textAlign: "center", animation: "fadeIn 0.5s ease-out" }}>
-                        <div style={{ fontSize: 48, marginBottom: 16, filter: "drop-shadow(0 0 20px rgba(0,229,255,0.4))" }}>🤖</div>
-                        <h3 style={{ fontSize: 22, fontWeight: 700, color: "#fff", marginBottom: 8, letterSpacing: "-0.02em" }}>Aivon Learning Brain v2</h3>
-                        <p style={{ color: "var(--text-secondary)", fontSize: 15, maxWidth: 380, lineHeight: 1.6, margin: "0 auto" }}>
-                          I'm your personal DSA mentor for <strong style={{ color: "var(--accent-cyan-light)" }}>{problem.title}</strong>. How can I help you today?
-                        </p>
+                    <div className="flex flex-col items-center justify-center h-full text-center max-w-sm mx-auto animate-fade-in-up">
+                      <div className="w-16 h-16 rounded-full bg-[var(--primary)]/10 border border-[var(--primary)]/30 flex items-center justify-center text-2xl mb-6 shadow-[0_0_30px_var(--glow-color)]">
+                        🤖
                       </div>
+                      <h3 className="text-xl font-bold mb-2 text-[var(--text-primary)]">Aivon Learning Brain</h3>
+                      <p className="text-sm text-[var(--text-secondary)] mb-8">
+                        I&apos;m your personal operative assistant for <span className="text-[var(--primary)]">{problem.title}</span>.
+                      </p>
 
-                      <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", maxWidth: 400, animation: "slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1)" }}>
+                      <div className="w-full space-y-3">
                         {[
-                          { icon: "💡", text: "I need a hint to get started", prompt: "I'm stuck. Can you give me a small hint to get started without giving the full solution?" },
-                          { icon: "📖", text: "Explain this problem mathematically", prompt: "Can you explain the mathematical or logical intuition behind this problem?" },
-                          { icon: "⏱️", text: "How do I optimize my complexity?", prompt: "My current approach might be too slow. How can I optimize the time and space complexity?" },
-                          { icon: "🐛", text: "Help me debug my code", prompt: "My code is failing or hitting an error. Can you help me debug?" }
+                          { icon: <Sparkles size={16}/>, text: "Need a hint", prompt: "I'm stuck. Can you give me a small hint to get started without giving the full solution?" },
+                          { icon: <BookOpen size={16}/>, text: "Explain mathematically", prompt: "Can you explain the mathematical or logical intuition behind this problem?" },
+                          { icon: <SearchCode size={16}/>, text: "Optimize complexity", prompt: "My current approach might be too slow. How can I optimize the time and space complexity?" },
+                          { icon: <Bug size={16}/>, text: "Debug my code", prompt: "My code is failing or hitting an error. Can you help me debug?" }
                         ].map((action, i) => (
                           <button 
                             key={i}
-                            onClick={() => {
-                              handleChatSubmit(undefined, action.prompt);
-                            }}
-                            style={{
-                              display: "flex", alignItems: "center", gap: 14,
-                              background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)",
-                              padding: "16px 20px", borderRadius: 16, width: "100%",
-                              color: "var(--text-primary)", fontSize: 14, fontWeight: 500, textAlign: "left",
-                              cursor: "pointer", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-                              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                            }}
-                            onMouseEnter={e => { e.currentTarget.style.background = "rgba(0, 229, 255, 0.08)"; e.currentTarget.style.borderColor = "rgba(0, 229, 255, 0.3)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; e.currentTarget.style.transform = "none"; }}
+                            onClick={() => handleChatSubmit(undefined, action.prompt)}
+                            className="w-full flex items-center gap-4 bg-[var(--card)]/50 border border-[var(--border)] hover:border-[var(--primary)]/50 p-4 rounded-xl text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] hover:text-[var(--primary)] transition-all group shadow-md"
                           >
-                            <span style={{ fontSize: 20 }}>{action.icon}</span>
-                            <span>{action.text}</span>
-                            <span style={{ marginLeft: "auto", color: "var(--text-muted)", fontSize: 18 }}>→</span>
+                            <span className="text-[var(--primary)] group-hover:scale-110 transition-transform">{action.icon}</span>
+                            <span className="flex-1 text-left">{action.text}</span>
+                            <span className="text-[var(--border)] group-hover:text-[var(--primary)] transition-colors opacity-50 group-hover:opacity-100 group-hover:translate-x-1 duration-300">→</span>
                           </button>
                         ))}
                       </div>
                     </div>
                   ) : (
                     chatHistory.map((msg, idx) => {
-                      // skip rendering the welcome message if there are other messages, to keep it clean.
                       if (msg.role === "assistant" && idx === 0) return null;
                       
                       const isUser = msg.role === "user";
                       return (
-                      <div key={idx} style={{ 
-                        alignSelf: isUser ? "flex-end" : "flex-start",
-                        maxWidth: "75%",
-                        background: isUser ? "linear-gradient(135deg, rgba(0, 229, 255, 0.15), rgba(0, 229, 255, 0.05))" : "rgba(30, 30, 35, 0.6)",
-                        border: `1px solid ${isUser ? "rgba(0, 229, 255, 0.25)" : "rgba(255, 255, 255, 0.08)"}`,
-                        padding: "14px 18px",
-                        borderRadius: "20px",
-                        borderBottomRightRadius: isUser ? 4 : 20,
-                        borderBottomLeftRadius: !isUser ? 4 : 20,
-                        color: isUser ? "#fff" : "var(--text-primary)",
-                        fontSize: 14,
-                        lineHeight: 1.6,
-                        whiteSpace: "pre-wrap",
-                        boxShadow: "0 4px 15px rgba(0,0,0,0.15)",
-                        backdropFilter: "blur(10px)",
-                        position: "relative"
-                      }}>
+                      <div key={idx} className={`relative max-w-[85%] ${isUser ? 'ml-auto' : 'mr-auto'}`}>
                         {!isUser && (
-                          <div style={{ position: "absolute", top: -12, left: -8, fontSize: 18, background: "#000", borderRadius: "50%", padding: 2 }}>
+                          <div className="absolute -top-3 -left-3 w-6 h-6 rounded-full bg-[var(--background)] border border-[var(--primary)]/50 flex items-center justify-center text-[10px] z-10 shadow-[0_0_10px_var(--glow-color)]">
                             🤖
                           </div>
                         )}
-                        {isUser ? msg.content : <ParsedMarkdown text={msg.content} />}
+                        <GlassCard hoverLift={!isUser} className={`p-4 md:p-5 text-sm ${isUser ? 'bg-[var(--primary)]/10 border-[var(--primary)]/30 text-[var(--text-primary)] rounded-tr-none' : 'bg-[var(--card)]/80 border-[var(--border)] text-[var(--text-secondary)] rounded-tl-none prose prose-invert prose-sm max-w-none prose-p:leading-relaxed'}`}>
+                          {isUser ? msg.content : <ParsedMarkdown text={msg.content} />}
+                        </GlassCard>
                       </div>
-                    );
-                  })
+                      );
+                    })
                   )}
                   
                   {chatLoading && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10, alignSelf: "flex-start" }}>
-                      <div style={{
-                          background: "rgba(30, 30, 35, 0.6)",
-                          border: "1px solid rgba(255, 255, 255, 0.08)",
-                          padding: "14px 18px",
-                          borderRadius: "20px",
-                          borderBottomLeftRadius: 4,
-                          display: "flex", alignItems: "center", gap: 10,
-                          boxShadow: "0 4px 15px rgba(0,0,0,0.15)",
-                          backdropFilter: "blur(10px)"
-                      }}>
-                        <div style={{ display: "flex", gap: 4 }}>
-                          <div style={{ width: 6, height: 6, background: "var(--accent-cyan)", borderRadius: "50%", animation: "bounce 1.4s infinite ease-in-out both" }} />
-                          <div style={{ width: 6, height: 6, background: "var(--accent-cyan)", borderRadius: "50%", animation: "bounce 1.4s infinite ease-in-out both", animationDelay: "0.2s" }} />
-                          <div style={{ width: 6, height: 6, background: "var(--accent-cyan)", borderRadius: "50%", animation: "bounce 1.4s infinite ease-in-out both", animationDelay: "0.4s" }} />
+                    <div className="flex items-center gap-3 p-4 max-w-[85%] bg-[var(--card)]/50 border border-[var(--border)] rounded-2xl rounded-tl-none relative mr-auto">
+                        <div className="flex gap-1.5">
+                          <div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-bounce" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-bounce [animation-delay:-0.15s]" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-bounce [animation-delay:-0.3s]" />
                         </div>
-                        <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500 }}>Aivon is thinking...</span>
-                      </div>
+                        <span className="text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-widest">Parsing...</span>
                     </div>
                   )}
                   <div ref={chatEndRef} />
                 </div>
                 
                 {/* Chat Input Field */}
-                <form onSubmit={handleChatSubmit} style={{ 
-                  display: "flex", gap: 12, flexShrink: 0,
-                  padding: "16px 20px", background: "rgba(0,0,0,0.6)", 
-                  borderTop: "1px solid rgba(255,255,255,0.05)",
-                  backdropFilter: "blur(12px)"
-                }}>
+                <form onSubmit={handleChatSubmit} className="flex gap-3 p-4 bg-[var(--background)]/80 border-t border-[var(--border)] shrink-0">
                   <input 
                     type="text"
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
-                    placeholder="Message Aivon..."
+                    placeholder="Terminal prompt..."
                     disabled={chatLoading}
-                    style={{
-                      flex: 1, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)", 
-                      outline: "none", borderRadius: 24, padding: "12px 20px",
-                      color: "#fff", fontSize: 14, fontFamily: "'Inter', sans-serif",
-                      boxShadow: "inset 0 2px 4px rgba(0,0,0,0.2)"
-                    }}
+                    className="flex-1 bg-[var(--card)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--text-primary)] font-mono outline-none transition-all focus:border-[var(--primary)] placeholder:text-[var(--text-muted)]"
                   />
                   {chatLoading ? (
                     <button 
                       type="button"
                       onClick={() => abortControllerRef.current?.abort()}
-                      style={{
-                        background: "rgba(255,100,100,0.1)",
-                        color: "#ff6b6b",
-                        border: "1px solid rgba(255,100,100,0.3)", borderRadius: 24, padding: "0 20px", fontSize: 14, fontWeight: 700,
-                        cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
-                        transition: "all 0.2s"
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,100,100,0.2)" }}
-                      onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,100,100,0.1)" }}
+                      className="px-6 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-bold uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all"
                     >
-                      <span>🛑</span> STOP
+                      Stop
                     </button>
                   ) : (
-                    <button type="submit" disabled={!chatInput.trim()} style={{
-                      background: chatInput.trim() ? "linear-gradient(135deg, var(--accent-cyan), #00b8d4)" : "rgba(255,255,255,0.1)",
-                      color: chatInput.trim() ? "#000" : "var(--text-muted)",
-                      border: "none", borderRadius: 24, padding: "0 24px", fontSize: 14, fontWeight: 700,
-                      cursor: chatInput.trim() ? "pointer" : "not-allowed",
-                      transition: "all 0.2s", boxShadow: chatInput.trim() ? "0 4px 15px rgba(0, 229, 255, 0.3)" : "none"
-                    }}>
-                      SEND
+                    <button type="submit" disabled={!chatInput.trim()} className="px-6 rounded-xl bg-[var(--primary)] text-[var(--background)] text-xs font-bold uppercase tracking-widest hover:scale-105 hover:shadow-[0_0_15px_var(--glow-color)] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none">
+                      Send
                     </button>
                   )}
                 </form>
-                <style>{`
-                  @keyframes bounce {
-                    0%, 80%, 100% { transform: scale(0); }
-                    40% { transform: scale(1); }
-                  }
-                  @keyframes fadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                  }
-                  @keyframes slideUp {
-                    from { opacity: 0; transform: translateY(20px); }
-                    to { opacity: 1; transform: translateY(0); }
-                  }
-                `}</style>
               </div>
             )}
           </div>
@@ -712,39 +584,40 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
         {/* ── Right panel: editor + terminal ──────────────────────────── */}
         <div
           ref={containerRef}
-          style={{ 
-            flex: 1, 
-            display: "flex", 
-            flexDirection: "column", 
-            overflow: "hidden", 
-            minWidth: 0,
-            minHeight: isSmallScreen ? 600 : 0, 
-            background: "transparent",
-            position: "relative", zIndex: 10 
-          }}
+          className="flex-1 flex flex-col min-w-0 bg-transparent relative z-10"
+          style={{ minHeight: isSmallScreen ? 600 : 0 }}
         >
           {/* Toolbar */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 60, padding: "0 24px", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(12px)", flexShrink: 0 }}>
-            <select value={language} onChange={(e) => setLanguage(e.target.value)}
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "8px 16px", color: "#fff", fontSize: 13, fontFamily: "'JetBrains Mono', monospace", cursor: "pointer", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)" }}>
-              {LANGUAGES.map((l) => <option key={l} value={l} style={{ background: "#050505" }}>{l.charAt(0).toUpperCase() + l.slice(1)}</option>)}
-            </select>
-            <div style={{ display: "flex", gap: 12 }}>
-              <button style={{ padding: "8px 20px", fontSize: 13, fontWeight: 700, letterSpacing: "0.05em", background: "rgba(255,255,255,0.05)", color: "#fff", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, cursor: "pointer", transition: "all 0.2s" }} onClick={handleRun} disabled={running || submitting}
-                 onMouseEnter={e => { e.currentTarget.style.borderColor = "#fff"; e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
-                 onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}>
-                {running ? "EXECUTING..." : "▶ RUN LOCAL"}
+          <div className="flex items-center justify-between h-14 px-4 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-md shrink-0">
+            <div className="flex items-center gap-2">
+              {/* Mac Window Dots */}
+              <div className="hidden sm:flex items-center gap-1.5 mr-4">
+                <div className="w-3 h-3 rounded-full bg-red-500/80 border border-red-500/50" />
+                <div className="w-3 h-3 rounded-full bg-yellow-500/80 border border-yellow-500/50" />
+                <div className="w-3 h-3 rounded-full bg-green-500/80 border border-green-500/50" />
+              </div>
+              <select value={language} onChange={(e) => setLanguage(e.target.value)}
+                className="bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-xs text-[var(--text-primary)] font-mono uppercase tracking-widest cursor-pointer outline-none hover:border-[var(--primary)]/50 transition-colors">
+                {LANGUAGES.map((l) => <option key={l} value={l} className="bg-[var(--background)]">{l.toUpperCase()}</option>)}
+              </select>
+            </div>
+            <div className="flex gap-3">
+              <button 
+                onClick={handleRun} disabled={running || submitting}
+                className="flex items-center gap-2 px-4 py-1.5 bg-[var(--card)] border border-[var(--border)] text-[var(--text-primary)] text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all hover:bg-[var(--background)] hover:border-[var(--text-muted)] disabled:opacity-50">
+                {running ? <span className="typing-cursor">Running</span> : <><Play size={12}/> Run</>}
               </button>
-              <button style={{ padding: "8px 24px", fontSize: 13, fontWeight: 800, letterSpacing: "0.05em", background: "#39FF14", color: "#050505", border: "none", borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, boxShadow: "0 4px 15px rgba(57,255,20,0.2), inset 0 2px 0 rgba(255,255,255,0.2)", transition: "all 0.2s" }} onClick={handleSubmit} disabled={running || submitting}
-                 onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 25px rgba(57,255,20,0.4), inset 0 2px 0 rgba(255,255,255,0.2)"; }}
-                 onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 4px 15px rgba(57,255,20,0.2), inset 0 2px 0 rgba(255,255,255,0.2)"; }}>
-                {submitting ? "UPLOADING..." : "☁ SUBMIT PROTOCOL"}
+              <button 
+                onClick={handleSubmit} disabled={running || submitting}
+                className="flex items-center gap-2 px-4 py-1.5 bg-[var(--primary)] border border-transparent text-[var(--background)] text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all hover:scale-105 hover:shadow-[0_0_15px_var(--glow-color)] disabled:opacity-50 disabled:hover:scale-100 disabled:shadow-none">
+                {submitting ? <span className="typing-cursor">Submitting</span> : <><UploadCloud size={12}/> Submit</>}
               </button>
             </div>
           </div>
 
-          {/* Monaco Editor — takes remaining space */}
-          <div style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
+          {/* Monaco Editor */}
+          <div className="flex-1 overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-b from-[var(--primary)]/5 to-transparent pointer-events-none z-10" />
             <Editor
               height="100%"
               language={language === "cpp" ? "cpp" : language}
@@ -760,6 +633,12 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
                 scrollBeyondLastLine: false,
                 padding: { top: 16 },
                 automaticLayout: true,
+                renderLineHighlight: "all",
+                cursorBlinking: "smooth",
+                scrollbar: {
+                  verticalScrollbarSize: 8,
+                  horizontalScrollbarSize: 8,
+                }
               }}
             />
           </div>
@@ -767,27 +646,14 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
           {/* ── Terminal section ────────────────────────────────────────── */}
           {result && (
             <>
-              {/* Vertical resize handle */}
               {terminalOpen && <ResizeHandleV onMouseDown={term.startResize} />}
 
-              {/* Terminal panel */}
               <div
-                style={{
-                  height: terminalOpen ? term.height : 0,
-                  minHeight: 0,
-                  borderTop: terminalOpen ? "1px solid rgba(255,255,255,0.05)" : "none",
-                  background: "rgba(10, 10, 12, 0.8)",
-                  backdropFilter: "blur(20px)",
-                  display: "flex",
-                  flexDirection: "column",
-                  overflow: "hidden",
-                  transition: "height 200ms cubic-bezier(0.4,0,0.2,1)",
-                  flexShrink: 0,
-                }}
+                className="flex flex-col shrink-0 border-t border-[var(--border)] bg-[var(--background)]/90 backdrop-blur-xl transition-all duration-300 relative z-20"
+                style={{ height: terminalOpen ? term.height : 0 }}
               >
                 {terminalOpen && (
                   <>
-                    {/* VerdictHeader */}
                     <VerdictHeader
                       status={currentStatus}
                       runtime={result.runtime}
@@ -800,7 +666,6 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
                       mode={resultMode ?? undefined}
                     />
 
-                    {/* Terminal tabs + controls */}
                     <TerminalTabBar
                       onToggleTerminal={() => setTerminalOpen(false)}
                       testResults={testResults}
@@ -811,8 +676,7 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
                       onImprove={triggerImproveApproach}
                     />
 
-                    {/* TestExplorer or PerformancePanel */}
-                    <div style={{ flex: 1, overflowY: "auto" }}>
+                    <div className="flex-1 overflow-y-auto w-full test-cases-scrollbar">
                       {testResults && testResults.length > 0 ? (
                         <TestExplorer
                           testResults={testResults}
@@ -825,31 +689,12 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
                 )}
               </div>
 
-              {/* Show terminal toggle button when collapsed */}
               {!terminalOpen && (
                 <button
                   onClick={() => setTerminalOpen(true)}
-                  style={{
-                    position: "absolute",
-                    bottom: 16,
-                    right: 24,
-                    background: "rgba(0,0,0,0.6)",
-                    backdropFilter: "blur(8px)",
-                    color: "#fff",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    padding: "8px 16px",
-                    borderRadius: 8,
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    boxShadow: "0 4px 15px rgba(0,0,0,0.5)",
-                    display: "flex", alignItems: "center", gap: 8,
-                    transition: "all 0.2s"
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = "#00FFFF"; e.currentTarget.style.color = "#00FFFF"; e.currentTarget.style.boxShadow = "0 0 15px rgba(0,255,255,0.2)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = "#fff"; e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.5)"; }}
+                  className="absolute bottom-6 right-6 flex items-center gap-2 px-4 py-2 bg-[var(--card)]/80 backdrop-blur-md border border-[var(--border)] rounded-lg text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] hover:text-[var(--primary)] hover:border-[var(--primary)]/50 transition-all shadow-lg z-50 group"
                 >
-                  Console <span style={{ fontFamily: "'JetBrains Mono', monospace", opacity: 0.5, marginLeft: 4 }}>[CMD+J]</span>
+                  <TerminalIcon size={14} className="group-hover:scale-110 transition-transform" /> Console
                 </button>
               )}
             </>
@@ -857,7 +702,6 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
         </div>
       </div>
 
-      {/* ── Floating AI Panel ──────────────────────────────────────────── */}
       {floatingMode && (
         <AiFloatingPanel
           mode={floatingMode}
@@ -874,21 +718,6 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────
-const glassBtnStyle: React.CSSProperties = {
-  padding: "7px 16px",
-  fontSize: 13,
-  fontWeight: 600,
-  fontFamily: "inherit",
-  cursor: "pointer",
-  borderRadius: 10,
-  backdropFilter: "blur(8px)",
-  transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-  display: "flex",
-  alignItems: "center",
-  gap: 6
-};
-
-
 
 function ResizeHandleH({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => void }) {
   const [hover, setHover] = useState(false);
@@ -897,29 +726,9 @@ function ResizeHandleH({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => 
       onMouseDown={onMouseDown}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      style={{
-        width: 5,
-        cursor: "col-resize",
-        flexShrink: 0,
-        background: hover ? "rgba(124,58,237,0.5)" : "transparent",
-        transition: "background 150ms ease",
-        position: "relative",
-        zIndex: 10,
-        userSelect: "none",
-      }}
+      className={`w-1 cursor-col-resize shrink-0 relative z-10 transition-colors duration-150 ${hover ? 'bg-[var(--primary)]/50' : 'bg-transparent'}`}
     >
-      {/* Visual dot indicator */}
-      <div style={{
-        position: "absolute",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        width: 3,
-        height: 40,
-        borderRadius: 99,
-        background: hover ? "#00E5FF" : "rgba(255,255,255,0.12)",
-        transition: "background 150ms ease, height 150ms ease",
-      }} />
+      <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-10 rounded-full transition-all duration-150 ${hover ? 'bg-[var(--primary)] h-16' : 'bg-[var(--text-muted)]'}`} />
     </div>
   );
 }
@@ -931,25 +740,9 @@ function ResizeHandleV({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => 
       onMouseDown={onMouseDown}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      style={{
-        height: 6,
-        cursor: "row-resize",
-        flexShrink: 0,
-        background: hover ? "rgba(124,58,237,0.25)" : "rgba(255,255,255,0.02)",
-        transition: "background 150ms ease",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        userSelect: "none",
-      }}
+      className={`h-1.5 cursor-row-resize shrink-0 flex items-center justify-center transition-colors duration-150 ${hover ? 'bg-[var(--primary)]/30' : 'bg-[var(--border)]'}`}
     >
-      <div style={{
-        width: 40,
-        height: 3,
-        borderRadius: 99,
-        background: hover ? "#00E5FF" : "rgba(255,255,255,0.15)",
-        transition: "background 150ms ease, width 150ms ease",
-      }} />
+      <div className={`w-10 h-0.5 rounded-full transition-all duration-150 ${hover ? 'bg-[var(--primary)] w-16' : 'bg-transparent'}`} />
     </div>
   );
 }
@@ -968,27 +761,24 @@ function TerminalTabBar({
   onImprove: () => void;
 }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px", borderBottom: "1px solid var(--border)", flexShrink: 0, minHeight: 46 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginRight: 8 }}>Results</span>
+    <div className="flex items-center justify-between px-4 min-h-[46px] border-b border-[var(--border)] bg-[var(--background)] shrink-0">
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest font-mono mr-2">Terminal Out</span>
       </div>
-      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+      <div className="flex gap-2 items-center">
         {isFailure && testResults && testResults.length > 0 && (
-          <QuickBtn label="✨ Explain Error" color="#f97316" onClick={onExplainError} />
+          <QuickBtn label="Explain Error" color="var(--accent-red)" icon={<Bug size={10} />} onClick={onExplainError} />
         )}
         {isAccepted && (
           <>
-            <QuickBtn label="📊 Performance" color="#22c55e" onClick={onPerformance} />
-            <QuickBtn label="🔀 Improve" color="#00FFFF" onClick={onImprove} />
+            <QuickBtn label="Performance" color="var(--accent-green)" icon={<Sparkles size={10} />} onClick={onPerformance} />
+            <QuickBtn label="Improve" color="var(--accent-cyan)" icon={<SearchCode size={10} />} onClick={onImprove} />
           </>
         )}
-        <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.1)", margin: "0 4px" }} />
+        <div className="w-px h-4 bg-[var(--border)] mx-1" />
         <button
           onClick={onToggleTerminal}
-          title="Hide terminal"
-          style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "var(--text-muted)", transition: "all 0.15s ease" }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "var(--text-primary)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; e.currentTarget.style.color = "var(--text-muted)"; }}
+          className="px-3 rounded-md text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
         >
           ▼ Hide
         </button>
@@ -997,15 +787,18 @@ function TerminalTabBar({
   );
 }
 
-function QuickBtn({ label, color, onClick }: { label: string; color: string; onClick: () => void }) {
+function QuickBtn({ label, color, icon, onClick }: { label: string; color: string; icon?: React.ReactNode; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      style={{ padding: "3px 10px", fontSize: 11, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", borderRadius: 6, background: `${color}14`, border: `1px solid ${color}35`, color, transition: "all 0.15s ease" }}
-      onMouseEnter={(e) => { e.currentTarget.style.background = `${color}25`; }}
-      onMouseLeave={(e) => { e.currentTarget.style.background = `${color}14`; }}
+      style={{
+        color,
+        background: `${color}10`,
+        borderColor: `${color}30`
+      }}
+      className="flex items-center gap-1.5 px-3 py-1 text-[9px] font-bold uppercase tracking-widest rounded-md border transition-all hover:bg-opacity-20 hover:scale-105"
     >
-      {label}
+      {icon && icon} {label}
     </button>
   );
 }

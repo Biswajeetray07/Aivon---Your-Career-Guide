@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { GlassCard } from "@/components/ui/glass-card";
+import { ArrowRight, SkipForward, Home, LogIn } from "lucide-react";
+import Link from "next/link";
 
 const GOALS = [
   { id: "interview_prep", label: "Interview Prep", icon: "🎯", desc: "Crack FAANG-level interviews" },
@@ -27,7 +30,6 @@ export default function OnboardingPage() {
     );
 
   const handleSkip = () => {
-    // Power user skip directly to dashboard
     router.push("/dashboard");
   };
 
@@ -47,7 +49,6 @@ export default function OnboardingPage() {
     }
     setLoading(true);
     try {
-      // Save username + goals to backend
       const token = localStorage.getItem("aivon_token");
       await fetch("/api/auth/complete-onboarding", {
         method: "POST",
@@ -71,240 +72,140 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "#050505",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontFamily: "'Space Grotesk', 'Inter', sans-serif",
-      position: "relative",
-      overflow: "hidden",
-      color: "#fff"
-    }}>
-      {/* Background Matrix */}
-      <div style={{
-        position: "fixed",
-        inset: 0,
-        backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)",
-        backgroundSize: "64px 64px",
-        pointerEvents: "none",
-        zIndex: 0,
-      }} />
+    <div className="min-h-screen bg-[var(--background)] flex items-center justify-center font-space-grotesk relative overflow-hidden text-[var(--text-primary)]">
+      
+      <div className="absolute top-8 left-6 md:left-12 flex items-center gap-6 z-50">
+        <Link 
+          href="/"
+          className="bg-transparent text-[var(--text-secondary)] hover:text-[var(--primary)] text-sm font-semibold uppercase tracking-wider transition-colors flex items-center gap-2 group"
+        >
+          <Home size={14} className="group-hover:-translate-x-1 transition-transform" /> Home
+        </Link>
+        <Link 
+          href="/sign-in"
+          className="bg-transparent text-[var(--text-secondary)] hover:text-[var(--primary)] text-sm font-semibold uppercase tracking-wider transition-colors flex items-center gap-2 group"
+        >
+          <LogIn size={14} className="group-hover:text-[var(--primary)] transition-colors" /> Sign In
+        </Link>
+      </div>
 
-      {/* Skip Button */}
       <button 
         onClick={handleSkip}
-        style={{
-          position: "absolute",
-          top: 32,
-          right: "5vw",
-          background: "transparent",
-          color: "#71717a",
-          border: "none",
-          fontSize: 14,
-          fontWeight: 600,
-          cursor: "pointer",
-          letterSpacing: "0.05em",
-          textTransform: "uppercase",
-          transition: "color 0.2s",
-          zIndex: 100
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.color = "#fff"}
-        onMouseLeave={(e) => e.currentTarget.style.color = "#71717a"}
+        className="absolute top-8 right-6 md:right-12 bg-transparent text-[var(--text-secondary)] border-none text-sm font-semibold cursor-pointer tracking-wider uppercase transition-colors hover:text-[var(--text-primary)] z-50 flex items-center gap-2 group"
       >
-        Skip Setup →
+        Skip Setup <SkipForward size={14} className="group-hover:translate-x-1 transition-transform" />
       </button>
 
-      {/* Main content card */}
-      <div style={{
-        position: "relative",
-        zIndex: 10,
-        width: "100%",
-        maxWidth: phase === "goals" ? 640 : 440,
-        padding: "48px",
-        background: "#0a0a0a",
-        border: "1px solid #27272a",
-        boxShadow: "20px 20px 0px rgba(0,0,0,1)",
-        transition: "max-width 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
-      }}>
+      <div className="relative z-10 w-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] px-4" style={{ maxWidth: phase === "goals" ? 640 : 440 }}>
         
-        {/* Progress Indicator */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 40 }}>
-           <div style={{ flex: 1, height: 4, background: "#39FF14" }} />
-           <div style={{ flex: 1, height: 4, background: phase === "goals" ? "#39FF14" : "#27272a", transition: "background 0.4s" }} />
-        </div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[var(--primary)]/10 blur-[100px] pointer-events-none rounded-full" />
 
-        <AnimatePresence mode="wait">
-          {/* ─── PHASE: USERNAME ─── */}
-          {phase === "username" && (
-            <motion.div key="username" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.3, ease: "easeOut" }}>
-              <h2 style={{ fontSize: 32, fontWeight: 900, color: "#fff", marginBottom: 8, letterSpacing: "-0.04em", textTransform: "uppercase" }}>
-                Identify Yourself
-              </h2>
-              <p style={{ color: "#a1a1aa", fontSize: 14, marginBottom: 32 }}>
-                This is how the system array will recognize you.
-              </p>
+        <GlassCard className="p-8 md:p-12 shadow-2xl relative z-10 border border-[var(--border)] bg-[var(--card)]/80">
+          
+          <div className="flex gap-2 mb-10 h-1 rounded-full overflow-hidden">
+             <div className="flex-1 bg-[var(--primary)] transition-colors duration-500 shadow-[0_0_10px_var(--glow-color)]" />
+             <div className={`flex-1 transition-colors duration-500 ${phase === "goals" ? "bg-[var(--primary)] shadow-[0_0_10px_var(--glow-color)]" : "bg-[var(--border)]"}`} />
+          </div>
 
-              <label htmlFor="callsign" style={{ color: "#71717a", fontSize: 12, textTransform: "uppercase", marginBottom: 8, display: "block" }}>Input Callsign</label>
-              <input
-                id="callsign"
-                type="text"
-                placeholder="CALLSIGN (e.g. neural_coder)"
-                value={username}
-                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
-                maxLength={20}
-                style={{
-                  width: "100%",
-                  padding: "16px",
-                  background: "#050505",
-                  border: "2px solid #27272a",
-                  borderRadius: 0,
-                  color: "#fff",
-                  fontSize: 16,
-                  fontFamily: "'JetBrains Mono', monospace",
-                  outline: "none",
-                  boxSizing: "border-box",
-                  transition: "border-color 0.2s"
-                }}
-                onFocus={(e) => e.target.style.borderColor = "#39FF14"}
-                onBlur={(e) => e.target.style.borderColor = "#27272a"}
-              />
-              <div style={{ fontSize: 12, color: "#71717a", marginTop: 8, textTransform: "uppercase" }}>
-                Lowercase, numbers, underscores · 3–20 chars
-              </div>
+          <AnimatePresence mode="wait">
+            {phase === "username" && (
+              <motion.div key="username" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.3, ease: "easeOut" }}>
+                <h2 className="text-3xl font-bold mb-2 tracking-tight uppercase text-gradient">
+                  Identify Yourself
+                </h2>
+                <p className="text-[var(--text-secondary)] text-sm mb-8 font-mono">
+                  &gt; This is how the system array will recognize you.
+                </p>
 
-              <button
-                onClick={handleUsernameSubmit}
-                style={{
-                  width: "100%",
-                  marginTop: 32,
-                  padding: "16px",
-                  background: "#39FF14",
-                  border: "none",
-                  borderRadius: 0,
-                  color: "#050505",
-                  fontSize: 16,
-                  fontWeight: 800,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em"
-                }}
-              >
-                Proceed to Calibration
-              </button>
+                <label htmlFor="callsign" className="text-[var(--text-muted)] text-xs uppercase mb-2 block font-mono">Input Callsign</label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none font-mono text-[var(--primary)]">
+                    $
+                  </div>
+                  <input
+                    id="callsign"
+                    type="text"
+                    placeholder="e.g. neural_coder"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+                    maxLength={20}
+                    className="w-full py-4 pl-10 pr-4 bg-[var(--background)]/50 border border-[var(--border)] rounded-lg text-white text-base font-mono outline-none transition-all focus:border-[var(--primary)] focus:shadow-[0_0_15px_var(--glow-color)] placeholder:text-[var(--text-muted)]"
+                  />
+                </div>
+                <div className="text-xs text-[var(--text-muted)] mt-2 uppercase font-mono">
+                  Lowercase, numbers, underscores · 3–20 chars
+                </div>
+
+                <button
+                  onClick={handleUsernameSubmit}
+                  className="w-full mt-8 py-4 bg-[var(--primary)] text-[var(--background)] font-bold rounded-lg uppercase tracking-wider transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_20px_var(--glow-color)] flex items-center justify-center gap-2 group/btn"
+                >
+                  Proceed to Calibration <ArrowRight size={18} className="group-hover/btn:translate-x-1 transition-transform" />
+                </button>
+              </motion.div>
+            )}
+
+            {phase === "goals" && (
+              <motion.div key="goals" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.3, ease: "easeOut" }}>
+                <h2 className="text-3xl font-bold mb-2 tracking-tight uppercase text-gradient">
+                  Calibrate Objectives
+                </h2>
+                <p className="text-[var(--text-secondary)] text-sm mb-8 font-mono">
+                  &gt; Select operational targets to align system heuristics.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {GOALS.map((goal, idx) => {
+                    const isSelected = selectedGoals.includes(goal.id);
+                    return (
+                      <button
+                        key={goal.id}
+                        onClick={() => toggleGoal(goal.id)}
+                        className={`text-left p-5 rounded-xl border transition-all duration-300 group/goal animate-fade-in-up flex flex-col items-start ${
+                          isSelected 
+                            ? "bg-[var(--primary)]/10 border-[var(--primary)] shadow-[0_0_15px_var(--glow-color)] scale-[1.02]" 
+                            : "bg-[var(--background)]/50 border-[var(--border)] hover:border-[var(--text-muted)] hover:bg-[var(--background)]"
+                        }`}
+                        style={{ animationDelay: `${(idx + 1) * 100}ms` }}
+                      >
+                        <div className="text-2xl mb-3 drop-shadow-lg">{goal.icon}</div>
+                        <div className={`font-bold text-base mb-1 transition-colors ${isSelected ? "text-[var(--primary)]" : "text-[var(--text-secondary)] group-hover/goal:text-[var(--text-primary)]"}`}>
+                          {goal.label}
+                        </div>
+                        <div className={`text-xs ${isSelected ? "text-[var(--text-secondary)]" : "text-[var(--text-muted)]"}`}>
+                          {goal.desc}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={handleGoalsSubmit}
+                  disabled={selectedGoals.length === 0 || loading}
+                  className={`w-full mt-8 py-4 font-bold rounded-lg uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 group/btn ${
+                    selectedGoals.length > 0 && !loading 
+                      ? "bg-[var(--primary)] text-[var(--background)] cursor-pointer hover:scale-[1.02] hover:shadow-[0_0_20px_var(--glow-color)]" 
+                      : "bg-[var(--border)]/50 text-[var(--text-muted)] cursor-not-allowed"
+                  }`}
+                >
+                  {loading ? "INITIALIZING..." : "ENTER DASHBOARD"} 
+                  {!loading && <ArrowRight size={18} className="group-hover/btn:translate-x-1 transition-transform" />}
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-6 p-3 bg-red-500/10 border border-red-500/50 text-red-400 text-sm text-center font-bold rounded-lg"
+            >
+              ⚠ {error}
             </motion.div>
           )}
-
-          {/* ─── PHASE: GOALS (Bento Grid) ─── */}
-          {phase === "goals" && (
-            <motion.div key="goals" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.3, ease: "easeOut" }}>
-              <h2 style={{ fontSize: 32, fontWeight: 900, color: "#fff", marginBottom: 8, letterSpacing: "-0.04em", textTransform: "uppercase" }}>
-                Calibrate Objectives
-              </h2>
-              <p style={{ color: "#a1a1aa", fontSize: 14, marginBottom: 32 }}>
-                Select operational targets to align system heuristics.
-              </p>
-
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 16,
-              }}>
-                {GOALS.map((goal) => {
-                  const isSelected = selectedGoals.includes(goal.id);
-                  return (
-                    <button
-                      key={goal.id}
-                      onClick={() => toggleGoal(goal.id)}
-                      style={{
-                        padding: "24px 20px",
-                        background: isSelected ? "#18181b" : "#050505",
-                        border: `2px solid ${isSelected ? "#39FF14" : "#27272a"}`,
-                        borderRadius: 0, cursor: "pointer", textAlign: "left",
-                        fontFamily: "inherit", transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                        transform: isSelected ? "scale(1.02)" : "scale(1)",
-                        boxShadow: isSelected ? "4px 4px 0px rgba(57,255,20,0.2)" : "none",
-                      }}
-                      onMouseEnter={(e) => { 
-                        if (!isSelected) {
-                          e.currentTarget.style.borderColor = "#52525b"; 
-                          e.currentTarget.style.background = "#09090b";
-                        }
-                      }}
-                      onMouseLeave={(e) => { 
-                        if (!isSelected) { 
-                          e.currentTarget.style.borderColor = "#27272a"; 
-                          e.currentTarget.style.background = "#050505";
-                        } 
-                      }}
-                    >
-                      <div style={{ fontSize: 24, marginBottom: 12 }}>{goal.icon}</div>
-                      <div style={{
-                        fontSize: 16,
-                        fontWeight: 700,
-                        color: isSelected ? "#fff" : "#a1a1aa",
-                        marginBottom: 4,
-                      }}>
-                        {goal.label}
-                      </div>
-                      <div style={{
-                        fontSize: 12,
-                        color: isSelected ? "#a1a1aa" : "#71717a",
-                      }}>
-                        {goal.desc}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                onClick={handleGoalsSubmit}
-                disabled={selectedGoals.length === 0 || loading}
-                style={{
-                  width: "100%",
-                  marginTop: 32,
-                  padding: "16px",
-                  background: selectedGoals.length > 0 ? "#39FF14" : "#18181b",
-                  border: "none",
-                  borderRadius: 0,
-                  color: selectedGoals.length > 0 ? "#050505" : "#52525b",
-                  fontSize: 16,
-                  fontWeight: 800,
-                  cursor: selectedGoals.length > 0 && !loading ? "pointer" : "not-allowed",
-                  fontFamily: "inherit",
-                  transition: "background 0.2s, color 0.2s",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em"
-                }}
-              >
-                {loading ? "INITIALIZING..." : "ENTER DASHBOARD →"}
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Error display */}
-        {error && (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            style={{
-              marginTop: 20,
-              padding: "12px",
-              background: "rgba(239,68,68,0.1)",
-              border: "1px solid #ef4444",
-              color: "#fca5a5",
-              fontSize: 13,
-              textAlign: "center",
-              fontWeight: 600
-            }}
-          >
-            {error}
-          </motion.div>
-        )}
+        </GlassCard>
       </div>
     </div>
   );

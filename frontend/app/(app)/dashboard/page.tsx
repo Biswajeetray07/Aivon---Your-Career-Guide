@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSession, listProblems, type Problem } from "@/lib/api";
 import { motion } from "framer-motion";
-import RoadmapView from "@/components/RoadmapView";
+import { useTypewriter } from "@/hooks/use-typewriter";
 
 interface UserProfile {
   id: string;
@@ -24,10 +24,27 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  const dynamicText = useTypewriter([
+    "software engineers",
+    "problem solvers",
+    "systems thinkers",
+    "AI-powered minds"
+  ], 80, 40, 2000);
+
+  const weaknessText = useTypewriter(
+    ["Aivon recommends completing 3 Array problems before returning to DP."], 
+    30, 0, 9999999
+  );
+  
+  const systemLogText = useTypewriter(
+    ["Engage targets immediately to restore."], 
+    40, 1000, 3000
+  );
+
   const [activityDots, setActivityDots] = useState<{r1: number, r2: number}[]>([]);
   useEffect(() => {
     const timer = setTimeout(() => {
-      setActivityDots(Array.from({ length: 42 }).map(() => ({ r1: Math.random(), r2: Math.random() })));
+      setActivityDots(Array.from({ length: 56 }).map(() => ({ r1: Math.random(), r2: Math.random() })));
     }, 0);
     return () => clearTimeout(timer);
   }, []);
@@ -51,268 +68,426 @@ export default function DashboardPage() {
 
   if (loading || !user) {
     return (
-      <div style={{ minHeight: "100vh", background: "#050505", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ color: "#39FF14", fontFamily: "'JetBrains Mono', monospace", animation: "pulse 1.5s infinite" }}>
-          &gt; INITIATING COMMAND CENTER...
+      <div className="min-h-screen bg-[#05070A] flex items-center justify-center">
+        <div className="text-[#00E5B0] font-geist-mono animate-pulse flex items-center gap-2">
+          &gt; INITIATING COMMAND CENTER...<span className="inline-block w-[8px] h-[15px] bg-[#00E5B0] animate-[blink_1s_step-end_infinite]" />
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "#050505",
-      color: "#fff",
-      fontFamily: "'Space Grotesk', 'Inter', sans-serif",
-      position: "relative",
-      padding: "8vh 5vw",
-      overflowX: "hidden"
-    }}>
+    <div className="min-h-screen bg-[#05070A] text-white font-geist-sans relative overflow-x-hidden pt-[12vh] pb-20 px-6 md:px-12 scanlines">
       {/* Interactive Cyber Background */}
-      <div style={{
-        position: "fixed",
-        inset: 0,
-        background: "radial-gradient(circle at 50% -20%, rgba(138,43,226,0.15), transparent 60%), radial-gradient(circle at 120% 50%, rgba(0,255,255,0.08), transparent 50%)",
-        pointerEvents: "none",
-        zIndex: 0,
-      }} />
-      <div style={{
-        position: "fixed",
-        inset: 0,
-        backgroundImage: "linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)",
-        backgroundSize: "48px 48px",
-        pointerEvents: "none",
-        zIndex: 0,
-      }} />
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(0,229,176,0.1),transparent_60%),radial-gradient(circle_at_120%_50%,rgba(0,194,255,0.05),transparent_50%)] pointer-events-none z-0" />
+      <div className="fixed inset-0 pointer-events-none z-0 opacity-20" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
 
-      <main style={{ position: "relative", zIndex: 10, maxWidth: 1200, margin: "0 auto" }}>
+      <main className="relative z-10 w-full max-w-[1500px] mx-auto">
         
-        {/* Header Section */}
+        {/* 1. Hero / Welcome Strip */}
         <motion.header 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          style={{ marginBottom: 64, display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderBottom: "1px solid #27272a", paddingBottom: 32 }}
+          className="mb-8 flex flex-col lg:flex-row gap-8 lg:gap-12 items-center lg:justify-between border-b border-white/10 pb-6 rounded-2xl bg-[#0A0F14]/40 p-6 lg:p-12"
         >
-          <div>
-            <div style={{ color: "#71717a", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, textTransform: "uppercase", marginBottom: 8, letterSpacing: "0.1em" }}>
-              PILOT LOGGED IN // STATUS: ONLINE
+          {/* Left Summary */}
+          <div className="flex flex-col w-full lg:w-[50%] lg:pr-8 justify-center items-start text-left">
+            <div className="flex items-center gap-3 text-[10px] sm:text-[11px] text-[var(--text-muted)] font-geist-mono font-bold tracking-[0.2em] uppercase mb-4 text-[#00E5B0]">
+              <div className="w-2 h-2 rounded-sm bg-[#00E5B0] animate-pulse shadow-[0_0_8px_#00E5B0]" />
+              SYS_AUTH: OPERATIVE VERIFIED
             </div>
-            <h1 style={{ fontSize: "clamp(32px, 5vw, 48px)", fontWeight: 900, margin: 0, letterSpacing: "-0.04em", textTransform: "uppercase" }}>
-              WELCOME BACK,<br/>
-              <span style={{ color: "#39FF14" }}>{user.name || user.username || "OPERATIVE"}</span>
-            </h1>
+            
+            {/* Hacker Font Welcome Message (VT323) */}
+            <div className="relative">
+              <h1 className="text-5xl md:text-[64px] lg:text-[76px] font-vt323 tracking-widest uppercase m-0 leading-[0.9] text-transparent bg-clip-text bg-[linear-gradient(180deg,#FFFFFF_0%,#A1A1AA_100%)] relative flex flex-col items-start gap-1">
+                <span>WELCOME BACK,</span>
+                <span className="text-[#00E5B0] text-[0.8em] tracking-[0.15em] bg-clip-text text-transparent bg-[linear-gradient(90deg,#00E5B0_0%,#00C2FF_100%)] border-b-2 border-[#00E5B0]/30 pb-1">
+                  {user.name || user.username || "OPERATIVE"}
+                  <span className="inline-block w-[0.4em] h-[0.8em] bg-[#00E5B0] ml-2 animate-pulse align-middle" />
+                </span>
+              </h1>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-5 mt-8 w-full max-w-xl mb-1 h-12">
+              <div className="w-32 bg-[#05070A] border border-[#FACC15]/20 rounded-lg flex flex-col justify-center items-center shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] relative overflow-hidden group hover:border-[#FACC15]/50 transition-colors">
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#FACC15]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="flex flex-col items-center justify-center -space-y-0.5">
+                  <span className="text-[9px] font-geist-mono text-[#FACC15]/60 uppercase tracking-[0.2em] z-10">Streak</span>
+                  <span className="text-[14px] font-bold font-geist-mono text-[#FACC15] z-10 tracking-widest">12 <span className="text-[12px]">DAYS</span></span>
+                </div>
+              </div>
+              <Link href="/profile" className="flex-1 relative overflow-hidden group bg-transparent border border-[#00E5B0]/30 text-[#00E5B0] font-space-grotesk font-bold uppercase tracking-[0.1em] transition-all duration-300 rounded-lg flex flex-col justify-center hover:bg-[#00E5B0]/10 hover:border-[#00E5B0]/80 hover:text-white hover:shadow-sm">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#00E5B0]/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                <div className="flex items-center gap-3 px-6 z-10">
+                  <span className="w-1.5 h-1.5 bg-[#00E5B0] rounded-full group-hover:animate-ping" />
+                  <span className="text-[13px]">VIEW PROFILE</span>
+                </div>
+              </Link>
+            </div>
           </div>
-          <div>
-             <Link href="/profile" style={{ display: "inline-block", background: "transparent", color: "#fff", border: "1px solid #52525b", padding: "12px 24px", textDecoration: "none", fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", transition: "all 0.2s", minWidth: 160, textAlign: "center" }}
-                   onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#00E5FF"; e.currentTarget.style.background = "#00E5FF"; e.currentTarget.style.color = "#050505"; }}
-                   onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#52525b"; e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#fff"; }}>
-               View Profile
-             </Link>
+
+          {/* Right Terminal ASCII */}
+          <div className="relative w-full lg:w-[50%] flex-shrink-0 flex flex-col items-center justify-center mt-8 lg:mt-0">
+             <div className="glass border border-[#00E5B0]/10 rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(0,229,176,0.05)] relative bg-[#05070A] w-full max-w-[560px] mx-auto flex flex-col h-full min-h-[240px]">
+               {/* Mac Header */}
+               <div className="px-5 py-3 border-b border-white/5 flex items-center gap-3 bg-[#0A0F14] relative z-10">
+                 <div className="w-2.5 h-2.5 rounded-full bg-[#FF5F56] opacity-80" />
+                 <div className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E] opacity-80" />
+                 <div className="w-2.5 h-2.5 rounded-full bg-[#27C93F] opacity-80" />
+                 <span className="absolute left-1/2 -translate-x-1/2 text-[10px] font-geist-mono text-[var(--text-muted)] tracking-[0.15em] uppercase opacity-50">
+                   terminal://aivon
+                 </span>
+               </div>
+               
+               {/* Terminal Body */}
+               <div className="p-6 lg:p-10 font-geist-mono text-[9px] sm:text-[11px] xl:text-[13px] text-[#00E5B0] leading-snug whitespace-pre overflow-x-auto relative flex flex-col items-center justify-center flex-grow">
+                 <div className="flex flex-col justify-center w-full max-w-[320px]">
+{`    ___    _____    __  __   ____    _   __ 
+   /   |  /  _/  | / / / __ \\ / | / /
+  / /| |  / /   \\ V / / / / //  |/ / 
+ / ___ |_/ /     | | / /_/ // /|  /  
+/_/  |_/___/     |_| \\____//_/ |_/   `}
+                   <div className="mt-8 text-[var(--text-secondary)] space-y-3 text-[11px] xl:text-[13px]">
+                     <div className="flex gap-4 items-center">
+                       <span className="text-[#00E5B0] font-bold text-base">❯</span>
+                       <span className="text-white opacity-80 min-w-[65px]">user:</span>
+                       <span className="text-[#00E5B0] opacity-90">{user.name || user.username || "operative"}</span>
+                     </div>
+                     <div className="flex gap-4 items-center">
+                       <span className="text-[#00E5B0] font-bold text-base">❯</span>
+                       <span className="text-white opacity-80 min-w-[65px]">forging:</span>
+                       <div className="flex items-center">
+                         <span className="text-[#00C2FF] font-bold">{dynamicText}</span><span className="inline-block w-[8px] h-[15px] bg-[#00C2FF] ml-1.5 animate-[blink_1s_step-end_infinite]" />
+                       </div>
+                     </div>
+                     <div className="flex gap-4 pt-1 items-center">
+                       <span className="text-[#00E5B0] font-bold text-base">❯</span>
+                       <span className="text-white opacity-80 min-w-[65px]">status:</span>
+                       <span className="text-[#FACC15] animate-pulse">OPTIMIZED</span>
+                     </div>
+                   </div>
+                 </div>
+               </div>
+             </div>
           </div>
         </motion.header>
+        {/* 2. Quick Action Bar (HIGH IMPACT) */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10"
+        >
+          {[
+            { tag: "[PRIORITY]", title: "Resume Target", desc: "Two Sum (Array)", color: "#FF5F56", link: "/problems/two-sum" },
+            { tag: "[PATH]", title: "Learning Node", desc: "Binary Search Tree", color: "#00E5B0", link: "/problems" },
+            { tag: "[ORACLE]", title: "Ask Aivon AI", desc: "Analyze weak spots", color: "#8A2BE2", link: "/dashboard" },
+            { tag: "[COMBAT]", title: "Enter Arena", desc: "Global Hierarchy", color: "#00C2FF", link: "/leaderboard" }
+          ].map((action, i) => (
+            <Link key={i} href={action.link} className="bg-[#05070A]/80 border border-white/10 rounded-xl p-5 hover:border-white/20 transition-all duration-300 hover:bg-[#0A0F14] hover:-translate-y-1 group relative overflow-hidden flex flex-col gap-2">
+              <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-current to-transparent opacity-10 rounded-bl-full pointer-events-none" style={{ color: action.color }} />
+              <span className="text-[10px] font-geist-mono font-bold tracking-widest" style={{ color: action.color }}>{action.tag}</span>
+              <span className="text-sm font-bold text-white uppercase tracking-wide">{action.title}</span>
+              <span className="text-xs font-geist-mono text-[var(--text-muted)]">{action.desc}</span>
+            </Link>
+          ))}
+        </motion.div>
 
-        {/* Dashboard Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(300px, 2fr) minmax(300px, 1fr)", gap: 32, alignItems: "start" }}>
-          
-          {/* Main Column */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+        {/* Dashboard Grid Container */}
+        <div className="bg-[#05070A]/80 border border-white/10 rounded-2xl p-6 lg:p-8 flex flex-col gap-6 shadow-2xl relative">
+          {/* Subtle container glow */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none rounded-2xl" />
+
+          {/* Upper Section (Full Width) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start relative z-10 w-full mt-2">
             
-            {/* Top Stat Band - Glassmorphic */}
-            <div style={{ 
-              display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16,
-              animation: "slideUp 0.6s ease-out 0.1s both"
-            }}>
-              {[
-                { label: "RANK", value: user.rank ? `#${user.rank}` : "UNRANKED", color: "#39FF14" },
-                { label: "RATING", value: user.rating || 1200, color: "#00FFFF" },
-                { label: "SYNERGY (XP)", value: user.xp || 0, color: "#8A2BE2" }
-              ].map((s, i) => (
-                <div key={i} style={{ 
-                  background: "rgba(20, 20, 25, 0.6)", 
-                  backdropFilter: "blur(12px)", 
-                  border: "1px solid rgba(255,255,255,0.05)",
-                  borderTop: `1px solid ${s.color}40`,
-                  padding: 24, 
-                  borderRadius: 16,
-                  boxShadow: `0 4px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)`,
-                  transition: "transform 0.2s, box-shadow 0.2s",
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = `0 8px 30px ${s.color}20, inset 0 1px 0 rgba(255,255,255,0.1)`;
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.transform = "none";
-                  e.currentTarget.style.boxShadow = `0 4px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)`;
-                }}>
-                  <div style={{ fontSize: 11, color: "#a1a1aa", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>{s.label}</div>
-                  <div style={{ fontSize: 32, fontWeight: 900, color: s.color, letterSpacing: "-0.02em", textShadow: `0 0 20px ${s.color}40` }}>{s.value}</div>
-                </div>
-              ))}
-            </div>
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1 }}
-              style={{
-                background: "rgba(20, 20, 25, 0.4)", 
-                backdropFilter: "blur(12px)", 
-                border: "1px solid rgba(255,255,255,0.05)",
-                borderRadius: 16,
-                padding: "24px 32px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 16,
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: "#a1a1aa", textTransform: "uppercase", letterSpacing: "0.1em" }}>Neural Activity Sync</div>
-                <div style={{ fontSize: 11, color: "#39FF14", background: "rgba(57, 255, 20, 0.1)", padding: "4px 8px", borderRadius: 4, fontFamily: "'JetBrains Mono', monospace" }}>[ONLINE]</div>
-              </div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", opacity: 0.6 }}>
-                {activityDots.map((dot, i) => (
-                  <div key={i} style={{ 
-                    width: "calc(100% / 14 - 6px)", 
-                    aspectRatio: "1", 
-                    background: dot.r1 > 0.7 ? (dot.r2 > 0.5 ? "#00FFFF" : "#8A2BE2") : "rgba(255,255,255,0.03)", 
-                    borderRadius: 4,
-                    boxShadow: dot.r1 > 0.7 ? "0 0 10px currentColor" : "none"
-                  }} />
+            {/* Key Stats Row (Spans all 12 columns) */}
+            <div className="col-span-1 lg:col-span-12">
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
+                {[
+                  { label: "RATING", value: user.rating || 1200, color: "text-[#00C2FF]" },
+                  { label: "SOLVED", value: "42", color: "text-white" },
+                  { label: "ACCURACY", value: "87%", color: "text-[#00E5B0]" },
+                  { label: "STREAK", value: "12", color: "text-[#FACC15]" },
+                  { label: "RANK", value: user.rank || "-", color: "text-[#FF5F56]" },
+                  { label: "AI CONF", value: "94%", color: "text-[#8A2BE2]" }
+                ].map((s, i) => (
+                  <div key={i} className="bg-[#05070A]/80 border border-white/10 p-3 relative group overflow-hidden shadow-[0_0_20px_rgba(255,255,255,0.02)] flex flex-col justify-between hover:border-white/20 transition-colors">
+                    {/* Structural Frame & Corners */}
+                    <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-white/30 group-hover:border-white/60 transition-colors" />
+                    <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-white/30 group-hover:border-white/60 transition-colors" />
+                    <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-white/30 group-hover:border-white/60 transition-colors" />
+                    <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-white/30 group-hover:border-white/60 transition-colors" />
+
+                    <div className="text-[9px] text-white/30 uppercase tracking-[0.2em] font-geist-mono font-bold mb-2 transition-colors group-hover:text-white/60 flex items-center gap-2 truncate relative z-10">
+                      <span className="opacity-0 group-hover:opacity-100 text-[10px] text-white/50 transition-opacity">►</span>
+                      {s.label}
+                    </div>
+                    <div className={`text-3xl lg:text-4xl font-vt323 tracking-widest ${s.color} drop-shadow-[0_0_10px_currentColor]/30 group-hover:drop-shadow-[0_0_15px_currentColor]/60 transition-all relative z-10`}>
+                       {s.value}
+                    </div>
+                  </div>
                 ))}
               </div>
-            </motion.div>
+            </div>
 
-            {/* Roadmap Section */}
+            {/* Heatmap & Priority Side-by-Side (Spans all 12 columns) */}
+            <div className="col-span-1 lg:col-span-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                
+                {/* 5. Priority Target Panel (Creative GUI Redesign) */}
+                <motion.div 
+                   initial={{ opacity: 0, scale: 0.95 }}
+                   animate={{ opacity: 1, scale: 1 }}
+                   transition={{ delay: 0.15 }}
+                   className="bg-[#05070A] p-6 relative flex flex-col justify-between border border-[#00E5B0]/30 shadow-[0_0_30px_rgba(0,229,176,0.1)] overflow-hidden group h-full"
+                >
+                   {/* Scanning Grid Background */}
+                   <div className="absolute inset-0 bg-[linear-gradient(rgba(0,229,176,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(0,229,176,0.05)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-50" />
+                   {/* Radar Sweep Animation */}
+                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200%] h-[200%] bg-[conic-gradient(from_0deg,transparent_0deg,rgba(0,229,176,0.1)_90deg,transparent_90deg)] animate-[spin_4s_linear_infinite] pointer-events-none z-0 mix-blend-screen opacity-50" />
+                   
+                   {/* Target Crosshairs (Corners) */}
+                   <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#00E5B0]" />
+                   <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#00E5B0]" />
+                   <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#00E5B0]" />
+                   <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#00E5B0]" />
+
+                   <div className="flex items-center justify-between bg-[#0A0F14]/90 px-4 py-2 border-b border-[#00E5B0]/20 relative z-10 w-[calc(100%+3rem)] -ml-6 -mt-6 mb-6">
+                     <span className="text-[10px] font-geist-mono text-[#00E5B0] tracking-[0.2em] font-bold flex items-center gap-2">
+                       <span className="text-[#FF5F56] animate-pulse">■</span> [ // PRIORITY_OVERRIDE ]
+                     </span>
+                     <span className="text-[8px] font-geist-mono text-[#00E5B0]/40">TARGET.LOCK</span>
+                   </div>
+
+                   <div className="relative z-10">
+                     <div className="flex items-start justify-between mb-4">
+                       <div className="flex flex-col gap-1">
+                         <h2 className="text-3xl font-black text-white uppercase tracking-tighter font-space-grotesk drop-shadow-md">
+                           Two Sum
+                         </h2>
+                       </div>
+                       <div className="text-[10px] font-bold text-[#05070A] font-geist-mono tracking-widest bg-[#00E5B0] px-3 py-1 shadow-[0_0_15px_rgba(0,229,176,0.4)]">
+                         PRIORITY 1
+                       </div>
+                     </div>
+                     
+                     <div className="bg-[#0A0F14]/80 backdrop-blur-sm border border-white/5 p-4 mb-6 relative overflow-hidden">
+                       <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FFBD2E]" />
+                       <p className="text-[12px] md:text-[13px] font-medium text-[var(--text-secondary)] leading-relaxed font-geist-mono pl-2">
+                         <span className="text-[#FFBD2E] mr-2">❯</span>
+                         Abandonment sequence detected. Weakness identified in <span className="text-white">Hash Maps</span>. Re-sync recommended to restore optimal algorithm flow.
+                       </p>
+                     </div>
+                   </div>
+                   
+                   <div className="flex items-center mt-auto relative z-10 w-full">
+                     <Link href="/problems/two-sum" className="w-full relative overflow-hidden flex items-center justify-center gap-3 bg-[#060D10] border border-[#00E5B0]/30 text-[#00E5B0] px-5 py-3 text-[12px] font-bold uppercase tracking-widest transition-all hover:bg-[#0A1418] hover:border-[#00E5B0]/80 hover:text-white hover:shadow-sm group/btn">
+                       {/* Gradient scanlight replicating View Profile button */}
+                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#00E5B0]/15 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000 z-0" />
+                       <span className="relative z-10 flex items-center justify-center w-4 h-4 mr-1">
+                         <span className="absolute inset-0 border border-current rounded-full" />
+                         <span className="w-1.5 h-1.5 bg-current rounded-full group-hover/btn:animate-ping" />
+                       </span>
+                       <span className="relative z-10">ENGAGE TARGET</span>
+                     </Link>
+                   </div>
+                </motion.div>
+
+                 {/* 6. Neural Activity Sync - Sidebar (Now side-by-side with Priority) */}
+                 <motion.div 
+                   initial={{ opacity: 0, scale: 0.98 }}
+                   animate={{ opacity: 1, scale: 1 }}
+                   transition={{ delay: 0.1 }}
+                   className="bg-[#05070A] border border-[#00C2FF]/30 shadow-[0_0_20px_rgba(0,194,255,0.1)] h-full flex flex-col relative"
+                 >
+                   {/* Structural Frame & Corners */}
+                   <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#00C2FF]" />
+                   <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#00C2FF]" />
+                   <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#00C2FF]" />
+                   <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#00C2FF]" />
+
+                   <div className="px-5 py-3 border-b border-[#00C2FF]/20 flex items-center justify-between bg-[#0A0F14]/90 relative z-10 flex-shrink-0">
+                     <span className="text-[10px] font-geist-mono text-[#00C2FF] font-bold tracking-[0.2em] flex items-center gap-2">
+                       <span className="text-white animate-pulse">■</span> [ // NEURAL_HEATMAP_SYNC ]
+                     </span>
+                     <span className="text-[8px] font-geist-mono text-[#00C2FF]/40">SYS.ONLINE</span>
+                   </div>
+                   
+                   <div className="p-5 flex flex-col gap-6 items-center justify-center flex-grow relative z-10">
+                     <div className="grid grid-cols-[repeat(14,minmax(0,1fr))] gap-1.5 w-full max-w-[400px]">
+                       {activityDots.map((dot, i) => {
+                         let dotColor = 'bg-[#111827] border border-white/5';
+                         if (dot.r1 > 0.8) {
+                           dotColor = dot.r2 > 0.5 ? 'bg-[#00E5B0] shadow-[0_0_10px_rgba(0,229,176,0.3)]' : 'bg-[#27C93F] shadow-[0_0_10px_rgba(39,201,63,0.3)]';
+                         } else if (dot.r1 > 0.6) {
+                           dotColor = 'bg-[#00E5B0]/20 border border-[#00E5B0]/10';
+                         }
+                         return (
+                           <div key={i} className={`aspect-square rounded-[2px] ${dotColor} transition-colors duration-500`} />
+                         );
+                       })}
+                     </div>
+                     <div className="w-full text-center mt-auto border-t border-[#00C2FF]/20 pt-4 text-[10px] font-geist-mono text-[#00C2FF]/60 uppercase tracking-[0.2em] flex items-center justify-center gap-2">
+                       <span className="text-[#00C2FF]">❯</span> PRIMARY_INTENSITY_MATRIX
+                     </div>
+                   </div>
+                 </motion.div>
+
+              </div>
+            </div>
+          </div>
+
+          {/* Matrix Progress - Terminal (Now Full Width Col-Span-12) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10 w-full mt-2">
+            <div className="col-span-1 lg:col-span-12">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-[#05070A] border border-white/5 shadow-[0_0_30px_rgba(0,0,0,0.5)] flex flex-col relative w-full"
+              >
+                {/* Structural Frame & Corners */}
+                <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#00C2FF]" />
+                <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#00C2FF]" />
+                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#00C2FF]" />
+                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#00C2FF]" />
+
+                {/* Hardcore Terminal Header */}
+                <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between bg-[#0A0F14]/90 relative z-10 w-full mb-2">
+                  <span className="text-[10px] font-geist-mono text-white/50 font-bold tracking-[0.2em] flex items-center gap-2">
+                    <span className="text-[#00C2FF] animate-pulse">■</span> [ // MATRIX_PROGRESS ]
+                  </span>
+                  <div className="flex items-center gap-4">
+                    <span className="text-[8px] font-geist-mono text-[#00C2FF] animate-pulse hidden sm:inline tracking-wider">[LIVE_TRACING]</span>
+                  </div>
+                </div>
+                
+                <div className="p-5 sm:p-6 flex flex-col gap-6 relative overflow-hidden">
+                   {/* CSS grid scanline overlay for hacker effect */}
+                   <div className="absolute inset-0 bg-[linear-gradient(rgba(0,229,176,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,229,176,0.02)_1px,transparent_1px)] bg-[size:30px_30px] pointer-events-none" />
+                   
+                   <div className="relative z-10 flex flex-col gap-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                     {[
+                       { name: "Array", pct: 85, easy: 24, med: 10, hard: 2, color: "bg-[#00E5B0]" },
+                       { name: "String", pct: 72, easy: 18, med: 8, hard: 1, color: "bg-[#00E5B0]" },
+                       { name: "Hash Table", pct: 65, easy: 15, med: 12, hard: 3, color: "bg-[#00E5B0]" },
+                       { name: "Two Pointers", pct: 45, easy: 4, med: 2, hard: 0, color: "bg-[#00E5B0]" },
+                       { name: "Binary Search", pct: 30, easy: 6, med: 3, hard: 0, color: "bg-[#00E5B0]" },
+                       { name: "Stack", pct: 60, easy: 5, med: 3, hard: 0, color: "bg-[#00E5B0]" },
+                       { name: "Sorting", pct: 55, easy: 8, med: 4, hard: 1, color: "bg-[#00E5B0]" },
+                       { name: "Tree", pct: 40, easy: 10, med: 5, hard: 2, color: "bg-[#00E5B0]" },
+                       { name: "Graph", pct: 15, easy: 2, med: 1, hard: 1, color: "bg-[#00E5B0]" },
+                       { name: "DP", pct: 10, easy: 1, med: 2, hard: 3, color: "bg-[#00E5B0]" }
+                     ].map(cat => (
+                       <div key={cat.name} className="flex flex-col gap-2 bg-[#0A0F14]/40 border border-[#00C2FF]/10 p-3 rounded-none hover:border-[#00C2FF]/30 transition-colors group/row">
+                         <div className="flex justify-between items-center relative">
+                           <div className="flex items-center gap-3">
+                             <span className="text-[12px] font-bold text-white font-geist-mono uppercase tracking-wider">{cat.name}</span>
+                           </div>
+                           <div className="flex items-center gap-3 text-[10px] font-geist-mono relative">
+                             <span className={`font-bold ${cat.color.replace('bg-', 'text-')}`}>{cat.pct}%</span>
+                             
+                             {/* Info Hover Button */}
+                             <div className="relative flex items-center justify-center group/info cursor-help">
+                               <div className="w-4 h-4 rounded-full border border-white/20 flex items-center justify-center text-white/50 text-[10px] font-bold transition-colors group-hover/info:border-[#00E5B0] group-hover/info:text-[#00E5B0] bg-[#0A0F14]">
+                                 i
+                               </div>
+                               
+                               {/* Hacker Tooltip Dropdown */}
+                               <div className="absolute right-0 top-full mt-2 w-36 bg-[#000000] border border-[#00E5B0]/30 rounded-md p-2 shadow-[0_0_15px_rgba(0,229,176,0.1)] opacity-0 pointer-events-none group-hover/info:opacity-100 group-hover/info:pointer-events-auto transition-opacity z-50">
+                                 <div className="flex flex-col gap-1.5 text-[9px] uppercase tracking-widest font-bold">
+                                   <div className="flex justify-between items-center border-b border-white/5 pb-1 mb-1 text-[var(--text-muted)]">
+                                     <span>Stats</span><span>{cat.easy + cat.med + cat.hard} Total</span>
+                                   </div>
+                                   <div className="flex justify-between text-[#00E5B0]">
+                                     <span>Easy</span><span>{cat.easy}</span>
+                                   </div>
+                                   <div className="flex justify-between text-[#FACC15]">
+                                     <span>Medium</span><span>{cat.med}</span>
+                                   </div>
+                                   <div className="flex justify-between text-[#FF5F56]">
+                                     <span>Hard</span><span>{cat.hard}</span>
+                                   </div>
+                                 </div>
+                               </div>
+                             </div>
+                             
+                           </div>
+                         </div>
+                         <div className="h-1.5 w-full bg-[#111827] rounded-full overflow-hidden border border-white/5">
+                           <div className={`h-full ${cat.color} shadow-[0_0_10px_currentColor]`} style={{ width: `${cat.pct}%` }} />
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+
+          {/* Lower Section (Grouped Logs) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative z-10 pt-2">
+            {/* 8. Weakness Insights (Terminal) */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              style={{
-                background: "rgba(20, 20, 25, 0.4)",
-                backdropFilter: "blur(12px)",
-                border: "1px solid rgba(255,255,255,0.05)",
-                borderRadius: 16,
-                padding: "32px",
-                position: "relative",
-                overflow: "hidden"
-              }}
+              transition={{ delay: 0.25 }}
+              className="bg-[#05070A] border border-[#FF5F56]/30 shadow-[0_0_20px_rgba(255,95,86,0.15)] flex flex-col relative h-full w-full"
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: "#a1a1aa", textTransform: "uppercase", letterSpacing: "0.1em" }}>Progress Roadmap</div>
-                <div style={{ fontSize: 11, color: "#00FFFF", background: "rgba(0, 255, 255, 0.1)", padding: "4px 8px", borderRadius: 4, fontFamily: "'JetBrains Mono', monospace" }}>[LIVE PATH]</div>
+              {/* Structural Frame & Corners */}
+              <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#FF5F56]" />
+              <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#FF5F56]" />
+              <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#FF5F56]" />
+              <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#FF5F56]" />
+
+              <div className="px-5 py-3 border-b border-[#FF5F56]/20 flex items-center justify-between bg-[#0A0F14]/90 relative z-10 w-full">
+                <span className="text-[10px] font-geist-mono text-[#FF5F56] font-bold tracking-[0.2em] flex items-center gap-2">
+                  <span className="text-white animate-pulse">■</span> [ // DIAGNOSTICS_LOG ]
+                </span>
+                <span className="text-[8px] font-geist-mono text-[#FF5F56]/40 tracking-wider">[WARNING]</span>
               </div>
-              
-              <div style={{ minHeight: "400px", position: "relative" }}>
-                 <RoadmapView problems={problems} />
+              <div className="p-5 text-[12px] font-geist-mono text-[var(--text-secondary)] leading-[1.8] flex-1">
+                <div className="flex gap-3 mb-3">
+                  <span className="text-[#FF5F56] font-bold mt-0.5">⚠</span>
+                  <span><span className="text-white">Sliding Window</span> accuracy below threshold (32%).</span>
+                </div>
+                <div className="flex gap-3 mb-3">
+                  <span className="text-[#FF5F56] font-bold mt-0.5">⚠</span>
+                  <span><span className="text-white">Dynamic Programming</span> O(N^2) detected instead of optimal O(N).</span>
+                </div>
+                <div className="flex gap-3 mt-4 pt-4 border-t border-white/5 text-[11px]">
+                  <span className="text-[#00E5B0] font-bold">❯</span>
+                  <span>{weaknessText}</span>
+                </div>
               </div>
             </motion.div>
 
-            {/* Resume Card (Neon-Noir "Continue where you left off") aria-label */}
+            {/* Recent Activity / System Feed - Terminal */}
             <motion.div 
-               initial={{ opacity: 0, y: 20 }}
-               animate={{ opacity: 1, y: 0 }}
-               transition={{ delay: 0.2 }}
-               style={{ 
-                 background: "rgba(57, 255, 20, 0.05)", 
-                 border: "1px solid rgba(57, 255, 20, 0.3)",
-                 boxShadow: "0 0 40px rgba(57, 255, 20, 0.05), inset 0 0 20px rgba(57, 255, 20, 0.02)",
-                 backdropFilter: "blur(12px)",
-                 borderRadius: 16, 
-                 padding: "40px", 
-                 position: "relative",
-                 overflow: "hidden"
-               }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-[#05070A] border border-[#00E5B0]/30 shadow-[0_0_20px_rgba(0,229,176,0.15)] flex flex-col relative h-full w-full"
             >
-               {/* Decorative structural line */}
-               <div style={{ position: "absolute", top: 0, left: 0, width: "4px", height: "100%", background: "#39FF14", boxShadow: "0 0 15px #39FF14" }} />
-               
-               <div style={{ position: "absolute", top: 20, right: 24, fontSize: 11, fontWeight: 800, color: "#39FF14", fontFamily: "'JetBrains Mono', monospace", opacity: 0.7, letterSpacing: "0.1em" }}>[PRIORITY TARGET]</div>
-               <h2 style={{ fontSize: 36, fontWeight: 900, color: "#fff", textTransform: "uppercase", letterSpacing: "-0.03em", margin: "0 0 16px 0", textShadow: "0 2px 10px rgba(255,255,255,0.1)" }}>
-                 Two Sum
-               </h2>
-               <p style={{ fontSize: 15, fontWeight: 500, color: "#a1a1aa", lineHeight: 1.6, margin: "0 0 32px 0", maxWidth: "85%" }}>
-                 You abandoned this sequence 4 hours ago. Re-engage the target array and find the indices that sum to the target to restore synchronization.
-               </p>
-               
-               <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                 <Link href="/problems/two-sum" style={{ display: "inline-flex", alignItems: "center", gap: 12, background: "#39FF14", color: "#050505", padding: "14px 28px", borderRadius: 8, textDecoration: "none", fontSize: 13, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", transition: "transform 0.2s, box-shadow 0.2s" }}
-                       onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 10px 25px rgba(57, 255, 20, 0.4)"; }}
-                       onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
-                   RE-ENGAGE TARGET
-                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
-                 </Link>
-                 <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", color: "#39FF14", border: "1px solid rgba(57, 255, 20, 0.3)", background: "rgba(57, 255, 20, 0.05)", padding: "6px 12px", borderRadius: 6 }}>EASY</span>
-                 <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", color: "#00FFFF", border: "1px solid rgba(0, 255, 255, 0.3)", background: "rgba(0, 255, 255, 0.05)", padding: "6px 12px", borderRadius: 6 }}>ARRAYS</span>
-               </div>
+              {/* Structural Frame & Corners */}
+              <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#00E5B0]" />
+              <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#00E5B0]" />
+              <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#00E5B0]" />
+              <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#00E5B0]" />
+
+              <div className="px-5 py-3 border-b border-[#00E5B0]/20 flex items-center justify-between bg-[#0A0F14]/90 relative z-10 w-full">
+                <span className="text-[10px] font-geist-mono text-[#00E5B0] font-bold tracking-[0.2em] flex items-center gap-2">
+                  <span className="text-white animate-pulse">■</span> [ // SYSTEM_FEED_TAIL ]
+                </span>
+              </div>
+              <div className="p-5 text-[var(--text-secondary)] text-[12px] font-geist-mono leading-[2] flex-1">
+                 <div className="flex gap-3 mb-2"><span className="text-[#27C93F] font-bold">❯</span> <span className="text-white opacity-90">Loading modules...</span></div>
+                 <div className="flex gap-3 mb-2"><span className="text-[#FB923C] font-bold">❯</span> <span className="text-white opacity-90">WARN: Compilations delayed.</span></div>
+                 <div className="flex gap-3 mb-2"><span className="text-[#00E5B0] font-bold">❯</span> <span>{systemLogText}</span></div>
+                 <div className="flex gap-3"><span className="text-[#00C2FF] font-bold">❯</span> <span className="inline-block w-[8px] h-[15px] bg-[#00C2FF] mt-[5px] animate-[blink_1s_step-end_infinite]" /></div>
+              </div>
             </motion.div>
-
-          </div>
-
-          {/* Secondary Column */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-
-             {/* Navigation Actions */}
-             <motion.div 
-               initial={{ opacity: 0, x: 20 }}
-               animate={{ opacity: 1, x: 0 }}
-               transition={{ delay: 0.3 }}
-               style={{ 
-                 background: "rgba(20, 20, 25, 0.6)", 
-                 backdropFilter: "blur(12px)", 
-                 border: "1px solid rgba(255,255,255,0.05)",
-                 borderTop: "1px solid rgba(138,43,226,0.3)",
-                 borderRadius: 16,
-                 padding: 32,
-                 boxShadow: "0 4px 30px rgba(0,0,0,0.5)"
-               }}
-             >
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, paddingBottom: 16, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                  <div style={{ width: 8, height: 8, background: "#8A2BE2", borderRadius: "50%", boxShadow: "0 0 10px #8A2BE2" }} />
-                  <h3 style={{ fontSize: 13, fontWeight: 800, color: "#a1a1aa", textTransform: "uppercase", letterSpacing: "0.1em", margin: 0 }}>
-                    Operations
-                  </h3>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                   <Link href="/problems" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(0,0,0,0.3)", padding: "16px", borderRadius: 8, textDecoration: "none", color: "#fff", border: "1px solid rgba(255,255,255,0.05)", transition: "all 0.2s" }}
-                         onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#8A2BE2"; e.currentTarget.style.background = "rgba(138,43,226,0.1)"; e.currentTarget.style.boxShadow = "0 0 15px rgba(138,43,226,0.2)"; }}
-                         onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)"; e.currentTarget.style.background = "rgba(0,0,0,0.3)"; e.currentTarget.style.boxShadow = "none"; }}>
-                     <span style={{ fontWeight: 700, fontSize: 14 }}>Explore Problem Matrix</span>
-                     <span style={{ color: "#8A2BE2", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: "0.05em" }}>[ENTER]</span>
-                   </Link>
-                   <Link href="/leaderboard" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(0,0,0,0.3)", padding: "16px", borderRadius: 8, textDecoration: "none", color: "#fff", border: "1px solid rgba(255,255,255,0.05)", transition: "all 0.2s" }}
-                         onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#00FFFF"; e.currentTarget.style.background = "rgba(0,255,255,0.1)"; e.currentTarget.style.boxShadow = "0 0 15px rgba(0,255,255,0.2)"; }}
-                         onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)"; e.currentTarget.style.background = "rgba(0,0,0,0.3)"; e.currentTarget.style.boxShadow = "none"; }}>
-                     <span style={{ fontWeight: 700, fontSize: 14 }}>Global Hierarchy</span>
-                     <span style={{ color: "#00FFFF", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: "0.05em" }}>[VIEW]</span>
-                   </Link>
-                </div>
-             </motion.div>
-
-             {/* Recent Activity */}
-             <motion.div 
-               initial={{ opacity: 0, x: 20 }}
-               animate={{ opacity: 1, x: 0 }}
-               transition={{ delay: 0.4 }}
-               style={{ 
-                 background: "rgba(20, 20, 25, 0.4)", 
-                 backdropFilter: "blur(12px)", 
-                 border: "1px dashed rgba(255,255,255,0.1)",
-                 borderRadius: 16,
-                 padding: 32 
-               }}
-             >
-               <h3 style={{ fontSize: 12, fontWeight: 800, color: "#71717a", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
-                 <div style={{ width: 6, height: 6, background: "#71717a", borderRadius: "50%" }} />
-                 System Feed
-               </h3>
-               <div style={{ color: "#a1a1aa", fontSize: 13, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.8 }}>
-                  <span style={{ color: "#8A2BE2" }}>&gt;</span> Loading neuro-metrics...<br/>
-                  <span style={{ color: "#ef4444" }}>&gt;</span> No recent successful compilations found.<br/>
-                  <span style={{ color: "#39FF14" }}>&gt;</span> Recommendation: Engage targets immediately.
-               </div>
-             </motion.div>
-
           </div>
 
         </div>

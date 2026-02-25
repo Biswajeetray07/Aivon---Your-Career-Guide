@@ -1,222 +1,378 @@
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
 @import "tailwindcss";
-@source "../components";
+
+/* ===============================
+   🎨 THEME TOKENS (OKLCH)
+   =============================== */
 
 :root {
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #111118;
-  --bg-card: #16161f;
-  --bg-hover: #1e1e2e;
+  --background: oklch(0.06 0.015 260);
+  --foreground: oklch(0.96 0 0);
+
+  --primary: oklch(0.72 0.2 170);
+  --primary-foreground: oklch(0.12 0 0);
+
+  --secondary: oklch(0.16 0.015 260);
+  --muted: oklch(0.16 0.015 260);
+
+  --border: oklch(0.2 0.015 260);
+  --card: oklch(0.08 0.02 260);
+
+  --glow-color: oklch(0.72 0.2 170 / 0.12);
+
+  /* Restored missing legacy variables for component compatibility */
   --accent-cyan: #00e5ff;
   --accent-cyan-light: #00b8d4;
   --accent-blue: #3b82f6;
-  --accent-glow: rgba(0, 229, 255, 0.3);
   --text-primary: #f1f0ff;
   --text-secondary: #8b8ca7;
   --text-muted: #4a4a6a;
-  --border: rgba(255, 255, 255, 0.06);
   --green: #22c55e;
   --yellow: #eab308;
   --red: #ef4444;
 
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-smooth: 250ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --bg-primary: var(--background);
+  --bg-secondary: var(--secondary);
+  --bg-card: var(--card);
+  --bg-hover: #1e1e2e;
 }
 
+/* Tailwind v4 theme bridge */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-border: var(--border);
+  --color-card: var(--card);
+  --color-accent-cyan: var(--accent-cyan);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --font-space-grotesk: var(--font-space-grotesk), "Space Grotesk", sans-serif;
+  --font-vt323: var(--font-vt323), monospace;
+}
+
+/* ===============================
+   🌐 BASE
+   =============================== */
+
 * {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+  border-color: var(--border);
 }
 
 html,
 body {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-family: "Space Grotesk", sans-serif;
-  min-height: 100vh;
-  line-height: 1.6;
+  background: var(--background);
+  color: var(--foreground);
+  font-feature-settings:
+    "rlig" 1,
+    "calt" 1;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+/* smoother rendering */
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--accent-cyan);
-  border-radius: 3px;
-  min-height: 48px;
+/* ===============================
+   🧊 GLASSMORPHISM
+   =============================== */
+
+.glass {
+  background: oklch(from var(--card) l c h / 0.6);
+  backdrop-filter: blur(12px) saturate(1.5);
+  -webkit-backdrop-filter: blur(12px) saturate(1.5);
+  border: 1px solid oklch(from var(--border) l c h / 0.5);
 }
 
-/* Cards */
-.card {
-  background: var(--bg-card); /* aria-label */
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  backdrop-filter: blur(10px);
-}
-
-/* Badges */
-.badge-easy {
-  background: rgba(34, 197, 94, 0.15);
-  color: var(--green);
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  padding: 2px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-}
-.badge-medium {
-  background: rgba(234, 179, 8, 0.15);
-  color: var(--yellow);
-  border: 1px solid rgba(234, 179, 8, 0.3);
-  padding: 2px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-}
-.badge-hard {
-  background: rgba(239, 68, 68, 0.15);
-  color: var(--red);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  padding: 2px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.btn-primary {
-  background: linear-gradient(
-    135deg,
-    var(--accent-cyan),
-    var(--accent-cyan-light)
-  );
-  color: white;
-  border: none;
-  padding: 10px 24px;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
+.hover-lift {
   transition:
-    transform var(--transition-fast),
-    box-shadow var(--transition-fast);
-  box-shadow: 0 4px 14px var(--accent-glow);
-}
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px var(--accent-glow);
-}
-.btn-primary:active {
-  transform: translateY(0) scale(0.98);
-  box-shadow: 0 2px 8px var(--accent-glow);
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.25s ease;
+  will-change: transform;
 }
 
-.btn-secondary {
-  background: transparent;
-  color: var(--text-primary);
-  border: 1px solid var(--border);
-  padding: 10px 24px;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-.btn-secondary:hover {
-  border-color: var(--accent-cyan);
-  color: var(--accent-cyan-light);
-  background: rgba(124, 58, 237, 0.05);
-}
-.btn-secondary:active {
-  transform: scale(0.98);
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 10px 30px -10px var(--glow-color),
+    0 0 0 1px oklch(from var(--border) l c h / 0.6);
 }
 
-/* Sidebar layout */
-.layout {
-  display: flex;
-  height: 100vh;
+/* ===============================
+   🌈 TEXT GRADIENT
+   =============================== */
+
+.text-gradient {
+  background: linear-gradient(90deg, oklch(0.72 0.2 170), oklch(0.75 0.18 210));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ===============================
+   📺 SCANLINES OVERLAY
+   =============================== */
+
+.scanlines::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 2px,
+    oklch(0 0 0 / 0.015) 3px
+  );
+}
+
+/* ===============================
+   ⌨️ TYPING CURSOR
+   =============================== */
+
+.typing-cursor::after {
+  content: "▋";
+  margin-left: 4px;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ===============================
+   ✨ GLITCH EFFECT
+   =============================== */
+
+.glitch {
+  position: relative;
+  display: inline-block;
+}
+
+.glitch:hover {
+  animation: glitch 350ms steps(2, end);
+}
+
+@keyframes glitch {
+  0% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(-2px, 2px);
+  }
+  40% {
+    transform: translate(2px, -2px);
+  }
+  60% {
+    transform: translate(-1px, 1px);
+  }
+  80% {
+    transform: translate(1px, -1px);
+  }
+  100% {
+    transform: translate(0);
+  }
+}
+
+/* ===============================
+   🎬 FADE + SCALE ANIMATIONS
+   =============================== */
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-slow {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes glitch {
+  0% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(-2px, 2px);
+  }
+  40% {
+    transform: translate(-2px, -2px);
+  }
+  60% {
+    transform: translate(2px, 2px);
+  }
+  80% {
+    transform: translate(2px, -2px);
+  }
+  100% {
+    transform: translate(0);
+  }
+}
+
+@keyframes scan {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.animate-fade-in-down {
+  animation: fade-in-down 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* ===============================
+   ⏱️ STAGGER UTILITIES
+   =============================== */
+
+.stagger-1 {
+  animation-delay: 0.1s;
+}
+.stagger-2 {
+  animation-delay: 0.2s;
+}
+.stagger-3 {
+  animation-delay: 0.3s;
+}
+.stagger-4 {
+  animation-delay: 0.4s;
+}
+.stagger-5 {
+  animation-delay: 0.5s;
+}
+.stagger-6 {
+  animation-delay: 0.6s;
+}
+.stagger-7 {
+  animation-delay: 0.7s;
+}
+.stagger-8 {
+  animation-delay: 0.8s;
+}
+
+/* ===============================
+   🌊 FLOAT ANIMATION
+   =============================== */
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* ===============================
+   ✨ SHIMMER (Workbench bars)
+   =============================== */
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  position: relative;
   overflow: hidden;
 }
 
-.sidebar {
-  width: 240px;
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  padding: 24px 16px;
+.animate-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    oklch(1 0 0 / 0.25),
+    transparent
+  );
+  animation: shimmer 2s infinite;
+}
+
+/* ===============================
+   💡 CURSOR GLOW BASE
+   =============================== */
+
+.cursor-glow {
+  pointer-events: none;
   position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  z-index: 100;
+  border-radius: 9999px;
+  mix-blend-mode: screen;
+  background: radial-gradient(circle, var(--glow-color) 0%, transparent 70%);
+  filter: blur(40px);
+  z-index: 0;
 }
 
-.sidebar .logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 40px;
-  padding: 0 8px;
-}
+/* ===============================
+   📱 REDUCE MOTION
+   =============================== */
 
-.sidebar .logo-icon {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  color: var(--text-secondary);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition:
-    background var(--transition-smooth),
-    color var(--transition-fast),
-    transform var(--transition-fast);
-  margin-bottom: 4px;
-}
-.nav-item:hover {
-  background: rgba(124, 58, 237, 0.08);
-  color: var(--text-primary);
-}
-.nav-item:active {
-  transform: scale(0.98);
-}
-.nav-item.active {
-  background: rgba(124, 58, 237, 0.15);
-  color: var(--accent-cyan-light);
-}
-
-.main {
-  flex: 1;
-  padding: 32px;
-  overflow-y: auto;
-  height: 100%;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }

@@ -35,11 +35,11 @@ export default function RoadmapView({ problems }: { problems: Problem[] }) {
           return (
             <path
               key={`line-${i}`}
-              d={`M ${x1} ${y1} C 50% ${y1}, 50% ${y2}, ${x2} ${y2}`}
+              d={`M ${x1} ${y1} L 50% ${y1} L 50% ${y2} L ${x2} ${y2}`}
               stroke="url(#glowG)"
-              strokeWidth="3"
+              strokeWidth="2"
               fill="none"
-              style={{ filter: "drop-shadow(0 0 8px rgba(0, 255, 255, 0.4))" }}
+              style={{ filter: "drop-shadow(0 0 6px rgba(0, 194, 255, 0.5))" }}
             />
           );
         })}
@@ -60,23 +60,26 @@ export default function RoadmapView({ problems }: { problems: Problem[] }) {
             <Link href={`/problems/${problem.slug}`} style={{ textDecoration: "none" }}>
               <div style={{
                 position: "relative",
-                width: 48, height: 48,
-                background: "rgba(10,10,10,0.8)",
-                border: "2px solid",
-                borderColor: problem.difficulty === "EASY" ? "var(--green)" : problem.difficulty === "MEDIUM" ? "var(--yellow)" : "var(--red)",
-                borderRadius: "50%",
+                width: 44, height: 44,
+                background: "#0A0F14",
+                border: "1px solid",
+                borderColor: problem.difficulty === "EASY" ? "#00E5B0" : problem.difficulty === "MEDIUM" ? "#FACC15" : "#FF5F56",
+                borderRadius: 4,
                 display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: `0 0 20px ${problem.difficulty === "EASY" ? "rgba(16,185,129,0.3)" : problem.difficulty === "MEDIUM" ? "rgba(234,179,8,0.3)" : "rgba(239,68,68,0.3)"}`,
-                transition: "transform 0.2s, box-shadow 0.2s",
-                cursor: "pointer"
+                boxShadow: `0 0 15px ${problem.difficulty === "EASY" ? "rgba(0,229,176,0.3)" : problem.difficulty === "MEDIUM" ? "rgba(250,204,21,0.3)" : "rgba(255,95,86,0.3)"}`,
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                cursor: "pointer",
+                fontFamily: "var(--font-geist-mono)"
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "scale(1.15)";
-                e.currentTarget.style.boxShadow = `0 0 30px ${problem.difficulty === "EASY" ? "rgba(16,185,129,0.5)" : problem.difficulty === "MEDIUM" ? "rgba(234,179,8,0.5)" : "rgba(239,68,68,0.5)"}`;
+                e.currentTarget.style.transform = "scale(1.1) translateY(-2px)";
+                e.currentTarget.style.boxShadow = `0 0 25px ${problem.difficulty === "EASY" ? "rgba(0,229,176,0.5)" : problem.difficulty === "MEDIUM" ? "rgba(250,204,21,0.5)" : "rgba(255,95,86,0.5)"}`;
+                e.currentTarget.style.background = problem.difficulty === "EASY" ? "rgba(0,229,176,0.1)" : problem.difficulty === "MEDIUM" ? "rgba(250,204,21,0.1)" : "rgba(255,95,86,0.1)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "scale(1)";
-                e.currentTarget.style.boxShadow = `0 0 20px ${problem.difficulty === "EASY" ? "rgba(16,185,129,0.3)" : problem.difficulty === "MEDIUM" ? "rgba(234,179,8,0.3)" : "rgba(239,68,68,0.3)"}`;
+                e.currentTarget.style.boxShadow = `0 0 15px ${problem.difficulty === "EASY" ? "rgba(0,229,176,0.3)" : problem.difficulty === "MEDIUM" ? "rgba(250,204,21,0.3)" : "rgba(255,95,86,0.3)"}`;
+                e.currentTarget.style.background = "#0A0F14";
               }}>
                 <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{i + 1}</span>
                 
@@ -86,19 +89,20 @@ export default function RoadmapView({ problems }: { problems: Problem[] }) {
                   top: "50%",
                   [isLeft ? "left" : "right"]: 60,
                   transform: "translateY(-50%)",
-                  background: "rgba(20,20,25,0.9)",
+                  background: "rgba(5,7,10,0.9)",
                   border: "1px solid rgba(255,255,255,0.1)",
-                  padding: "8px 16px",
-                  borderRadius: 8,
+                  padding: "10px 14px",
+                  borderRadius: 4,
                   whiteSpace: "nowrap",
                   textAlign: isLeft ? "left" : "right",
-                  backdropFilter: "blur(10px)"
+                  backdropFilter: "blur(10px)",
+                  fontFamily: "var(--font-geist-mono)"
                 }}>
-                  <div style={{ color: "#fff", fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
+                  <div style={{ color: "#fff", fontSize: 13, fontWeight: 700, marginBottom: 4, letterSpacing: "0.05em" }}>
                     {problem.title}
                   </div>
-                  <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11 }}>
-                    {problem.tags?.slice(0, 2).join(" • ") || "Algorithm"}
+                  <div style={{ color: problem.difficulty === "EASY" ? "#00E5B0" : problem.difficulty === "MEDIUM" ? "#FACC15" : "#FF5F56", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                    {problem.difficulty} <span style={{ color: "rgba(255,255,255,0.3)", margin: "0 4px" }}>|</span> {problem.tags?.slice(0, 2).join(" • ") || "Algo"}
                   </div>
                 </div>
               </div>

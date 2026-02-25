@@ -77,10 +77,11 @@ export interface Problem {
   testCases: Array<{ id: string; input: string; expected: string; order: number }>;
 }
 
-export const listProblems = (params?: { difficulty?: string; tags?: string; page?: number; limit?: number }) => {
+export const listProblems = (params?: { difficulty?: string; tags?: string; search?: string; page?: number; limit?: number }) => {
   const qs = new URLSearchParams();
   if (params?.difficulty) qs.set("difficulty", params.difficulty);
   if (params?.tags) qs.set("tags", params.tags);
+  if (params?.search) qs.set("search", params.search);
   if (params?.page) qs.set("page", String(params.page));
   if (params?.limit) qs.set("limit", String(params.limit));
   return apiGet<{ problems: Problem[]; total: number; page: number; limit: number }>(`/api/problems?${qs}`);

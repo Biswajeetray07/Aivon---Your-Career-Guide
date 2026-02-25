@@ -29,7 +29,7 @@ export default function RegisterPage() {
       if (res?.error) {
         setError("Session initialization failed");
       } else {
-        router.push("/dashboard");
+        router.push("/onboarding");
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Registration failed");

@@ -1,8 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/Sidebar";
 import { getMyStats, getSession, getMySubmissions, type SubmissionHistoryItem } from "@/lib/api";
+import { GlassCard } from "@/components/ui/glass-card";
+import { Lock, ShieldAlert, Cpu } from "lucide-react";
 
 /* ─── SVG Donut for Verdict Distribution ─── */
 function VerdictDonut({ data }: { data: { label: string; count: number; color: string }[] }) {
@@ -23,31 +25,48 @@ function VerdictDonut({ data }: { data: { label: string; count: number; color: s
   }, { slices: [] as Array<typeof data[0] & { dash: number, gap: number, rotate: number }>, currentOffset: 0 });
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 24, flexWrap: "wrap" }}>
-      <svg width={120} height={120} viewBox="0 0 120 120">
-        {slices.map((s, i) => (
-          <circle key={i}
-            cx={CX} cy={CY} r={R} fill="none"
-            stroke={s.color} strokeWidth="16"
-            strokeDasharray={`${s.dash} ${s.gap}`}
-            strokeLinecap="butt"
-            transform={`rotate(${s.rotate - 90} ${CX} ${CY})`}
-          />
-        ))}
-        <text x={CX} y={CY - 4} textAnchor="middle" fill="#f1f0ff" fontSize="18" fontWeight="800" fontFamily="Space Grotesk, sans-serif">
-          {total}
-        </text>
-        <text x={CX} y={CY + 14} textAnchor="middle" fill="#6b7280" fontSize="9" fontFamily="Space Grotesk, sans-serif" textLength="40">
-          TOTAL
-        </text>
-      </svg>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <div className="flex items-center gap-6 flex-wrap font-mono">
+      <div className="relative group">
+        {/* Sweeping Radar Background */}
+        <div className="absolute inset-0 rounded-full [background:conic-gradient(from_0deg,transparent_0deg,rgba(0,229,176,0.2)_90deg,transparent_90deg)] animate-[spin_4s_linear_infinite] mix-blend-screen pointer-events-none" />
+        
+        <svg width={120} height={120} viewBox="0 0 120 120" className="drop-shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+          {/* Hardware Grid Rings */}
+          <circle cx={CX} cy={CY} r={R + 10} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1" strokeDasharray="2 4" />
+          <circle cx={CX} cy={CY} r={R - 10} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+          
+          <g className="scale-y-[-1] translate-y-[-120px] origin-center rotate-[-90deg]">
+            {slices.map((s, i) => (
+              <circle key={i}
+                cx={CX} cy={CY} r={R} fill="none"
+                stroke={s.color} strokeWidth="12"
+                strokeDasharray={`${s.dash} ${s.gap}`}
+                strokeLinecap="butt"
+                transform={`rotate(${-s.rotate} ${CX} ${CY})`}
+                className="transition-all duration-1000 ease-out origin-center hover:stroke-[16px] cursor-crosshair"
+              />
+            ))}
+          </g>
+
+          {/* Digital Readout Center */}
+          <text x={CX} y={CY + 2} textAnchor="middle" fill="#00E5B0" fontSize="22" fontWeight="800" fontFamily="inherit" className="drop-shadow-[0_0_8px_#00E5B0]">
+            {total}
+          </text>
+          <text x={CX + 20} y={CY + 5} fill="#00E5B0" fontSize="16" className="animate-pulse">_</text>
+          <text x={CX} y={CY + 18} textAnchor="middle" fill="white" fontSize="8" fontFamily="inherit" letterSpacing="0.2em" opacity="0.5">
+            TOTAL_OP
+          </text>
+        </svg>
+      </div>
+
+      <div className="flex flex-col gap-2">
         {data.filter(d => d.count > 0).map((d) => (
-          <div key={d.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 10, height: 10, borderRadius: 2, background: d.color, flexShrink: 0 }} />
-            <span style={{ fontSize: 13, color: "#8b8ca7", flex: 1 }}>{d.label}</span>
-            <span style={{ fontSize: 14, fontWeight: 700, color: d.color }}>{d.count}</span>
-            <span style={{ fontSize: 11, color: "#4a4a6a", minWidth: 32 }}>
+          <div key={d.label} className="flex items-center gap-3 text-[10px] group hover:bg-white/5 px-2 py-1 transition-colors">
+            <span className="text-[#00C2FF] opacity-30 group-hover:opacity-100 group-hover:animate-pulse">]</span>
+            <div className="w-1.5 h-1.5 rounded-sm shadow-[0_0_5px_currentColor]" style={{ background: d.color, color: d.color }} />
+            <span className="text-white/60 flex-1 uppercase tracking-widest font-geist-mono transition-colors group-hover:text-white">{d.label}</span>
+            <span className="font-bold text-xs" style={{ color: d.color }}>{d.count}</span>
+            <span className="text-white/30 min-w-[32px] text-right">
               {Math.round((d.count / total) * 100)}%
             </span>
           </div>
@@ -60,8 +79,8 @@ function VerdictDonut({ data }: { data: { label: string; count: number; color: s
 /* ─── Runtime Trend Line Chart ─── */
 function RuntimeTrend({ points }: { points: { runtime: number; label: string }[] }) {
   if (points.length < 2) return (
-    <div style={{ color: "#4a4a6a", fontSize: 13, textAlign: "center", padding: 20 }}>
-      Submit more accepted solutions to see runtime trends.
+    <div className="text-[#FF5500]/50 text-xs text-center p-6 font-geist-mono uppercase tracking-widest border border-dashed border-[#FF5500]/20 bg-[#0A0F14]/30">
+      <span className="animate-pulse">_</span> Insufficient telemetry. Execute more operative missions.
     </div>
   );
 
@@ -77,35 +96,50 @@ function RuntimeTrend({ points }: { points: { runtime: number; label: string }[]
   const pathD = coords.map((c, i) => `${i === 0 ? "M" : "L"} ${c.x} ${c.y}`).join(" ");
 
   return (
-    <div>
-      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
-        {/* Area fill */}
+    <div className="font-geist-mono w-full relative group">
+      {/* Sweeping Scanner Line */}
+      <div className="absolute top-0 bottom-0 w-[2px] bg-white shadow-[0_0_10px_white] opacity-50 block transform transition-all pointer-events-none z-20 animate-[scan_4s_linear_infinite]" style={{ left: '0%' }} />
+
+      <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="overflow-visible drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+        {/* Oscilloscope Grid */}
         <defs>
+          <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+            <path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="0.5" />
+          </pattern>
           <linearGradient id="rtGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#00E5FF" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="#00E5FF" stopOpacity="0.02" />
+            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.0" />
           </linearGradient>
         </defs>
-        <path d={`${pathD} L ${coords.at(-1)!.x} ${H} L ${coords[0].x} ${H} Z`} fill="url(#rtGrad)" />
-        <path d={pathD} fill="none" stroke="#00B8D4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <rect width={W} height={H} fill="url(#grid)" />
+
+        {/* Data Path */}
+        <path d={`${pathD} L ${coords.at(-1)!.x} ${H} L ${coords[0].x} ${H} Z`} fill="url(#rtGrad)" className="animate-fade-in-up" />
+        <path d={pathD} fill="none" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="square" strokeLinejoin="miter" />
+        
+        {/* Hardware Crosshairs */}
         {coords.map((c, i) => (
-          <circle key={i} cx={c.x} cy={c.y} r="4" fill="#00B8D4" stroke="#0a0a0f" strokeWidth="2">
-            <title>{points[i].label}: {points[i].runtime}ms</title>
-          </circle>
+          <g key={i} className="hover:scale-150 transition-transform origin-center cursor-crosshair group/point">
+            <path d={`M ${c.x - 3} ${c.y} L ${c.x + 3} ${c.y} M ${c.x} ${c.y - 3} L ${c.x} ${c.y + 3}`} stroke="#FFFFFF" strokeWidth="1" />
+            <circle cx={c.x} cy={c.y} r="1.5" fill="#FFFFFF" className="group-hover/point:fill-[#00E5B0]" />
+            <text x={c.x} y={c.y - 8} fontSize="5" fill="#FFFFFF" textAnchor="middle" className="opacity-0 group-hover/point:opacity-100 transition-opacity drop-shadow-md">
+              {points[i].runtime}ms
+            </text>
+          </g>
         ))}
       </svg>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#4a4a6a", marginTop: 4 }}>
-        {points.map((p, i) => <span key={i}>{p.label}</span>)}
+      <div className="flex justify-between text-[8px] text-white/40 mt-3 uppercase tracking-[0.2em]">
+        {points.map((p, i) => <span key={i} className="relative before:absolute before:-top-3 before:left-1/2 before:-translate-x-1/2 before:h-2 before:w-[1px] before:bg-white/10">{p.label}</span>)}
       </div>
     </div>
   );
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  ACCEPTED: "#22c55e", WRONG_ANSWER: "#ef4444", WRONG_ANSWER_ON_HIDDEN_TEST: "#f43f5e",
-  TIME_LIMIT_EXCEEDED: "#eab308", RUNTIME_ERROR: "#f97316",
-  COMPILATION_ERROR: "#ef4444", INTERNAL_ERROR: "#6b7280",
-  MEMORY_LIMIT_EXCEEDED: "#eab308",
+  ACCEPTED: "var(--accent-green)", WRONG_ANSWER: "var(--accent-red)", WRONG_ANSWER_ON_HIDDEN_TEST: "#f43f5e",
+  TIME_LIMIT_EXCEEDED: "var(--accent-yellow)", RUNTIME_ERROR: "#f97316",
+  COMPILATION_ERROR: "var(--accent-red)", INTERNAL_ERROR: "#6b7280",
+  MEMORY_LIMIT_EXCEEDED: "var(--accent-yellow)",
 };
 
 const formatStatus = (s: string) => {
@@ -125,10 +159,13 @@ export default function ProfilePage() {
   } | null>(null);
   const [user, setUser] = useState<{ name: string | null; email: string; rating: number; createdAt: string } | null>(null);
   const [submissions, setSubmissions] = useState<SubmissionHistoryItem[]>([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const router = useRouter();
 
   useEffect(() => {
+    setMounted(true);
     Promise.all([getMyStats(), getSession()])
       .then(([s, sess]) => { 
         if (!sess || !sess.user) {
@@ -147,6 +184,17 @@ export default function ProfilePage() {
       .catch(() => {}); // graceful
   }, [router]);
 
+  useEffect(() => {
+    if (isHistoryOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    }
+  }, [isHistoryOpen]);
+
 
 
   // Compute verdict distribution from recent submissions
@@ -156,12 +204,12 @@ export default function ProfilePage() {
   }, {});
 
   const verdictData = [
-    { label: "Accepted",    count: verdictGroups["ACCEPTED"] ?? 0,              color: "#22c55e" },
-    { label: "Wrong Answer",count: verdictGroups["WRONG_ANSWER"] ?? 0,          color: "#ef4444" },
+    { label: "Accepted",    count: verdictGroups["ACCEPTED"] ?? 0,              color: "var(--accent-green)" },
+    { label: "Wrong Answer",count: verdictGroups["WRONG_ANSWER"] ?? 0,          color: "var(--accent-red)" },
     { label: "Hidden Test Failed",count: verdictGroups["WRONG_ANSWER_ON_HIDDEN_TEST"] ?? 0, color: "#f43f5e" },
-    { label: "TLE",         count: verdictGroups["TIME_LIMIT_EXCEEDED"] ?? 0,   color: "#eab308" },
+    { label: "TLE",         count: verdictGroups["TIME_LIMIT_EXCEEDED"] ?? 0,   color: "var(--accent-yellow)" },
     { label: "Runtime Err", count: verdictGroups["RUNTIME_ERROR"] ?? 0,         color: "#f97316" },
-    { label: "Compile Err", count: verdictGroups["COMPILATION_ERROR"] ?? 0,     color: "#00B8D4" },
+    { label: "Compile Err", count: verdictGroups["COMPILATION_ERROR"] ?? 0,     color: "var(--accent-cyan)" },
   ];
 
   // Runtime trend from last accepted submissions with runtimes
@@ -188,212 +236,589 @@ export default function ProfilePage() {
   const topLang = Object.entries(langGroups).sort((a, b) => b[1] - a[1])[0];
 
   return (
-    <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "#050505", color: "#fff", position: "relative" }}>
-      {/* Interactive Cyber Background */}
-      <div style={{
-        position: "fixed",
-        inset: 0,
-        background: "radial-gradient(circle at 60% 10%, rgba(0,255,255,0.08), transparent 50%), radial-gradient(circle at 10% 80%, rgba(138,43,226,0.1), transparent 50%)",
-        pointerEvents: "none",
-        zIndex: 0,
-      }} />
-      <div style={{
-        position: "fixed",
-        inset: 0,
-        backgroundImage: "linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)",
-        backgroundSize: "48px 48px",
-        pointerEvents: "none",
-        zIndex: 0,
-      }} />
-      
-      <Sidebar />
-      <main style={{ flex: 1, overflowY: "auto", position: "relative", zIndex: 10, padding: "5vh 6vw", fontFamily: "'Space Grotesk', 'Inter', sans-serif" }}>
+    <div className="min-h-screen pt-28 pb-20 container mx-auto px-6 md:px-12 font-space-grotesk">
 
-        {/* ── User Header ── */}
-        {user && (
-          <div style={{ 
-            display: "flex", alignItems: "center", gap: 24, marginBottom: 40,
-            background: "rgba(20, 20, 25, 0.4)", backdropFilter: "blur(12px)",
-            border: "1px solid rgba(255,255,255,0.05)", borderRadius: 24, padding: "32px",
-            boxShadow: "0 10px 40px rgba(0,0,0,0.5)"
-          }}>
-            <div style={{ 
-              width: 80, height: 80, borderRadius: "50%", 
-              background: "linear-gradient(135deg, #8A2BE2, #00FFFF)", 
-              display: "flex", alignItems: "center", justifyContent: "center", 
-              fontSize: 32, fontWeight: 900, color: "#050505",
-              boxShadow: "0 0 20px rgba(138,43,226,0.3)"
-            }}>
-              {(user.name || user.email)[0].toUpperCase()}
+      {/* ── User Header (Operative Dossier) ── */}
+      {user && (
+        <div className="bg-[#05070A] border border-[#00E5B0]/30 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(0,229,176,0.1)] mb-12 relative flex flex-col stagger-1 animate-fade-in-up">
+          {/* Top Tech Bar */}
+          <div className="px-5 py-3 border-b border-[#00E5B0]/20 flex items-center justify-between bg-[#0A0F14] relative z-10 w-full">
+            <div className="flex items-center gap-3">
+              <div className="w-2.5 h-2.5 rounded-sm bg-[#00E5B0] animate-pulse shadow-[0_0_8px_#00E5B0]" />
+              <span className="text-[10px] font-geist-mono text-[#00E5B0] tracking-widest uppercase">
+                SYS_AUTH: OPERATIVE VERIFIED
+              </span>
             </div>
-            <div>
-              <h1 style={{ fontSize: "clamp(24px, 3vw, 32px)", fontWeight: 900, letterSpacing: "-0.02em", margin: "0 0 8px 0", textTransform: "uppercase" }}>
-                {user.name || user.email.split("@")[0]}
-              </h1>
-              <p style={{ color: "#a1a1aa", fontSize: 13, fontFamily: "'JetBrains Mono', monospace", margin: 0 }}>
-                {user.email} <span style={{ color: "#39FF14", margin: "0 8px" }}>{"//"}</span> LOGGED IN: {new Date(user.createdAt).toLocaleDateString()}
-              </p>
-            </div>
-            <div style={{ marginLeft: "auto", textAlign: "right" }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#a1a1aa", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Neural Rating</div>
-              <div style={{ fontSize: 36, fontWeight: 900, color: "#00FFFF", textShadow: "0 0 20px rgba(0,255,255,0.4)" }}>{user.rating}</div>
+            <div className="flex gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#FF5F56]/80" />
+              <div className="w-1.5 h-1.5 rounded-full bg-[#FFBD2E]/80" />
+              <div className="w-1.5 h-1.5 rounded-full bg-[#27C93F]/80" />
             </div>
           </div>
-        )}
+          
+          <div className="p-8 md:p-10 relative z-10 flex flex-col md:flex-row items-center md:items-center gap-8">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[conic-gradient(from_0deg,transparent_0deg,rgba(0,229,176,0.05)_90deg,transparent_90deg)] animate-[spin_10s_linear_infinite] pointer-events-none mix-blend-screen opacity-50 block" />
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(0,229,176,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,229,176,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
 
-        {stats && (
-          <>
-            {/* ── Key Stats ── */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 32 }}>
-              {[
-                { label: "Problems Solved",    value: stats.totalSolved,          color: "#8A2BE2" },
-                { label: "Total Submissions",  value: stats.totalSubmissions,     color: "#00FFFF" },
-                { label: "Acceptance Rate",    value: `${stats.accuracy}%`,       color: "#39FF14" },
-                ...(avgRuntime != null ? [{ label: "Avg Runtime",   value: `${avgRuntime}ms`,   color: "#00FFFF" }] : []),
-                ...(topLang ? [{ label: "Top Language",  value: topLang[0].charAt(0).toUpperCase() + topLang[0].slice(1), color: "#60a5fa" }] : []),
-              ].map(s => (
-                <div key={s.label} style={{ 
-                  background: "rgba(20, 20, 25, 0.4)", backdropFilter: "blur(12px)",
-                  border: "1px solid rgba(255,255,255,0.05)", borderTop: `1px solid ${s.color}40`,
-                  padding: "24px", borderRadius: 16, textAlign: "center",
-                  boxShadow: "0 4px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)",
-                  transition: "transform 0.2s, box-shadow 0.2s"
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = `0 8px 30px ${s.color}20, inset 0 1px 0 rgba(255,255,255,0.1)`;
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.transform = "none";
-                  e.currentTarget.style.boxShadow = `0 4px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)`;
-                }}>
-                  <div style={{ fontSize: 32, fontWeight: 900, color: s.color, letterSpacing: "-0.02em", textShadow: `0 0 20px ${s.color}40` }}>{s.value}</div>
-                  <div style={{ fontSize: 11, color: "#a1a1aa", marginTop: 8, textTransform: "uppercase", letterSpacing: "0.1em" }}>{s.label}</div>
+            {/* Faceted Crosshair Avatar Block */}
+            <div className="relative group shrink-0">
+              {/* Targetting crosshairs */}
+              <div className="absolute -top-2 -left-2 w-4 h-4 border-t-2 border-l-2 border-[#00C2FF] transition-all duration-300 group-hover:w-full group-hover:h-full group-hover:-top-1 group-hover:-left-1 group-hover:border-[#00E5B0] group-hover:opacity-50 z-20 pointer-events-none" />
+              <div className="absolute -bottom-2 -right-2 w-4 h-4 border-b-2 border-r-2 border-[#00C2FF] transition-all duration-300 group-hover:w-full group-hover:h-full group-hover:-bottom-1 group-hover:-right-1 group-hover:border-[#00E5B0] group-hover:opacity-50 z-20 pointer-events-none" />
+              
+              <div className="w-28 h-28 bg-[#060D10] flex items-center justify-center text-[#00E5B0] shadow-[inset_0_0_30px_rgba(0,229,176,0.15)] overflow-hidden border border-[#00E5B0]/30 relative z-10 [clip-path:polygon(15%_0%,_85%_0%,_100%_15%,_100%_85%,_85%_100%,_15%_100%,_0%_85%,_0%_15%)]">
+                {/* Scanner line overlay */}
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-[#00E5B0]/50 shadow-[0_0_10px_#00E5B0] opacity-50 block -translate-y-full hover:animate-[scan_2s_linear_infinite] z-30" />
+                <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,229,176,0.05)_2px,rgba(0,229,176,0.05)_4px)] mix-blend-screen pointer-events-none z-30" />
+                
+                {/* Hacker SVG Graphic */}
+                <svg viewBox="0 0 100 100" className="w-full h-[120%] scale-[1.1] translate-y-5 drop-shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:scale-[1.15] transition-transform duration-500 relative z-10" xmlns="http://www.w3.org/2000/svg">
+                  {/* Hoodie Outer */}
+                  <path d="M 5 100 C 5 65, 20 45, 50 10 C 80 45, 95 65, 95 100 Z" fill="#28597A" stroke="black" strokeWidth="4.5" strokeLinejoin="round"/>
+                  
+                  {/* Sleeves */}
+                  <path d="M 5 85 C 0 95, 10 100, 20 100 L 25 100 C 20 90, 20 85, 5 85 Z" fill="#28597A" stroke="black" strokeWidth="4.5" strokeLinejoin="round"/>
+                  <path d="M 95 85 C 100 95, 90 100, 80 100 L 75 100 C 80 90, 80 85, 95 85 Z" fill="#28597A" stroke="black" strokeWidth="4.5" strokeLinejoin="round"/>
+
+                  {/* Hood Inner Shadow / Rim */}
+                  <path d="M 22 55 C 15 40, 30 18, 50 18 C 70 18, 85 40, 78 55 C 80 70, 70 80, 50 80 C 30 80, 20 70, 22 55 Z" fill="black"/>
+
+                  {/* Neck Shadow */}
+                  <path d="M 40 60 L 60 60 C 60 72, 40 72, 40 60 Z" fill="#D2A072"/>
+                  {/* Lower Face */}
+                  <path d="M 28 40 C 28 65, 42 68, 50 68 C 58 68, 72 65, 72 40 Z" fill="#F1C28F"/>
+                  
+                  {/* Ears */}
+                  <circle cx="27" cy="40" r="4" fill="#F1C28F" stroke="black" strokeWidth="2.5"/>
+                  <circle cx="73" cy="40" r="4" fill="#F1C28F" stroke="black" strokeWidth="2.5"/>
+
+                  {/* Upper Face / Void behind glasses */}
+                  <path d="M 28 40 C 30 25, 40 22, 50 22 C 60 22, 70 25, 72 40 Z" fill="black"/>
+
+                  {/* Sunglasses */}
+                  {/* Left Lens */}
+                  <rect x="29" y="34" width="18" height="9" rx="2" fill="#4B4B4B" stroke="black" strokeWidth="3"/>
+                  <path d="M 32 36 L 44 36 L 44 38 L 32 38 Z" fill="#757575"/>
+                  
+                  {/* Right Lens */}
+                  <rect x="53" y="34" width="18" height="9" rx="2" fill="#4B4B4B" stroke="black" strokeWidth="3"/>
+                  <path d="M 56 36 L 68 36 L 68 38 L 56 38 Z" fill="#757575"/>
+
+                  {/* Bridge */}
+                  <rect x="47" y="37" width="6" height="3" fill="black"/>
+
+                  {/* Laptop */}
+                  <path d="M 15 65 L 85 65 L 88 100 L 12 100 Z" fill="black" stroke="black" strokeWidth="4.5" strokeLinejoin="round"/>
+                  <path d="M 17 67 L 83 67 L 86 100 L 14 100 Z" fill="#C9C9C9" />
+                  
+                  {/* Laptop Screen Split/Shading */}
+                  <path d="M 68 67 L 83 67 L 86 100 L 71 100 Z" fill="#A3A3A3" />
+                  
+                  {/* Laptop Base Lip */}
+                  <rect x="12" y="96" width="76" height="4" fill="#A3A3A3" className="opacity-50"/>
+                  
+                  {/* Light Apple/Circle Logo */}
+                  <circle cx="50" cy="80" r="6" fill="#F0F0F0" stroke="black" strokeWidth="2.5" className="animate-pulse drop-shadow-[0_0_5px_white] group-hover:fill-white group-hover:scale-110 transition-transform"/>
+                </svg>
+              </div>
+            </div>
+            
+            <div className="flex-1 text-center md:text-left relative z-10 flex flex-col justify-center">
+              {/* Faux Metadata Above Name */}
+              <div className="text-[#00C2FF] text-[9px] font-geist-mono uppercase tracking-[0.3em] mb-2 flex items-center justify-center md:justify-start gap-4 opacity-70">
+                <span><span className="text-white/30 mr-1 text-[8px]">ID:</span>Aivon-{Math.floor(Math.random() * 9000) + 1000}</span>
+                <span className="hidden md:inline text-white/10">|</span>
+                <span className="hidden md:inline"><span className="text-white/30 mr-1 text-[8px]">SYS_LATENCY:</span>14MS</span>
+                <span className="hidden md:inline text-white/10">|</span>
+                <span className="hidden sm:flex items-center gap-1">
+                  <span className="w-1 h-3 bg-[#00E5B0] animate-pulse" />
+                  <span className="w-1 h-3 bg-[#00E5B0]/40 animate-pulse delay-75" />
+                  <span className="w-1 h-3 bg-[#00E5B0]/10 animate-pulse delay-150" />
+                </span>
+              </div>
+
+              {/* Glitch Typography Name */}
+              <div className="relative group inline-block">
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-vt323 uppercase tracking-widest mb-1 text-transparent bg-clip-text bg-[linear-gradient(180deg,#FFFFFF_0%,#A1A1AA_100%)] drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] relative z-10 group-hover:text-white transition-colors">
+                  <span className="text-[#00C2FF] mr-2 opacity-50 group-hover:opacity-100 transition-opacity">]</span>
+                  {user.name || user.email.split("@")[0]}
+                </h1>
+                {/* Glitch Pseudo-elements on hovering container */}
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-vt323 uppercase tracking-widest mb-1 text-[#00E5B0] absolute top-0 left-[-2px] opacity-0 group-hover:opacity-70 group-hover:animate-[glitch_0.3s_linear_infinite] mix-blend-screen pointer-events-none select-none z-0">
+                  <span className="text-transparent mr-2">]</span>
+                  {user.name || user.email.split("@")[0]}
+                </h1>
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-vt323 uppercase tracking-widest mb-1 text-[#FF1493] absolute top-[2px] left-[2px] opacity-0 group-hover:opacity-70 group-hover:animate-[glitch_0.4s_linear_infinite_reverse] mix-blend-screen pointer-events-none select-none z-0">
+                  <span className="text-transparent mr-2">]</span>
+                  {user.name || user.email.split("@")[0]}
+                </h1>
+              </div>
+
+              {/* Terminal Logging Subtext */}
+              <p className="text-[#00E5B0] text-xs font-geist-mono tracking-[0.2em] flex flex-col md:flex-row items-center gap-3 mt-2">
+                <span className="lowercase bg-[#00E5B0]/10 border border-[#00E5B0]/20 px-2 py-0.5 rounded-sm">{user.email}</span> 
+                <span className="hidden md:inline text-white/20">/</span> 
+                <span className="flex items-center gap-2 text-white/60 uppercase">
+                  <span className="w-2 h-2 rounded-full bg-[#00E5B0] shadow-[0_0_8px_#00E5B0] animate-pulse" />
+                  AUTH_START: {new Date(user.createdAt).toLocaleDateString()}
+                </span>
+                <span className="hidden md:inline text-[#00C2FF]/30 text-[10px] ml-auto">0x{Date.now().toString(16).toUpperCase()}</span>
+              </p>
+            </div>
+            
+            {/* Active Processing Node (Neural Rating) */}
+            <div className="text-center md:text-right shrink-0 relative z-10 bg-[#0A0F14]/80 border border-[#FACC15]/30 p-5 rounded-none shadow-[inset_0_0_20px_rgba(250,204,21,0.05)] min-w-[160px] group overflow-hidden">
+              {/* Corner Brackets */}
+              <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-[#FACC15]/50 group-hover:border-[#FACC15] transition-colors" />
+              <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-[#FACC15]/50 group-hover:border-[#FACC15] transition-colors" />
+              <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-[#FACC15]/50 group-hover:border-[#FACC15] transition-colors" />
+              <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-[#FACC15]/50 group-hover:border-[#FACC15] transition-colors" />
+
+              {/* Scanning background line */}
+              <div className="absolute -left-full top-1/2 w-[200%] h-[1px] bg-[#FACC15]/20 -rotate-45 block transform -translate-y-1/2 group-hover:animate-[scan_3s_linear_infinite]" />
+
+              <div className="text-[9px] font-bold text-[#FACC15]/70 font-geist-mono tracking-[0.2em] uppercase mb-1 flex items-center justify-center md:justify-end gap-2 relative z-10">
+                <span className="w-1.5 h-1.5 bg-[#FACC15] animate-pulse" />
+                NEURAL RATING
+              </div>
+              
+              <div className="relative flex items-center justify-center md:justify-end mt-2 mb-1">
+                {/* Decorative spinning ring */}
+                <div className="absolute w-14 h-14 border border-dashed border-[#FACC15]/30 rounded-full animate-[spin_15s_linear_infinite]" />
+                <div className="absolute w-10 h-10 border border-[#FACC15]/10 rounded-full animate-[spin_10s_linear_infinite_reverse]" />
+                
+                <div className="text-5xl font-vt323 text-[#FACC15] drop-shadow-[0_0_15px_rgba(250,204,21,0.4)] relative z-10 group-hover:text-white transition-colors duration-300">
+                  {user.rating}
                 </div>
-              ))}
-            </div>
-
-            {/* ── Analytics Row ── */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 32 }}>
-
-              {/* Verdict Pie */}
-              <div style={{
-                background: "rgba(20, 20, 25, 0.4)", backdropFilter: "blur(12px)",
-                border: "1px dashed rgba(255,255,255,0.1)", borderRadius: 16, padding: "32px",
-                display: "flex", flexDirection: "column"
-              }}>
-                <h2 style={{ fontSize: 13, fontWeight: 800, color: "#71717a", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 6, height: 6, background: "#71717a", borderRadius: "50%" }} />
-                  Submission Verdicts
-                </h2>
-                {submissions.length > 0 ? (
-                  <VerdictDonut data={verdictData} />
-                ) : (
-                  <div style={{ color: "#4a4a6a", fontSize: 13, textAlign: "center", padding: 20, fontFamily: "'JetBrains Mono', monospace" }}>No neural links established yet.</div>
-                )}
               </div>
-
-              {/* Runtime Trend */}
-              <div style={{
-                background: "rgba(20, 20, 25, 0.4)", backdropFilter: "blur(12px)",
-                border: "1px dashed rgba(255,255,255,0.1)", borderRadius: 16, padding: "32px"
-              }}>
-                <h2 style={{ fontSize: 13, fontWeight: 800, color: "#71717a", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 6, height: 6, background: "#71717a", borderRadius: "50%" }} />
-                  Runtime Trend
-                </h2>
-                <RuntimeTrend points={runtimePoints} />
+              
+              {/* Hex Data Stream */}
+              <div className="bg-[#05070A] px-2 py-0.5 mt-3 border border-[#FACC15]/20 text-[8px] font-geist-mono text-[#FACC15]/50 flex justify-between items-center relative z-10 overflow-hidden group-hover:text-[#FACC15]/80 transition-colors">
+                <span>0xAF{Math.floor(Math.random() * 9)}9</span>
+                <span className="group-hover:animate-pulse">PRC_RUN</span>
               </div>
             </div>
+          </div>
+        </div>
+      )}
 
-            {/* ── Difficulty Breakdown ── */}
-            <div style={{
-              background: "rgba(20, 20, 25, 0.4)", backdropFilter: "blur(12px)",
-              border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: "32px", marginBottom: 32,
-              boxShadow: "0 4px 30px rgba(0,0,0,0.5)"
-            }}>
-              <h2 style={{ fontSize: 13, fontWeight: 800, color: "#a1a1aa", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 24, paddingBottom: 16, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                Target Matrix Resolved
-              </h2>
-              <div style={{ display: "flex", gap: 24 }}>
-                {Object.entries(stats.byDifficulty).map(([diff, count]) => {
+      {stats && (
+        <>
+          {/* ── Key Stats HUD Array ── */}
+          <div className="w-full mb-12 stagger-2 animate-fade-in-up">
+            <div className="bg-[#05070A]/80 border border-white/10 p-1 relative group overflow-hidden shadow-[0_0_20px_rgba(255,255,255,0.02)]">
+              {/* Structural Frame & Corners */}
+              <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-white/30 group-hover:border-white/60 transition-colors" />
+              <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-white/30 group-hover:border-white/60 transition-colors" />
+              <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-white/30 group-hover:border-white/60 transition-colors" />
+              <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-white/30 group-hover:border-white/60 transition-colors" />
+
+              {/* Faux HUD Header */}
+              <div className="absolute top-1 left-4 flex gap-4 text-[7px] font-geist-mono text-white/30 tracking-[0.2em] font-bold">
+                <span className="flex items-center gap-1"><span className="w-1 h-1 bg-[#00E5B0] animate-pulse rounded-full" /> DATA_LINK: STABLE</span>
+                <span className="flex items-center gap-1"><span className="w-1 h-1 bg-[#00C2FF] animate-pulse rounded-full delay-75" /> UPTIME: OK</span>
+                <span className="hidden md:flex items-center gap-1"><span className="w-1 h-1 bg-[#FF5500] animate-pulse rounded-full" /> V: 2.1.04</span>
+              </div>
+
+              {/* Seamless Array Container */}
+              <div className="flex flex-col md:flex-row items-center justify-between pt-6 pb-2 px-6 relative z-10 w-full">
+                {[
+                  { label: "SOLVED_COUNT",    value: stats.totalSolved,          color: "text-[#00C2FF]" },
+                  { label: "TOTAL_HITS",      value: stats.totalSubmissions,     color: "text-white" },
+                  { label: "ACCURACY_RTE",    value: `${stats.accuracy}%`,       color: "text-[#00E5B0]" },
+                  ...(avgRuntime != null ? [{ label: "RUNTIME_AVG",   value: `${avgRuntime}ms`,   color: "text-[#FF5500]" }] : []),
+                  ...(topLang && avgRuntime == null ? [{ label: "PRI_LANGUAGE",  value: topLang[0].charAt(0).toUpperCase() + topLang[0].slice(1), color: "text-[#FF1493]" }] : []),
+                ].map((s, idx, arr) => (
+                  <div key={idx} className="flex items-center w-full md:w-auto h-full group/metric relative py-4 md:py-0">
+                    <div className="flex flex-col items-center md:items-start flex-1 md:flex-none px-4">
+                      <div className="text-[9px] text-white/30 uppercase tracking-[0.2em] font-geist-mono font-bold mb-1 transition-colors group-hover/metric:text-white/60 flex items-center gap-2">
+                        <span className="opacity-0 group-hover/metric:opacity-100 text-[10px] text-white/50 transition-opacity">►</span>
+                        {s.label}
+                      </div>
+                      <div className={`text-4xl md:text-5xl font-vt323 tracking-widest ${s.color} drop-shadow-[0_0_10px_currentColor]/30 group-hover/metric:drop-shadow-[0_0_15px_currentColor]/60 transition-all`}>
+                        {s.value}
+                      </div>
+                    </div>
+
+                    {/* Array Separators (Slashes between metrics, hidden on mobile/last item) */}
+                    {idx < arr.length - 1 && (
+                      <div className="hidden md:flex self-stretch items-center justify-center px-4 md:px-6 relative">
+                        <div className="text-white/10 font-geist-mono text-4xl font-light italic select-none transform skew-x-12">
+                          /
+                        </div>
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-white/20 rounded-full shadow-[0_0_10px_white]/20" />
+                      </div>
+                    )}
+                    
+                    {/* Mobile Separator (Horizontal line) */}
+                    {idx < arr.length - 1 && (
+                      <div className="md:hidden absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-[1px] bg-white/5" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Analytics Row ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12 stagger-3 animate-fade-in-up">
+
+            {/* Verdict Donut (Hacker Frame) */}
+            <div className="bg-[#05070A] border border-[#00E5B0]/30 overflow-hidden shadow-[0_0_20px_rgba(0,229,176,0.1)] flex flex-col h-full relative group">
+              {/* Terminal Frame Brackets ([ ┐ ) */}
+              <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#00E5B0]" />
+              <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#00E5B0]" />
+              <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#00E5B0]" />
+              <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#00E5B0]" />
+
+              {/* Hardcore Header */}
+              <div className="px-4 py-2 border-b border-[#00E5B0]/20 flex items-center justify-between bg-[#0A0F14]/80 relative z-10 w-full mb-2">
+                <span className="text-[10px] font-geist-mono text-[#00E5B0] tracking-[0.2em] font-bold flex items-center gap-2">
+                  <span className="text-[#00C2FF] animate-pulse">■</span> [ // VERDICT_DATA_STREAM ]
+                </span>
+                <span className="text-[8px] font-geist-mono text-[#00E5B0]/40">SYS.OK</span>
+              </div>
+              
+              <div className="p-6 relative flex-grow flex flex-col">
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(0,229,176,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,229,176,0.02)_1px,transparent_1px)] bg-[size:30px_30px] pointer-events-none" />
+                <h2 className="text-xs font-bold text-[#00E5B0]/50 uppercase tracking-widest mb-6 flex items-center gap-3 relative z-10">
+                  <ShieldAlert size={14} className="text-[#00E5B0]" /> Submission Verdicts
+                </h2>
+                <div className="relative z-10 flex-grow flex items-center justify-center mt-4">
+                  {submissions.length > 0 ? (
+                    <VerdictDonut data={verdictData} />
+                  ) : (
+                    <div className="text-[#00E5B0]/50 text-xs text-center py-10 font-geist-mono uppercase tracking-widest border border-dashed border-[#00E5B0]/20 p-4 w-full block">No neural links established yet.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Runtime Trend (Hacker Frame) */}
+            <div className="bg-[#05070A] border border-white/30 overflow-hidden shadow-[0_0_20px_rgba(255,255,255,0.1)] flex flex-col h-full relative group">
+              {/* Terminal Frame Brackets */}
+              <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-white" />
+              <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-white" />
+              <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-white" />
+              <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-white" />
+
+              {/* Hardcore Header */}
+              <div className="px-4 py-2 border-b border-white/20 flex items-center justify-between bg-[#0A0F14]/80 relative z-10 w-full mb-2">
+                <span className="text-[10px] font-geist-mono text-white tracking-[0.2em] font-bold flex items-center gap-2">
+                  <span className="text-white animate-pulse">■</span> [ // RUNTIME_TRACE ]
+                </span>
+                <span className="text-[8px] font-geist-mono text-white/40">SYNC_MS</span>
+              </div>
+              
+              <div className="p-6 relative flex-grow flex flex-col">
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:30px_30px] pointer-events-none" />
+                <h2 className="text-xs font-bold text-white/50 uppercase tracking-widest mb-6 flex items-center gap-3 relative z-10">
+                  <ShieldAlert size={14} className="text-white" /> Runtime Trend
+                </h2>
+                <div className="relative z-10 flex-grow flex items-center justify-center mt-4">
+                  <RuntimeTrend points={runtimePoints} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Difficulty Breakdown (Target Matrix - Server Rack) ── */}
+          <div className="bg-[#05070A] border border-[#00E5B0]/30 overflow-hidden shadow-[0_0_20px_rgba(0,229,176,0.1)] mb-12 relative flex flex-col stagger-4 animate-fade-in-up">
+            {/* Terminal Frame Brackets */}
+            <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#00E5B0]" />
+            <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#00E5B0]" />
+            <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#00E5B0]" />
+            <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#00E5B0]" />
+
+            {/* Hardcore Tech Header */}
+            <div className="px-5 py-3 border-b border-[#00E5B0]/20 flex items-center justify-between bg-[#0A0F14]/90 relative z-10 w-full">
+              <div className="flex items-center gap-3">
+                <span className="text-[#00C2FF] animate-pulse">■</span>
+                <span className="text-[10px] font-geist-mono text-[#00E5B0] font-bold tracking-[0.2em] uppercase">
+                  [ // TARGET_MATRIX_DIAGNOSTICS ]
+                </span>
+              </div>
+              <span className="text-[8px] font-geist-mono text-[#00E5B0]/30 hidden sm:inline">ARRAY_READOUT: ACTIVE</span>
+            </div>
+
+            <div className="p-8 relative">
+              <div className="absolute inset-0 bg-[linear-gradient(rgba(0,229,176,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,229,176,0.02)_1px,transparent_1px)] bg-[size:30px_30px] pointer-events-none" />
+              
+              {/* Vertical Server-Rack Stack */}
+              <div className="flex flex-col gap-6 relative z-10">
+                {Object.entries(stats.byDifficulty).map(([diff, count], idx) => {
                   const total = Object.values(stats.byDifficulty).reduce((a, b) => a + b, 0);
                   const pct = total ? Math.round((count / total) * 100) : 0;
-                  // Override colors to use Neon-Noir scheme instead of var(--color) hooks
-                  const colorOverride: Record<string, string> = { EASY: "#39FF14", MEDIUM: "#eab308", HARD: "#ef4444" };
-                  const barColor = colorOverride[diff] || "#fff";
+                  const colorOverride: Record<string, string> = { EASY: "#00E5B0", MEDIUM: "#FACC15", HARD: "#FF5F56" };
+                  const barColor = colorOverride[diff] || "#00E5B0";
+                  
                   return (
-                    <div key={diff} style={{ flex: 1, textAlign: "center" }}>
-                      <div style={{ fontSize: 32, fontWeight: 900, color: barColor, letterSpacing: "-0.02em", textShadow: `0 0 20px ${barColor}40` }}>{count}</div>
-                      <div style={{ fontSize: 11, color: "#a1a1aa", marginTop: 8, textTransform: "uppercase", letterSpacing: "0.1em" }}>{diff}</div>
-                      <div style={{ height: 4, borderRadius: 2, marginTop: 12, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-                        <div style={{ height: "100%", width: `${pct}%`, background: barColor, borderRadius: 2, transition: "width 0.6s ease", boxShadow: `0 0 10px ${barColor}` }} />
+                    <div key={diff} className="w-full flex flex-col md:flex-row items-start md:items-center gap-4 group server-rack-row">
+                      {/* Readout Left: Count and Label */}
+                      <div className="flex items-center gap-4 min-w-[200px] bg-[#0A0F14]/80 border border-white/5 px-4 py-2 relative overflow-hidden group-hover:border-white/20 transition-colors">
+                        <div className="absolute left-0 top-0 h-full w-1" style={{ backgroundColor: barColor }} />
+                        <div className="text-4xl font-vt323 tracking-widest drop-shadow-[0_0_15px_currentColor] min-w-[50px]" style={{ color: barColor }}>{count}</div>
+                        <div className="flex flex-col">
+                          <div className="text-[10px] font-bold font-geist-mono uppercase tracking-[0.2em]" style={{ color: barColor }}>{diff}</div>
+                          <div className="text-[8px] font-geist-mono text-white/30 uppercase tracking-widest">THREAT_LEVEL: {idx + 1}</div>
+                        </div>
+                      </div>
+
+                      {/* Readout Right: Structural Tracker */}
+                      <div className="flex-1 w-full flex items-center gap-3">
+                        <div className="text-[10px] font-geist-mono font-bold w-8 text-right group-hover:animate-pulse" style={{ color: barColor }}>{pct}%</div>
+                        
+                        <div className="h-1 flex-1 bg-[#111827] relative overflow-hidden flex shadow-[inset_0_0_5px_black]">
+                          {/* Continuous line background */}
+                          <div className="absolute inset-0 bg-[repeating-linear-gradient(90deg,transparent,transparent_2px,rgba(255,255,255,0.05)_2px,rgba(255,255,255,0.05)_4px)]" />
+                          
+                          {/* Colored Progress Fill */}
+                          <div className="h-full relative transition-all duration-1000 ease-out z-10" style={{ width: `${pct}%`, background: barColor, boxShadow: `0 0 10px ${barColor}` }}>
+                            {/* Head tracer dot */}
+                            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity" style={{ boxShadow: `0 0 8px ${barColor}` }} />
+                          </div>
+                        </div>
+                        
+                        <div className="text-[8px] font-geist-mono text-white/20 uppercase hidden lg:block tracking-widest">SEC_OK</div>
                       </div>
                     </div>
                   );
                 })}
               </div>
             </div>
-
-            {/* ── Recent Submissions ── */}
-            <div style={{
-              background: "rgba(20, 20, 25, 0.4)", backdropFilter: "blur(12px)",
-              border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, overflow: "hidden",
-              boxShadow: "0 4px 30px rgba(0,0,0,0.5)"
-            }}>
-              <div style={{ padding: "20px 24px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(0,0,0,0.3)" }}>
-                <h2 style={{ fontSize: 13, fontWeight: 800, color: "#a1a1aa", textTransform: "uppercase", letterSpacing: "0.1em", margin: 0 }}>Recent Activity Feed</h2>
-                <span style={{ fontSize: 11, color: "#39FF14", fontFamily: "'JetBrains Mono', monospace", background: "rgba(57, 255, 20, 0.1)", padding: "4px 8px", borderRadius: 4 }}>Last {submissions.length}</span>
-              </div>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <tbody>
-                  {((submissions.length > 0 ? submissions : stats.recentActivity) as Array<{
-                    id: string; status: string; language: string; createdAt: string; runtime?: number | null;
-                    problem: { title: string; slug: string; difficulty: string };
-                  }>).slice(0, 15).map((s) => {
-                    const diffColors: Record<string, string> = { EASY: "#39FF14", MEDIUM: "#eab308", HARD: "#ef4444" };
-                    return (
-                      <tr key={s.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.02)", transition: "background 0.2s" }}
-                        onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.02)")}
-                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                        <td style={{ padding: "16px 24px", fontSize: 13, fontWeight: 700, color: "#fff" }}>{s.problem.title.replace(/-/g, " ")}</td>
-                        <td style={{ padding: "16px 24px" }}>
-                          <span style={{ 
-                            fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", padding: "4px 10px", borderRadius: 6,
-                            color: diffColors[s.problem.difficulty.toUpperCase()] || "#fff",
-                            border: `1px solid ${diffColors[s.problem.difficulty.toUpperCase()]}40`,
-                            background: `${diffColors[s.problem.difficulty.toUpperCase()]}15`
-                          }}>
-                            {s.problem.difficulty}
-                          </span>
-                        </td>
-                        <td style={{ padding: "16px 24px", fontSize: 12, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", color: STATUS_COLOR[s.status] ?? "#8b8ca7" }}>
-                          {formatStatus(s.status)}
-                        </td>
-                        <td style={{ padding: "16px 24px", fontSize: 11, color: "#a1a1aa", fontFamily: "'JetBrains Mono', monospace" }}>{s.language}</td>
-                        {s.runtime != null && (
-                          <td style={{ padding: "16px 24px", fontSize: 11, color: "#00FFFF", fontFamily: "'JetBrains Mono', monospace" }}>{s.runtime}ms</td>
-                        )}
-                        <td style={{ padding: "16px 24px", fontSize: 11, color: "#71717a", textAlign: "right" }}>
-                          {new Date(s.createdAt).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-
-        {!stats && !user && (
-          <div style={{ textAlign: "center", padding: "100px 20px", display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <div style={{ fontSize: 64, marginBottom: 24, filter: "drop-shadow(0 0 20px rgba(138,43,226,0.6))" }}>🔒</div>
-            <h2 style={{ fontSize: 24, fontWeight: 900, marginBottom: 12, textTransform: "uppercase", letterSpacing: "-0.02em" }}>Neural Link Severed</h2>
-            <p style={{ color: "#a1a1aa", fontSize: 14, maxWidth: 400, lineHeight: 1.6 }}>Authenticate your console session to view operative statistics, neuro-metrics, and leaderboard status.</p>
           </div>
-        )}
-      </main>
+
+          {/* ── Recent Submissions (System Log) ── */}
+          <div className="bg-[#05070A] border border-white/5 shadow-[0_0_20px_rgba(0,0,0,0.5)] flex flex-col relative stagger-5 animate-fade-in-up">
+             {/* Terminal Frame Brackets */}
+             <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-white/20" />
+             <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-white/20" />
+             <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-white/20" />
+             <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-white/20" />
+
+            {/* Hardcore Header */}
+            <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between bg-[#0A0F14]/90 relative z-10 w-full mb-2">
+              <span className="text-[10px] font-geist-mono text-white/50 font-bold tracking-[0.2em] flex items-center gap-2">
+                <span className="text-[#00C2FF] animate-pulse">■</span> [ // ACTIVITY_LOG ]
+              </span>
+              <div className="flex items-center gap-4">
+                <span className="text-[8px] font-geist-mono text-white/30 hidden sm:inline">REC_TRACE: ACTIVE</span>
+                <button 
+                  onClick={() => setIsHistoryOpen(true)}
+                  className="px-3 py-1.5 border border-[#00C2FF]/30 bg-[#00C2FF]/5 hover:bg-[#00C2FF]/15 text-[9px] font-geist-mono text-[#00C2FF] transition-all tracking-[0.2em] uppercase flex items-center gap-2 group/btn relative overflow-hidden backdrop-blur-sm"
+                >
+                  <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-[#00C2FF]/20 to-transparent -translate-x-[150%] group-hover/btn:translate-x-[150%] transition-transform duration-500 ease-in-out" />
+                  HISTORY <span className="text-[10px] opacity-70 group-hover/btn:opacity-100 group-hover/btn:translate-x-0.5 transition-all">↗</span>
+                </button>
+              </div>
+            </div>
+            
+            <div className="relative w-full px-5 pb-5">
+              <div className="flex flex-col gap-[2px] font-geist-mono text-[11px] uppercase tracking-wider relative z-10">
+                {(() => {
+                  const sourceArray = submissions.length > 0 ? submissions : stats.recentActivity;
+                  const uniqueSubmissions = [];
+                  const seenProblems = new Set();
+                  
+                  for (const s of sourceArray as Array<any>) {
+                    const id = s.problem?.slug || s.problem?.title || s.id;
+                    if (!seenProblems.has(id)) {
+                      seenProblems.add(id);
+                      uniqueSubmissions.push(s);
+                      if (uniqueSubmissions.length >= 8) break;
+                    }
+                  }
+
+                  if (uniqueSubmissions.length === 0) {
+                    return (
+                       <div className="p-8 text-center text-white/30 font-geist-mono uppercase tracking-widest border border-dashed border-white/10 mt-2">
+                        <span className="animate-pulse">_</span> Awaiting input...
+                      </div>
+                    );
+                  }
+
+                  return uniqueSubmissions.map((s, idx) => {
+                    const diffColors: Record<string, string> = { EASY: "text-[#00E5B0]", MEDIUM: "text-[#FACC15]", HARD: "text-[#FF5F56]" };
+                    
+                    // Remap hacker status colors
+                    let statusColor = "text-white/40";
+                    let bgGlow = "hover:bg-white/5 hover:border-white/10";
+                    if (s.status === "ACCEPTED") {
+                      statusColor = "text-[#00E5B0]";
+                      bgGlow = "hover:bg-[#00E5B0]/5 hover:border-[#00E5B0]/20";
+                    } else if (["WRONG_ANSWER", "WRONG_ANSWER_ON_HIDDEN_TEST", "RUNTIME_ERROR", "COMPILATION_ERROR"].includes(s.status)) {
+                      statusColor = "text-[#FF5F56]";
+                      bgGlow = "hover:bg-[#FF5F56]/5 hover:border-[#FF5F56]/20";
+                    } else if (["TIME_LIMIT_EXCEEDED", "MEMORY_LIMIT_EXCEEDED"].includes(s.status)) {
+                      statusColor = "text-[#FACC15]";
+                      bgGlow = "hover:bg-[#FACC15]/5 hover:border-[#FACC15]/20";
+                    }
+
+                    return (
+                      <div key={s.id} className={`flex flex-col md:flex-row md:items-center justify-between p-3 gap-3 md:gap-6 border border-transparent transition-colors duration-200 group ${bgGlow}`}>
+                        {/* Left side: Pointer, Title, Difficulty */}
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                           <span className={`${statusColor} opacity-50 text-[10px]`}>{(idx + 1).toString().padStart(2, '0')}</span>
+                           <span className="text-[#00C2FF] text-[8px] animate-pulse">❯</span>
+                           <span className="font-bold text-white/80 group-hover:text-white transition-colors truncate">
+                             {s.problem.title.replace(/-/g, " ")}
+                           </span>
+                           <span className={`text-[9px] px-1.5 py-0.5 border border-current rounded-[2px] ${diffColors[s.problem.difficulty.toUpperCase()] || "text-white/40 border-white/10"}`}>
+                             {s.problem.difficulty.charAt(0)}
+                           </span>
+                        </div>
+
+                        {/* Right side: Status, Lang, Runtime, Date */}
+                        <div className="flex items-center gap-4 text-[10px] sm:text-[11px] justify-between md:justify-end shrink-0 pl-7 md:pl-0">
+                          <span className={`${statusColor} font-bold min-w-[70px] transition-all group-hover:drop-shadow-[0_0_8px_currentColor]`}>
+                            {formatStatus(s.status)}
+                          </span>
+                          
+                          <div className="flex items-center gap-4 text-white/40">
+                             <span className="w-12 truncate">{s.language}</span>
+                             <span className="w-12 text-right">
+                               {s.runtime != null ? <span className="text-white/60">{s.runtime}ms</span> : <span>--</span>}
+                             </span>
+                             <span className="text-white/20 whitespace-nowrap min-w-[65px] text-right">
+                               {(new Date(s.createdAt)).toLocaleDateString(undefined, { month: 'short', day: 'numeric'})}
+                             </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {!stats && !user && (
+        <div className="flex flex-col items-center justify-center py-32 text-center stagger-1 animate-fade-in-up">
+          <div className="w-24 h-24 rounded-full bg-[var(--background)] border border-[var(--border)] shadow-[0_0_30px_rgba(138,43,226,0.2)] flex items-center justify-center mb-8">
+             <Lock size={32} className="text-[var(--primary)]" />
+          </div>
+          <h2 className="text-3xl font-bold uppercase tracking-tight mb-4 text-gradient">Neural Link Severed</h2>
+          <p className="text-[var(--text-secondary)] text-sm max-w-md leading-relaxed font-mono">
+            Authenticate your console session to view operative statistics, neuro-metrics, and leaderboard status.
+          </p>
+        </div>
+      )}
+
+      {/* ── Activity History Modal ── */}
+      {mounted && isHistoryOpen && submissions && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center backdrop-blur-sm bg-black/40 p-4 sm:p-6 animate-in fade-in duration-200">
+          <div className="bg-[#0A0F14]/90 border border-white/10 w-full max-w-4xl shadow-2xl flex flex-col relative animate-in zoom-in-[0.98] duration-200 max-h-[90vh] backdrop-blur-md">
+            {/* Terminal Frame Brackets */}
+            <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#00C2FF]" />
+            <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#00C2FF]" />
+            <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#00C2FF]" />
+            <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#00C2FF]" />
+
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-[#00C2FF]/20 flex items-center justify-between bg-[#05070A] relative z-10 w-full mb-2 shrink-0">
+              <span className="text-[12px] md:text-[14px] font-geist-mono text-[#00C2FF] font-bold tracking-[0.2em] flex items-center gap-3">
+                <span className="text-white animate-pulse">■</span> [ // FULL_ACTIVITY_ARCHIVE ]
+              </span>
+              <div className="flex items-center gap-6">
+                {(() => {
+                  const sourceArray = submissions.length > 0 ? submissions : (stats?.recentActivity || []);
+                  const uniqueCount = new Set(sourceArray.map((s: any) => s.problem?.slug || s.problem?.title || s.id)).size;
+                  return (
+                    <span className="text-[9px] md:text-[10px] font-geist-mono text-white/40 tracking-widest hidden sm:block">
+                      TOTAL_UNIQUE_TARGETS: <span className="text-[#00E5B0]">{uniqueCount}</span>
+                    </span>
+                  );
+                })()}
+                <button 
+                  onClick={() => setIsHistoryOpen(false)}
+                  className="text-[12px] font-geist-mono text-[#FF5F56] hover:text-white transition-colors tracking-widest font-bold"
+                >
+                  [ X ]
+                </button>
+              </div>
+            </div>
+
+            {/* Scrollable Content Container */}
+            <div className="relative w-full px-6 pb-6 overflow-y-auto custom-scrollbar flex-grow">
+              <div className="flex flex-col gap-[2px] font-geist-mono text-[11px] uppercase tracking-wider relative z-10">
+                {(() => {
+                  const sourceArray = submissions.length > 0 ? submissions : (stats?.recentActivity || []);
+                  const uniqueSubmissions = [];
+                  const seenProblems = new Set();
+                  
+                  for (const s of sourceArray as Array<any>) {
+                    const id = s.problem?.slug || s.problem?.title || s.id;
+                    if (!seenProblems.has(id)) {
+                      seenProblems.add(id);
+                      uniqueSubmissions.push(s);
+                    }
+                  }
+
+                  if (uniqueSubmissions.length === 0) {
+                    return (
+                       <div className="p-12 text-center text-white/30 font-geist-mono uppercase tracking-widest border border-dashed border-white/10 mt-4">
+                        <span className="animate-pulse">_</span> NO ARCHIVE DATA FOUND.
+                      </div>
+                    );
+                  }
+
+                  return uniqueSubmissions.map((s, idx) => {
+                    const diffColors: Record<string, string> = { EASY: "text-[#00E5B0]", MEDIUM: "text-[#FACC15]", HARD: "text-[#FF5F56]" };
+                    
+                    let statusColor = "text-white/40";
+                    let bgGlow = "hover:bg-white/5 hover:border-white/10";
+                    if (s.status === "ACCEPTED") {
+                      statusColor = "text-[#00E5B0]";
+                      bgGlow = "hover:bg-[#00E5B0]/5 hover:border-[#00E5B0]/20";
+                    } else if (["WRONG_ANSWER", "WRONG_ANSWER_ON_HIDDEN_TEST", "RUNTIME_ERROR", "COMPILATION_ERROR"].includes(s.status)) {
+                      statusColor = "text-[#FF5F56]";
+                      bgGlow = "hover:bg-[#FF5F56]/5 hover:border-[#FF5F56]/20";
+                    } else if (["TIME_LIMIT_EXCEEDED", "MEMORY_LIMIT_EXCEEDED"].includes(s.status)) {
+                      statusColor = "text-[#FACC15]";
+                      bgGlow = "hover:bg-[#FACC15]/5 hover:border-[#FACC15]/20";
+                    }
+
+                    return (
+                      <div key={s.id} className={`flex flex-col md:flex-row md:items-center justify-between p-4 gap-4 md:gap-8 border border-transparent transition-colors duration-200 group ${bgGlow}`}>
+                        {/* Left side */}
+                        <div className="flex items-center gap-4 min-w-0 flex-1">
+                           <span className={`${statusColor} opacity-50 text-[10px]`}>{(idx + 1).toString().padStart(3, '0')}</span>
+                           <span className="text-[#00C2FF] text-[8px] animate-pulse">❯</span>
+                           <span className="font-bold text-white/80 group-hover:text-white transition-colors truncate">
+                             {s.problem.title.replace(/-/g, " ")}
+                           </span>
+                           <span className={`text-[10px] px-2 py-0.5 border border-current rounded-[2px] ${diffColors[s.problem.difficulty.toUpperCase()] || "text-white/40 border-white/10"}`}>
+                             {s.problem.difficulty}
+                           </span>
+                        </div>
+
+                        {/* Right side */}
+                        <div className="flex items-center gap-6 text-[11px] justify-between md:justify-end shrink-0 pl-8 md:pl-0">
+                          <span className={`${statusColor} font-bold min-w-[80px] transition-all group-hover:drop-shadow-[0_0_8px_currentColor]`}>
+                            {formatStatus(s.status)}
+                          </span>
+                          
+                          <div className="flex items-center gap-6 text-white/40">
+                             <span className="w-16 truncate text-right">{s.language}</span>
+                             <span className="w-16 text-right">
+                               {s.runtime != null ? <span className="text-white/60">{s.runtime}ms</span> : <span>--</span>}
+                             </span>
+                             <span className="text-white/20 whitespace-nowrap min-w-[80px] text-right">
+                               {(new Date(s.createdAt)).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric'})}
+                             </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          </div>
+        </div>
+      , document.body)}
     </div>
   );
 }
