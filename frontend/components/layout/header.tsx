@@ -80,8 +80,8 @@ export function Header() {
 
   if (!mounted) return null;
 
-  // Don't show header on immersive flows
-  if (pathname === "/onboarding" || pathname === "/sign-in" || pathname === "/sign-up") {
+  // Don't show header on immersive flows and specific problem pages
+  if (pathname === "/onboarding" || pathname === "/sign-in" || pathname === "/sign-up" || pathname.startsWith("/problems/")) {
     return null;
   }
   

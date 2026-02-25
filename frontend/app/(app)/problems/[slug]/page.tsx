@@ -8,6 +8,7 @@ import {
   runCodeApi, explainError, getAlternativeApproach, chatWithAI,
   type Problem, type RunResult,
 } from "@/lib/api";
+import Link from "next/link";
 import { useJudgeSocket, type JudgeEvent } from "@/hooks/useJudgeSocket";
 import VerdictHeader from "@/components/result/VerdictHeader";
 import TestExplorer from "@/components/result/TestExplorer";
@@ -16,6 +17,7 @@ import AiFloatingPanel, { type AiPanelMode, type ErrorExplanation, type Performa
 import ParsedMarkdown from "@/components/ui/ParsedMarkdown";
 import { GlassCard } from "@/components/ui/glass-card";
 import { StatusDot } from "@/components/ui/badge";
+import { HackerBackground } from "@/components/ui/hacker-background";
 import { Play, UploadCloud, Terminal as TerminalIcon, Sparkles, BookOpen, SearchCode, Bug } from "lucide-react";
 
 const Editor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
@@ -414,19 +416,39 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
   );
 
   return (
-    <div className="h-screen w-full pt-[72px] bg-[var(--background)] text-[var(--text-primary)] font-space-grotesk overflow-hidden relative">
+    <div className="h-screen w-full bg-[#05070A] text-[var(--text-primary)] font-geist-mono overflow-hidden relative">
+      
+      {/* ── 3D Hacker Background ──────────────────────────────────────── */}
+      <HackerBackground />
 
-      <div className="flex h-full w-full max-w-[1920px] mx-auto overflow-hidden">
+      <div className="flex flex-col h-full w-full max-w-[1920px] mx-auto overflow-hidden relative z-10 p-2 gap-2 animate-fade-in-up">
         
-        {/* ── Description panel ─────────────────────────────────────────── */}
-        <div
-          ref={descRef}
-          className="flex flex-col shrink-0 border-r border-[var(--border)] glass"
-          style={{
-            width: isSmallScreen ? "100%" : desc.width,
-            height: "100%",
-          }}
-        >
+        {/* ── Top Bar ─────────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between shrink-0 bg-[#060D10]/80 backdrop-blur-xl border border-[#00E5B0]/30 rounded-xl p-3 shadow-[0_0_20px_rgba(0,229,176,0.1)]">
+          <Link href="/problems" className="flex items-center gap-2 text-[#00E5B0] hover:text-white transition-colors uppercase tracking-widest text-[10px] font-bold group">
+            <span className="opacity-50 group-hover:-translate-x-1 transition-transform">[</span>
+            ⟵ RETURN TO MATRIX
+            <span className="opacity-50 group-hover:translate-x-1 transition-transform">]</span>
+          </Link>
+          <div className="flex items-center gap-3">
+             <div className="w-2 h-2 rounded-full bg-[#00E5B0] animate-pulse" />
+             <span className="text-[10px] uppercase font-bold tracking-widest text-[#00E5B0]">SYS.ONLINE</span>
+          </div>
+        </div>
+
+        {/* ── Main content bento grid ─────────────────────────────────── */}
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0 relative">
+          
+          {/* ── Description panel (Mission Briefing) ────────────────── */}
+          <div
+            ref={descRef}
+            className="flex flex-col shrink-0 border border-[#00E5B0]/30 bg-[#060D10]/80 backdrop-blur-xl rounded-xl overflow-hidden shadow-[0_0_20px_rgba(0,229,176,0.05)] lg:h-full"
+            style={{
+              width: isSmallScreen ? "100%" : desc.width,
+              height: "100%",
+              animationDelay: "0.1s"
+            }}
+          >
           {/* Description tab bar */}
           <div className="flex h-12 bg-[var(--background)]/80 border-b border-[var(--border)] shrink-0 font-mono text-xs uppercase tracking-widest relative z-10">
             {(["description", "ai"] as const).map((tab) => (
@@ -485,33 +507,35 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
               </div>
             ) : (
               /* AI Chat Interface */
-              <div className="flex flex-col h-full bg-[var(--background)]/40 relative">
-                <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+              <div className="flex flex-col h-full bg-[#05070A] relative font-geist-mono">
+                <div className="absolute inset-0 pointer-events-none opacity-10 bg-[radial-gradient(ellipse_at_top,#00E5B0_0%,transparent_70%)]" />
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 relative z-10 scrollbar-thin scrollbar-thumb-[#00E5B0]/20 scrollbar-track-transparent">
                   {chatHistory.length === 1 && chatHistory[0].role === "assistant" ? (
                     <div className="flex flex-col items-center justify-center h-full text-center max-w-sm mx-auto animate-fade-in-up">
-                      <div className="w-16 h-16 rounded-full bg-[var(--primary)]/10 border border-[var(--primary)]/30 flex items-center justify-center text-2xl mb-6 shadow-[0_0_30px_var(--glow-color)]">
-                        🤖
+                      <div className="w-16 h-16 rounded-sm bg-[#060D10] border border-[#00E5B0]/30 shadow-[0_0_15px_rgba(0,229,176,0.2)] flex items-center justify-center text-2xl mb-6 font-mono text-[#00E5B0] relative">
+                         <div className="absolute inset-0 border border-[#00E5B0] animate-pulse opacity-20" />
+                         AI
                       </div>
-                      <h3 className="text-xl font-bold mb-2 text-[var(--text-primary)]">Aivon Learning Brain</h3>
-                      <p className="text-sm text-[var(--text-secondary)] mb-8">
-                        I&apos;m your personal operative assistant for <span className="text-[var(--primary)]">{problem.title}</span>.
+                      <h3 className="text-sm tracking-widest uppercase font-bold text-[#00E5B0] mb-2">Neural Link Active</h3>
+                      <p className="text-xs text-[var(--text-secondary)] mb-8 font-mono">
+                        Awaiting instructions for <span className="text-white">{problem.title}</span>_
                       </p>
 
                       <div className="w-full space-y-3">
                         {[
-                          { icon: <Sparkles size={16}/>, text: "Need a hint", prompt: "I'm stuck. Can you give me a small hint to get started without giving the full solution?" },
-                          { icon: <BookOpen size={16}/>, text: "Explain mathematically", prompt: "Can you explain the mathematical or logical intuition behind this problem?" },
-                          { icon: <SearchCode size={16}/>, text: "Optimize complexity", prompt: "My current approach might be too slow. How can I optimize the time and space complexity?" },
-                          { icon: <Bug size={16}/>, text: "Debug my code", prompt: "My code is failing or hitting an error. Can you help me debug?" }
+                          { icon: <Sparkles size={14}/>, text: "REQUEST HINT", prompt: "I'm stuck. Can you give me a small hint to get started without giving the full solution?" },
+                          { icon: <BookOpen size={14}/>, text: "EXPLAIN MATH", prompt: "Can you explain the mathematical or logical intuition behind this problem?" },
+                          { icon: <SearchCode size={14}/>, text: "OPTIMIZE O(N)", prompt: "My current approach might be too slow. How can I optimize the time and space complexity?" },
+                          { icon: <Bug size={14}/>, text: "DEBUG SCRIPT", prompt: "My code is failing or hitting an error. Can you help me debug?" }
                         ].map((action, i) => (
                           <button 
                             key={i}
                             onClick={() => handleChatSubmit(undefined, action.prompt)}
-                            className="w-full flex items-center gap-4 bg-[var(--card)]/50 border border-[var(--border)] hover:border-[var(--primary)]/50 p-4 rounded-xl text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] hover:text-[var(--primary)] transition-all group shadow-md"
+                            className="w-full flex items-center gap-4 bg-[#060D10] border border-white/5 hover:border-[#00E5B0]/50 p-3 rounded-none text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)] hover:text-[#00E5B0] transition-all group shadow-md"
                           >
-                            <span className="text-[var(--primary)] group-hover:scale-110 transition-transform">{action.icon}</span>
-                            <span className="flex-1 text-left">{action.text}</span>
-                            <span className="text-[var(--border)] group-hover:text-[var(--primary)] transition-colors opacity-50 group-hover:opacity-100 group-hover:translate-x-1 duration-300">→</span>
+                            <span className="text-[#00E5B0] group-hover:scale-110 transition-transform">{action.icon}</span>
+                            <span className="flex-1 text-left">&gt; {action.text}</span>
+                            <span className="text-[var(--border)] group-hover:text-[#00E5B0] transition-colors opacity-50 group-hover:opacity-100 group-hover:translate-x-1 duration-300">_</span>
                           </button>
                         ))}
                       </div>
@@ -522,54 +546,53 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
                       
                       const isUser = msg.role === "user";
                       return (
-                      <div key={idx} className={`relative max-w-[85%] ${isUser ? 'ml-auto' : 'mr-auto'}`}>
-                        {!isUser && (
-                          <div className="absolute -top-3 -left-3 w-6 h-6 rounded-full bg-[var(--background)] border border-[var(--primary)]/50 flex items-center justify-center text-[10px] z-10 shadow-[0_0_10px_var(--glow-color)]">
-                            🤖
-                          </div>
-                        )}
-                        <GlassCard hoverLift={!isUser} className={`p-4 md:p-5 text-sm ${isUser ? 'bg-[var(--primary)]/10 border-[var(--primary)]/30 text-[var(--text-primary)] rounded-tr-none' : 'bg-[var(--card)]/80 border-[var(--border)] text-[var(--text-secondary)] rounded-tl-none prose prose-invert prose-sm max-w-none prose-p:leading-relaxed'}`}>
+                      <div key={idx} className={`relative w-full flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`p-4 text-xs font-mono max-w-[90%] border-l-2 ${isUser ? 'border-[#FACC15] bg-[#FACC15]/5 text-white' : 'border-[#00E5B0] bg-[#00E5B0]/5 text-[var(--text-secondary)] prose-h2:text-white prose-h3:text-white prose-strong:text-[#00E5B0] prose-code:text-[#FACC15] prose prose-invert max-w-none'}`}>
+                           <div className="text-[9px] uppercase tracking-widest font-bold mb-2 opacity-50 flex items-center gap-2">
+                              {isUser ? <><span className="text-[#FACC15]">USER</span> // QUERY</> : <><span className="text-[#00E5B0]">SYS</span> // RESPONSE</>}
+                           </div>
                           {isUser ? msg.content : <ParsedMarkdown text={msg.content} />}
-                        </GlassCard>
+                        </div>
                       </div>
                       );
                     })
                   )}
                   
                   {chatLoading && (
-                    <div className="flex items-center gap-3 p-4 max-w-[85%] bg-[var(--card)]/50 border border-[var(--border)] rounded-2xl rounded-tl-none relative mr-auto">
-                        <div className="flex gap-1.5">
-                          <div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-bounce" />
-                          <div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-bounce [animation-delay:-0.15s]" />
-                          <div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-bounce [animation-delay:-0.3s]" />
+                    <div className="flex w-full justify-start">
+                        <div className="p-4 text-xs font-mono border-l-2 border-[#00E5B0] bg-[#00E5B0]/5 text-[#00E5B0] flex items-center gap-3">
+                            <span className="text-[9px] uppercase tracking-widest font-bold opacity-50">SYS // </span>
+                            <span className="typing-cursor">COMPUTING</span>
                         </div>
-                        <span className="text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-widest">Parsing...</span>
                     </div>
                   )}
                   <div ref={chatEndRef} />
                 </div>
                 
                 {/* Chat Input Field */}
-                <form onSubmit={handleChatSubmit} className="flex gap-3 p-4 bg-[var(--background)]/80 border-t border-[var(--border)] shrink-0">
-                  <input 
-                    type="text"
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    placeholder="Terminal prompt..."
-                    disabled={chatLoading}
-                    className="flex-1 bg-[var(--card)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--text-primary)] font-mono outline-none transition-all focus:border-[var(--primary)] placeholder:text-[var(--text-muted)]"
-                  />
+                <form onSubmit={handleChatSubmit} className="flex gap-2 p-3 bg-[#060D10] border-t border-[#00E5B0]/20 shrink-0 relative z-10">
+                  <div className="flex-1 flex items-center bg-[#05070A] border border-white/10 focus-within:border-[#00E5B0]/50 transition-colors">
+                    <span className="text-[#00E5B0] pl-3 font-mono text-sm">&gt;</span>
+                    <input 
+                      type="text"
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder="ENTER COMMAND..."
+                      disabled={chatLoading}
+                      className="w-full bg-transparent px-3 py-3 text-xs text-white font-mono outline-none placeholder:text-white/20 uppercase tracking-wide"
+                    />
+                  </div>
                   {chatLoading ? (
                     <button 
                       type="button"
                       onClick={() => abortControllerRef.current?.abort()}
-                      className="px-6 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-bold uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all"
+                      className="px-4 bg-[#FF5F56]/10 border border-[#FF5F56]/30 text-[#FF5F56] text-[10px] font-bold uppercase tracking-widest hover:bg-[#FF5F56] hover:text-white transition-all"
                     >
-                      Stop
+                      KILL PROCESS
                     </button>
                   ) : (
-                    <button type="submit" disabled={!chatInput.trim()} className="px-6 rounded-xl bg-[var(--primary)] text-[var(--background)] text-xs font-bold uppercase tracking-widest hover:scale-105 hover:shadow-[0_0_15px_var(--glow-color)] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none">
-                      Send
+                    <button type="submit" disabled={!chatInput.trim()} className="px-6 bg-[#00E5B0]/10 border border-[#00E5B0]/30 text-[#00E5B0] text-[10px] font-bold uppercase tracking-widest hover:bg-[#00E5B0] hover:text-black transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+                      EXECUTE
                     </button>
                   )}
                 </form>
@@ -577,16 +600,17 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
             )}
           </div>
         </div>
-
         {/* ── Horizontal resize handle ──────────────────────────────────── */}
         {!isSmallScreen && <ResizeHandleH onMouseDown={desc.startResize} />}
 
-        {/* ── Right panel: editor + terminal ──────────────────────────── */}
+        {/* ── Right panel: Code Matrix & Terminal Output ───────────── */}
         <div
           ref={containerRef}
-          className="flex-1 flex flex-col min-w-0 bg-transparent relative z-10"
+          className="flex-1 flex flex-col min-w-0 bg-transparent relative z-10 lg:h-full"
           style={{ minHeight: isSmallScreen ? 600 : 0 }}
         >
+          {/* Code Matrix */}
+          <div className="flex-1 flex flex-col border border-[#00E5B0]/30 bg-[#060D10]/80 backdrop-blur-xl rounded-xl shadow-[0_0_30px_rgba(0,229,176,0.15)] overflow-hidden relative">
           {/* Toolbar */}
           <div className="flex items-center justify-between h-14 px-4 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-md shrink-0">
             <div className="flex items-center gap-2">
@@ -642,16 +666,14 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
               }}
             />
           </div>
+          </div>
 
-          {/* ── Terminal section ────────────────────────────────────────── */}
+          {/* ── Terminal section (Detached Output) ───────────────────── */}
           {result && (
             <>
               {terminalOpen && <ResizeHandleV onMouseDown={term.startResize} />}
 
-              <div
-                className="flex flex-col shrink-0 border-t border-[var(--border)] bg-[var(--background)]/90 backdrop-blur-xl transition-all duration-300 relative z-20"
-                style={{ height: terminalOpen ? term.height : 0 }}
-              >
+              <div className="flex flex-col shrink-0 border border-t border-[var(--border)] border-[#00E5B0]/30 bg-[#060D10]/95 backdrop-blur-xl rounded-xl shadow-[0_0_20px_rgba(0,229,176,0.1)] transition-all duration-300 relative z-20 overflow-hidden" style={{ height: terminalOpen ? term.height : 0 }}>
                 {terminalOpen && (
                   <>
                     <VerdictHeader
@@ -692,7 +714,7 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
               {!terminalOpen && (
                 <button
                   onClick={() => setTerminalOpen(true)}
-                  className="absolute bottom-6 right-6 flex items-center gap-2 px-4 py-2 bg-[var(--card)]/80 backdrop-blur-md border border-[var(--border)] rounded-lg text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] hover:text-[var(--primary)] hover:border-[var(--primary)]/50 transition-all shadow-lg z-50 group"
+                  className="absolute bottom-6 right-6 flex items-center gap-2 px-4 py-2 bg-[#060D10]/80 backdrop-blur-md border border-[#FACC15]/30 rounded-none text-xs font-bold uppercase tracking-widest text-white hover:text-[#FACC15] hover:border-[#FACC15] transition-all shadow-lg z-50 group"
                 >
                   <TerminalIcon size={14} className="group-hover:scale-110 transition-transform" /> Console
                 </button>
@@ -714,6 +736,7 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
         />
       )}
     </div>
+    </div>
   );
 }
 
@@ -726,9 +749,9 @@ function ResizeHandleH({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => 
       onMouseDown={onMouseDown}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      className={`w-1 cursor-col-resize shrink-0 relative z-10 transition-colors duration-150 ${hover ? 'bg-[var(--primary)]/50' : 'bg-transparent'}`}
+      className={`w-2 cursor-col-resize shrink-0 relative z-10 transition-colors duration-150 ${hover ? 'bg-[#00E5B0]/50' : 'bg-transparent'}`}
     >
-      <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-10 rounded-full transition-all duration-150 ${hover ? 'bg-[var(--primary)] h-16' : 'bg-[var(--text-muted)]'}`} />
+      <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-10 rounded-full transition-all duration-150 ${hover ? 'bg-[#00E5B0] h-16 shadow-[0_0_10px_#00E5B0]' : 'bg-[var(--text-muted)]'}`} />
     </div>
   );
 }
@@ -740,9 +763,9 @@ function ResizeHandleV({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => 
       onMouseDown={onMouseDown}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      className={`h-1.5 cursor-row-resize shrink-0 flex items-center justify-center transition-colors duration-150 ${hover ? 'bg-[var(--primary)]/30' : 'bg-[var(--border)]'}`}
+      className={`h-2 cursor-row-resize shrink-0 flex items-center justify-center transition-colors duration-150 ${hover ? 'bg-[#00E5B0]/30' : 'bg-transparent'}`}
     >
-      <div className={`w-10 h-0.5 rounded-full transition-all duration-150 ${hover ? 'bg-[var(--primary)] w-16' : 'bg-transparent'}`} />
+      <div className={`w-10 h-0.5 rounded-full transition-all duration-150 ${hover ? 'bg-[#00E5B0] w-16 shadow-[0_0_10px_#00E5B0]' : 'bg-[var(--text-muted)]'}`} />
     </div>
   );
 }
@@ -798,7 +821,8 @@ function QuickBtn({ label, color, icon, onClick }: { label: string; color: strin
       }}
       className="flex items-center gap-1.5 px-3 py-1 text-[9px] font-bold uppercase tracking-widest rounded-md border transition-all hover:bg-opacity-20 hover:scale-105"
     >
-      {icon && icon} {label}
+      {icon}
+      <span>{label}</span>
     </button>
   );
 }

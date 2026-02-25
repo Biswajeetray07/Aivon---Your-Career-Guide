@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { auth } from "@/auth";
 
-const PUBLIC_ROUTES = ["/"];
+const PUBLIC_ROUTES = ["/", "/onboarding"]; // Temporarily added /onboarding for design preview
 const AUTH_ROUTES = ["/sign-in", "/sign-up"];
 
 export async function middleware(req: NextRequest) {

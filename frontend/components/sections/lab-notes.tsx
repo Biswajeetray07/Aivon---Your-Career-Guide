@@ -24,21 +24,21 @@ export function LabNotes() {
             <GlassCard
               key={note.id}
               onClick={() => setExpandedNote(isExpanded ? null : note.id)}
-              className={`p-6 md:p-8 flex flex-col cursor-pointer group transition-all duration-300 animate-fade-in-up ${isExpanded ? "border-[#00E5B0] scale-[1.02] shadow-[0_0_30px_rgba(0,229,176,0.15)] z-10 bg-[#0A0F14]" : "hover:border-white/10 bg-[#0A0F14]/60 border-white/5"}`}
+              className={`p-6 md:p-8 flex flex-col cursor-pointer group rounded-none transition-all duration-300 animate-fade-in-up ${isExpanded ? "border-[#00E5B0]/50 scale-[1.02] shadow-[0_0_40px_rgba(0,229,176,0.15)] z-10 bg-[#060D10]/90" : "hover:border-[#00E5B0]/30 bg-[#060D10]/80 border-[#00C2FF]/20"}`}
               style={{ animationDelay: `${(idx + 1) * 100}ms` }}
             >
-              <div className={`absolute inset-0 bg-gradient-to-tr ${note.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500 rounded-2xl pointer-events-none`} />
+              <div className={`absolute inset-0 bg-gradient-to-tr ${note.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500 rounded-none pointer-events-none`} />
               
               <div className="flex items-center justify-between mb-6 z-10 relative">
-                <span className="px-3 py-1.5 rounded bg-[#05070A] border border-white/5 text-[10px] font-geist-mono font-bold text-[var(--text-muted)] uppercase tracking-wider group-hover:border-[#00E5B0]/30 group-hover:text-[#00E5B0] transition-colors">
+                <span className="px-3 py-1.5 rounded-none bg-[#05070A] border border-[#00E5B0]/20 text-[10px] font-geist-mono font-bold text-[var(--text-muted)] uppercase tracking-wider group-hover:border-[#00E5B0]/50 group-hover:text-[#00E5B0] transition-colors shadow-[0_0_10px_rgba(0,229,176,0.05)]">
                   Experiment {note.id.toString().padStart(3, '0')}
                 </span>
                 <span className="font-geist-mono text-xs text-[var(--text-muted)] tracking-wider">{note.date}</span>
               </div>
               
-              <h3 className="text-xl md:text-2xl font-black font-space-grotesk mb-3 text-white group-hover:text-[#00E5B0] transition-colors flex items-center justify-between z-10 relative">
+              <h3 className="text-xl md:text-2xl font-black font-space-grotesk mb-3 text-white group-hover:text-[#00E5B0] transition-colors flex items-center justify-between z-10 relative tracking-tighter drop-shadow-[0_0_5px_rgba(0,229,176,0.1)]">
                 {note.title}
-                <ChevronRight size={20} className={`transform transition-transform duration-300 text-[var(--text-muted)] ${isExpanded ? "rotate-90 text-[#00E5B0]" : "group-hover:translate-x-1"}`} />
+                <ChevronRight size={20} className={`transform transition-transform duration-300 text-[var(--text-muted)] ${isExpanded ? "rotate-90 text-[#00E5B0]" : "group-hover:translate-x-1 group-hover:text-[#00C2FF]"}`} />
               </h3>
               
               <p className={`text-[14px] text-[var(--text-secondary)] leading-relaxed transition-all duration-300 z-10 relative font-geist-sans ${isExpanded ? "opacity-100 max-h-40" : "opacity-80 max-h-20"}`}>
@@ -46,8 +46,8 @@ export function LabNotes() {
               </p>
               
               {isExpanded && (
-                <div className="mt-6 pt-5 border-t border-white/5 text-[13px] font-geist-mono text-[#00C2FF] select-none animate-fade-in-down z-10 relative flex items-center gap-2">
-                  <span className="font-bold">&gt;</span> Reading logs...<span className="inline-block w-[8px] h-[15px] bg-[#00C2FF] animate-[blink_1s_step-end_infinite]" />
+                <div className="mt-6 pt-5 border-t border-[#00E5B0]/20 text-[13px] font-geist-mono text-[#00C2FF] select-none animate-fade-in-down z-10 relative flex items-center gap-2">
+                  <span className="font-bold text-[#00E5B0]">&gt;</span> Reading logs...<span className="inline-block w-[8px] h-[15px] bg-[#00E5B0] animate-[blink_1s_step-end_infinite] shadow-[0_0_8px_#00E5B0]" />
                 </div>
               )}
             </GlassCard>

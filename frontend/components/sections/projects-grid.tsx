@@ -23,7 +23,7 @@ export function ProjectsGrid() {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-1.5 rounded-full text-xs font-geist-mono font-bold transition-all duration-300 ${filter === f ? "bg-[#00E5B0]/20 text-[#00E5B0] border border-[#00E5B0]/50 shadow-[0_0_15px_rgba(0,229,176,0.2)]" : "bg-[#0A0F14] text-[var(--text-secondary)] border border-white/10 hover:border-[#00E5B0]/30 hover:text-white"}`}
+              className={`px-4 py-1.5 rounded-none text-xs font-geist-mono font-bold transition-all duration-300 uppercase ${filter === f ? "bg-[#00E5B0]/20 text-[#00E5B0] border border-[#00E5B0]/50 shadow-[0_0_15px_rgba(0,229,176,0.2)]" : "bg-[#0A0F14] text-[var(--text-secondary)] border border-white/10 hover:border-[#00E5B0]/30 hover:text-white"}`}
             >
               {f}
             </button>
@@ -36,7 +36,7 @@ export function ProjectsGrid() {
           <GlassCard
             key={project.title}
             hoverLift
-            className={`p-6 md:p-8 flex flex-col h-full group bg-[#0A0F14]/60 ${project.highlight ? "md:col-span-2 lg:col-span-2 border-[#00E5B0]/30 shadow-[0_0_20px_rgba(0,229,176,0.05)]" : "border-white/5"} animate-fade-in-up hover:bg-[#0A0F14]/90 transition-colors`}
+            className={`p-6 md:p-8 flex flex-col h-full group bg-[#060D10]/80 rounded-none ${project.highlight ? "md:col-span-2 lg:col-span-2 border-[#00E5B0]/40 shadow-[0_0_30px_rgba(0,229,176,0.1)]" : "border-[#00C2FF]/20 hover:border-[#00E5B0]/30"} animate-fade-in-up transition-colors`}
             style={{ animationDelay: `${(idx % 4 + 1) * 100}ms` }}
           >
             {project.highlight && (
@@ -46,12 +46,12 @@ export function ProjectsGrid() {
             <div className="flex items-center justify-between mb-4">
               <span className="font-geist-mono text-xs text-[var(--text-muted)] tracking-wider">{project.year}</span>
               <div className="flex items-center gap-2">
-                {project.highlight && <span className="text-[10px] font-bold tracking-[0.1em] text-[#00E5B0] border border-[#00E5B0]/30 bg-[#00E5B0]/10 px-2 py-0.5 rounded-lg">FEATURED</span>}
-                <StatusDot animate={project.status === "in-progress"} colorClass={project.status === "shipped" ? "bg-[#00C2FF]" : project.status === "in-progress" ? "bg-[#FACC15]" : "bg-[#FB923C]"} />
+                {project.highlight && <span className="text-[10px] font-bold tracking-[0.1em] text-[#00E5B0] border border-[#00E5B0]/30 bg-[#00E5B0]/10 px-2 py-0.5 rounded-none">FEATURED</span>}
+                <StatusDot animate={project.status === "in-progress"} colorClass={project.status === "shipped" ? "bg-[#00E5B0]" : project.status === "in-progress" ? "bg-[#FACC15]" : "bg-[#FB923C]"} />
               </div>
             </div>
 
-            <h3 className="text-xl md:text-2xl font-black font-space-grotesk mb-3 text-white group-hover:text-[#00E5B0] transition-colors tracking-tight">
+            <h3 className="text-xl md:text-2xl font-black font-space-grotesk mb-3 text-white group-hover:text-[#00E5B0] drop-shadow-[0_0_5px_rgba(0,229,176,0.2)] transition-colors tracking-tight">
               {project.title}
             </h3>
             
@@ -62,7 +62,7 @@ export function ProjectsGrid() {
             <div className="flex items-center justify-between mt-auto pt-5 border-t border-white/5 relative z-10">
               <div className="flex flex-wrap gap-2">
                 {project.tags.map(tag => (
-                  <span key={tag} className="text-[10px] font-geist-mono font-bold px-2.5 py-1 rounded bg-[#05070A] border border-white/5 text-[var(--text-muted)] tracking-wider">
+                  <span key={tag} className="text-[10px] font-geist-mono font-bold px-2.5 py-1 rounded-none bg-[#05070A] border border-[#00E5B0]/20 text-[#00E5B0] tracking-wider uppercase">
                     {tag}
                   </span>
                 ))}
@@ -74,7 +74,9 @@ export function ProjectsGrid() {
               </div>
             </div>
 
-            <div className="absolute bottom-0 left-0 h-1 w-0 bg-gradient-to-r from-[#00E5B0] to-[#00C2FF] group-hover:w-full transition-all duration-700 ease-out z-0" />
+            {/* Scanning Laser Line */}
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-[#00E5B0] shadow-[0_0_8px_#00E5B0] scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
+            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-[#00E5B0] to-[#00C2FF] opacity-0 group-hover:opacity-100 transition-opacity duration-700 ease-out z-0" />
           </GlassCard>
         ))}
       </div>

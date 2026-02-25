@@ -26,13 +26,16 @@ export function HeroSection() {
           </span>
         </div>
         
-        <h1 className="text-5xl sm:text-6xl md:text-[80px] font-space-grotesk font-black leading-[1.05] tracking-tight stagger-2 animate-fade-in-up">
-          Forging digital <br />
-          <span className="text-[#00E5B0] inline-flex items-center">
-            {dynamicText}
-            <span className="inline-block w-[24px] h-[64px] bg-[#00E5B0] ml-2 animate-[blink_1s_step-end_infinite]" />
-          </span>
-        </h1>
+        {/* Fixed height wrapper to prevent typewriter layout jump */}
+        <div className="min-h-[140px] sm:min-h-[160px] md:min-h-[180px] flex items-center">
+          <h1 className="text-5xl sm:text-6xl md:text-[80px] font-space-grotesk font-black leading-[1.05] tracking-tight stagger-2 animate-fade-in-up">
+            Forging digital <br />
+            <span className="text-[#00E5B0] inline-flex items-center drop-shadow-[0_0_8px_rgba(0,229,176,0.3)]">
+              {dynamicText}
+              <span className="inline-block w-[24px] h-[64px] bg-[#00E5B0] ml-2 animate-[blink_1s_step-end_infinite] shadow-[0_0_15px_#00E5B0]" />
+            </span>
+          </h1>
+        </div>
         
         <p className="text-lg md:text-xl text-[var(--text-secondary)] mt-6 max-w-xl stagger-3 animate-fade-in-up leading-relaxed font-geist-sans">
           Welcome to the Aivon Laboratory — a space for experimental remote 
@@ -50,21 +53,21 @@ export function HeroSection() {
               </div>
               <div className="flex flex-wrap items-center gap-4">
                 <Link href="/dashboard">
-                  <button className="h-14 px-8 rounded-xl bg-[#00E5B0] text-black font-bold font-space-grotesk text-lg transition-all duration-300 hover:brightness-110 hover:-translate-y-1 hover:shadow-[0_10px_30px_-10px_rgba(0,229,176,0.4)] flex items-center gap-3 group">
-                    Go to Dashboard <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                  <button className="h-14 px-8 rounded-none border border-[#00E5B0]/40 bg-[#00E5B0]/10 text-[#00E5B0] font-bold font-space-grotesk tracking-widest uppercase text-xs transition-all duration-300 hover:bg-[#00E5B0] hover:text-[#05070A] hover:-translate-y-1 hover:shadow-[0_10px_30px_-10px_rgba(0,229,176,0.4)] flex items-center gap-3 group">
+                    ENTER DASHBOARD <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                   </button>
                 </Link>
                 <Link href="/logout">
-                  <button className="h-14 px-8 rounded-xl bg-transparent text-[var(--text-primary)] font-bold font-space-grotesk border border-white/10 transition-all duration-300 hover:border-red-500/50 hover:text-red-500 hover:bg-red-500/5 hover:-translate-y-1">
-                    Sign Out
+                  <button className="h-14 px-8 rounded-none bg-transparent text-[var(--text-secondary)] font-bold font-space-grotesk tracking-widest uppercase text-xs border border-white/10 transition-all duration-300 hover:border-[#00C2FF]/50 hover:text-[#00C2FF] hover:bg-[#00C2FF]/5 hover:-translate-y-1">
+                    ABORT SESSION
                   </button>
                 </Link>
               </div>
             </div>
           ) : (
             <Link href="/sign-in">
-              <button className="h-14 px-8 rounded-xl bg-[#00E5B0] text-black font-bold font-space-grotesk text-lg transition-all duration-300 hover:brightness-110 hover:-translate-y-1 hover:shadow-[0_10px_30px_-10px_rgba(0,229,176,0.4)] flex items-center gap-3 group">
-                Sign in to Dashboard <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              <button className="h-14 px-8 rounded-none border border-[#00E5B0]/40 bg-[#00E5B0]/10 text-[#00E5B0] font-bold font-space-grotesk tracking-widest uppercase text-xs transition-all duration-300 hover:bg-[#00E5B0] hover:text-[#05070A] hover:-translate-y-1 hover:shadow-[0_10px_30px_-10px_rgba(0,229,176,0.4)] flex items-center gap-3 group">
+                INITIALIZE UPLINK <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
               </button>
             </Link>
           )}
@@ -75,40 +78,48 @@ export function HeroSection() {
       <div className="relative z-10 w-full max-w-2xl mx-auto lg:mx-0 stagger-5 animate-fade-in-up mt-12 lg:mt-0 flex justify-end">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-[#00E5B0]/10 blur-[120px] rounded-full pointer-events-none" />
         
-        <div className="glass border border-white/6 rounded-2xl overflow-hidden shadow-2xl relative group transform transition-transform duration-700 hover:rotate-1 w-full max-w-[600px] bg-[#0A0F14]/80">
+        <div className="glass border border-[#00E5B0]/30 rounded-none overflow-hidden shadow-[0_0_40px_rgba(0,229,176,0.1)] relative group transform transition-transform duration-700 hover:scale-[1.02] w-full max-w-[600px] bg-[#060D10]/80 backdrop-blur-2xl">
           
-          {/* Mac Header */}
-          <div className="px-5 py-4 border-b border-white/5 flex items-center gap-2.5 bg-[#05070A]/80 relative relative z-10">
-            <div className="w-3 h-3 rounded-full bg-[#FF5F56]" />
-            <div className="w-3 h-3 rounded-full bg-[#FFBD2E]" />
-            <div className="w-3 h-3 rounded-full bg-[#27C93F]" />
-            <span className="absolute left-1/2 -translate-x-1/2 text-[11px] font-geist-mono text-[var(--text-muted)] tracking-[0.1em]">
+          {/* Decorative Corner Cuts */}
+          <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#00E5B0] z-20" />
+          <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#00E5B0] z-20" />
+          <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#00E5B0] z-20" />
+          <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#00E5B0] z-20" />
+          
+          {/* Cyber Header */}
+          <div className="px-5 py-4 border-b border-[#00E5B0]/20 flex items-center justify-between bg-[#05070A]/90 relative z-10">
+            <div className="flex gap-2">
+              <div className="w-2 h-2 bg-[#00E5B0] animate-pulse" />
+              <div className="w-2 h-2 bg-[#00C2FF]" />
+            </div>
+            <span className="text-[10px] font-geist-mono text-[#00E5B0] tracking-[0.2em] font-bold">
               terminal://aivon
             </span>
           </div>
           
           {/* Terminal Body */}
-          <div className="p-8 md:p-10 font-geist-mono text-sm sm:text-[15px] text-[#00E5B0] leading-tight whitespace-pre overflow-x-auto relative">
+          <div className="p-8 md:p-10 font-geist-mono text-sm sm:text-[15px] text-white leading-tight whitespace-pre overflow-x-auto relative">
 {`    ___    _____    __  __   ____    _   __ 
    /   |  /  _/  | / / / __ \\ / | / /
   / /| |  / /   \\ V / / / / //  |/ / 
  / ___ |_/ /     | | / /_/ // /|  /  
 /_/  |_/___/     |_| \\____//_/ |_/   `}
-            <div className="mt-12 text-[var(--text-secondary)] space-y-3 font-geist-mono text-[13px]">
+            <div className="mt-12 text-[var(--text-secondary)] space-y-3 font-geist-mono text-[13px] uppercase tracking-wider">
               <div className="flex gap-4">
-                <span className="text-[#00E5B0] font-bold">❯</span>
-                <span className="text-white opacity-90">user:</span>
-                <span className="opacity-70">{status === "authenticated" ? (session?.user?.name || "authenticated") : "unauthenticated"}</span>
+                <span className="text-[#00C2FF] font-bold">❯</span>
+                <span className="text-[var(--text-muted)]">user:</span>
+                <span className="text-white font-bold">{status === "authenticated" ? (session?.user?.name || "authenticated") : "unauthenticated"}</span>
               </div>
               <div className="flex gap-4">
                 <span className="text-[#00E5B0] font-bold">❯</span>
-                <span className="text-white opacity-90">status:</span>
-                <span className="text-[#00E5B0]">ONLINE</span>
+                <span className="text-[var(--text-muted)]">status:</span>
+                <span className="text-[#00E5B0] drop-shadow-[0_0_5px_#00E5B0]">ONLINE</span>
               </div>
-              <div className="flex gap-4">
-                <span className="text-[#00E5B0] font-bold">❯</span>
-                <span className="text-white opacity-90">compiler:</span>
-                <span className="opacity-70">ready_for_execution</span><span className="inline-block w-[8px] h-[15px] bg-[var(--text-muted)] ml-2 animate-[blink_1s_step-end_infinite]" />
+              <div className="flex gap-4 items-center">
+                <span className="text-[#00C2FF] font-bold text-lg leading-none">❯</span>
+                <span className="text-[var(--text-muted)]">compiler:</span>
+                <span className="text-[#00E5B0]">ready_for_execution</span>
+                <span className="inline-block w-[8px] h-[15px] bg-[#00E5B0] ml-2 animate-[blink_1s_step-end_infinite] shadow-[0_0_8px_#00E5B0]" />
               </div>
             </div>
 
@@ -118,11 +129,11 @@ export function HeroSection() {
         </div>
 
         {/* Floating Badges */}
-        <div className="absolute -top-6 -right-6 px-4 py-1.5 rounded-full border border-[var(--primary)]/30 bg-[var(--card)]/90 backdrop-blur-md text-[10px] font-mono text-[var(--primary)] animate-float" style={{ animationDelay: '0s' }}>
-          v2.0.0
+        <div className="absolute -top-6 -right-6 px-4 py-1.5 rounded-none border border-[#00E5B0]/50 bg-[#00E5B0]/10 backdrop-blur-md text-[10px] font-mono text-[#00E5B0] font-bold shadow-[0_0_15px_rgba(0,229,176,0.2)] animate-float" style={{ animationDelay: '0s' }}>
+          CORE v2.0
         </div>
-        <div className="absolute -bottom-4 -left-4 px-4 py-1.5 rounded-full border border-[var(--border)] bg-[var(--card)]/90 backdrop-blur-md text-[10px] font-mono text-[var(--text-secondary)] animate-float" style={{ animationDelay: '2s' }}>
-          EST. 2026
+        <div className="absolute -bottom-4 -left-4 px-4 py-1.5 rounded-none border border-[#00C2FF]/50 bg-[#00C2FF]/10 backdrop-blur-md text-[10px] font-mono text-[#00C2FF] font-bold shadow-[0_0_15px_rgba(0,194,255,0.2)] animate-float" style={{ animationDelay: '2s' }}>
+          UPLINK SECURE
         </div>
       </div>
 
