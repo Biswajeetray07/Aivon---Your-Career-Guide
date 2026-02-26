@@ -49,4 +49,26 @@ __pycache__/
 
 # Temporary / Debug files
 test_api.py
+test_api_err.py
+*test*.py
 __motia_log.txt
+lint_output.txt
+
+# Databases
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# AI Agent Artifacts
+.gemini/
+.aider*
+.cli-mcp/
+
+# OS and IDE
+.DS_Store
+.cursor/
+.claude/
+.vscode/
+.idea/

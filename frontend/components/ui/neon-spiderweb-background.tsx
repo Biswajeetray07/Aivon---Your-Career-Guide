@@ -20,75 +20,60 @@ export function NeonSpiderWebBackground() {
     window.addEventListener("resize", handleResize);
 
     // Node particle system for the web
-    class Node {
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-      radius: number;
-      color: string;
-      baseX: number;
-      baseY: number;
+    type Node = {
+      x: number; y: number; vx: number; vy: number; radius: number; color: string; baseX: number; baseY: number;
+    };
 
-      constructor(x: number, y: number) {
-        this.x = x;
-        this.y = y;
-        this.baseX = x;
-        this.baseY = y;
-        
-        // Slower drifting for a more eerie, calculated feel
-        this.vx = (Math.random() - 0.5) * 0.3;
-        this.vy = (Math.random() - 0.5) * 0.3;
-        
-        // Node sizing
-        this.radius = Math.random() * 1.5 + 0.5;
-        
-        // Mostly Neon Green with occasional Cobalt Blue accents
-        this.color = Math.random() > 0.85 ? "#00C2FF" : "#00E5B0"; 
-      }
+    const createNode = (x: number, y: number): Node => {
+        return {
+          x, y, baseX: x, baseY: y,
+          vx: (Math.random() - 0.5) * 0.3,
+          vy: (Math.random() - 0.5) * 0.3,
+          radius: Math.random() * 1.5 + 0.5,
+          color: Math.random() > 0.85 ? "#00C2FF" : "#00E5B0",
+        };
+    };
 
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
+    const updateNode = (node: Node, mouseX: number, mouseY: number) => {
+        node.x += node.vx;
+        node.y += node.vy;
 
         // Gentle boundary drift and wrap
-        if (this.x < -100) this.x = width + 100;
-        if (this.x > width + 100) this.x = -100;
-        if (this.y < -100) this.y = height + 100;
-        if (this.y > height + 100) this.y = -100;
+        if (node.x < -100) node.x = width + 100;
+        if (node.x > width + 100) node.x = -100;
+        if (node.y < -100) node.y = height + 100;
+        if (node.y > height + 100) node.y = -100;
 
         // Central cursor pull logic
-        const dx = mouse.x - this.x;
-        const dy = mouse.y - this.y;
+        const dx = mouseX - node.x;
+        const dy = mouseY - node.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         
         // If mouse is close, nodes naturally pull towards it slightly
-        if (mouse.x !== -1000 && dist < 300) {
+        if (mouseX !== -1000 && dist < 300) {
           const force = (300 - dist) / 300;
-          this.x += dx * force * 0.02;
-          this.y += dy * force * 0.02;
+          node.x += dx * force * 0.02;
+          node.y += dy * force * 0.02;
         } else {
           // Slow return to base trajectory
-          this.x += (this.baseX - this.x) * 0.001;
-          this.y += (this.baseY - this.y) * 0.001;
+          node.x += (node.baseX - node.x) * 0.001;
+          node.y += (node.baseY - node.y) * 0.001;
         }
-      }
+    };
 
-      draw() {
-        if (!ctx) return;
+    const drawNode = (node: Node, ctx: CanvasRenderingContext2D) => {
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
+        ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+        ctx.fillStyle = node.color;
         
         // Add strong glow to nodes
         ctx.shadowBlur = 10;
-        ctx.shadowColor = this.color;
+        ctx.shadowColor = node.color;
         ctx.fill();
         
         // Reset shadow for performance on lines
         ctx.shadowBlur = 0;
-      }
-    }
+    };
 
     // Initialize nodes
     const nodes: Node[] = [];
@@ -100,7 +85,7 @@ export function NeonSpiderWebBackground() {
         const radius = Math.random() * (Math.max(width, height) / 1.5);
         const x = width / 2 + Math.cos(angle) * radius;
         const y = height / 2 + Math.sin(angle) * radius;
-        nodes.push(new Node(x, y));
+        nodes.push(createNode(x, y));
     }
 
     // Mouse interaction
@@ -140,8 +125,8 @@ export function NeonSpiderWebBackground() {
 
       // Update and Draw Nodes
       nodes.forEach(node => {
-        node.update();
-        node.draw();
+        updateNode(node, mouse.x, mouse.y);
+        drawNode(node, ctx);
       });
 
       // Draw Spiderman "Webs" (Curved Bezier lines between close nodes)
@@ -226,7 +211,7 @@ export function NeonSpiderWebBackground() {
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 w-full h-full object-cover z-[-1]"
+      className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
       style={{ background: "#05070A" }} // Fallback background
     />
   );

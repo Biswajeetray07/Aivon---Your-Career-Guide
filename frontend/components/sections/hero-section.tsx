@@ -27,13 +27,13 @@ export function HeroSection() {
         </div>
         
         {/* Fixed height wrapper to prevent typewriter layout jump */}
-        <div className="min-h-[140px] sm:min-h-[160px] md:min-h-[180px] flex items-center">
+        <div className="min-h-[200px] sm:min-h-[240px] md:min-h-[300px] flex items-start w-full">
           <h1 className="text-5xl sm:text-6xl md:text-[80px] font-space-grotesk font-black leading-[1.05] tracking-tight stagger-2 animate-fade-in-up">
             Forging digital <br />
-            <span className="text-[#00E5B0] inline-flex items-center drop-shadow-[0_0_8px_rgba(0,229,176,0.3)]">
+            <span className="text-[#00E5B0] drop-shadow-[0_0_8px_rgba(0,229,176,0.3)]">
               {dynamicText}
-              <span className="inline-block w-[24px] h-[64px] bg-[#00E5B0] ml-2 animate-[blink_1s_step-end_infinite] shadow-[0_0_15px_#00E5B0]" />
             </span>
+            <span className="inline-block w-[16px] sm:w-[20px] md:w-[24px] h-[40px] sm:h-[50px] md:h-[64px] bg-[#00E5B0] ml-2 animate-[blink_1s_step-end_infinite] shadow-[0_0_15px_#00E5B0] align-middle -mt-2 sm:-mt-4" />
           </h1>
         </div>
         
@@ -53,12 +53,15 @@ export function HeroSection() {
               </div>
               <div className="flex flex-wrap items-center gap-4">
                 <Link href="/dashboard">
-                  <button className="h-14 px-8 rounded-none border border-[#00E5B0]/40 bg-[#00E5B0]/10 text-[#00E5B0] font-bold font-space-grotesk tracking-widest uppercase text-xs transition-all duration-300 hover:bg-[#00E5B0] hover:text-[#05070A] hover:-translate-y-1 hover:shadow-[0_10px_30px_-10px_rgba(0,229,176,0.4)] flex items-center gap-3 group">
-                    ENTER DASHBOARD <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                  <button className="h-14 px-8 rounded-lg relative overflow-hidden group bg-transparent border border-[#00E5B0]/30 text-[#00E5B0] font-space-grotesk font-bold uppercase tracking-[0.1em] transition-all duration-300 flex items-center justify-center gap-3 hover:bg-[#00E5B0]/10 hover:border-[#00E5B0]/80 hover:text-white hover:shadow-sm">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#00E5B0]/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                    <span className="w-1.5 h-1.5 bg-[#00E5B0] rounded-full group-hover:animate-ping z-10" />
+                    <span className="z-10 relative">ENTER DASHBOARD</span>
+                    <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform z-10 relative" />
                   </button>
                 </Link>
                 <Link href="/logout">
-                  <button className="h-14 px-8 rounded-none bg-transparent text-[var(--text-secondary)] font-bold font-space-grotesk tracking-widest uppercase text-xs border border-white/10 transition-all duration-300 hover:border-[#00C2FF]/50 hover:text-[#00C2FF] hover:bg-[#00C2FF]/5 hover:-translate-y-1">
+                  <button className="h-14 px-8 rounded-lg bg-transparent text-[var(--text-secondary)] font-bold font-space-grotesk tracking-widest uppercase text-xs border border-white/10 transition-all duration-300 hover:border-[#00C2FF]/50 hover:text-[#00C2FF] hover:bg-[#00C2FF]/5">
                     ABORT SESSION
                   </button>
                 </Link>
@@ -66,8 +69,11 @@ export function HeroSection() {
             </div>
           ) : (
             <Link href="/sign-in">
-              <button className="h-14 px-8 rounded-none border border-[#00E5B0]/40 bg-[#00E5B0]/10 text-[#00E5B0] font-bold font-space-grotesk tracking-widest uppercase text-xs transition-all duration-300 hover:bg-[#00E5B0] hover:text-[#05070A] hover:-translate-y-1 hover:shadow-[0_10px_30px_-10px_rgba(0,229,176,0.4)] flex items-center gap-3 group">
-                INITIALIZE UPLINK <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+              <button className="h-14 px-8 rounded-lg relative overflow-hidden group bg-transparent border border-[#00E5B0]/30 text-[#00E5B0] font-space-grotesk font-bold uppercase tracking-[0.1em] transition-all duration-300 flex items-center justify-center gap-3 hover:bg-[#00E5B0]/10 hover:border-[#00E5B0]/80 hover:text-white hover:shadow-sm">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#00E5B0]/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                <span className="w-1.5 h-1.5 bg-[#00E5B0] rounded-full group-hover:animate-ping z-10" />
+                <span className="z-10 relative">SIGN IN TO DASHBOARD</span>
+                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform z-10 relative" />
               </button>
             </Link>
           )}
@@ -78,13 +84,7 @@ export function HeroSection() {
       <div className="relative z-10 w-full max-w-2xl mx-auto lg:mx-0 stagger-5 animate-fade-in-up mt-12 lg:mt-0 flex justify-end">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-[#00E5B0]/10 blur-[120px] rounded-full pointer-events-none" />
         
-        <div className="glass border border-[#00E5B0]/30 rounded-none overflow-hidden shadow-[0_0_40px_rgba(0,229,176,0.1)] relative group transform transition-transform duration-700 hover:scale-[1.02] w-full max-w-[600px] bg-[#060D10]/80 backdrop-blur-2xl">
-          
-          {/* Decorative Corner Cuts */}
-          <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#00E5B0] z-20" />
-          <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#00E5B0] z-20" />
-          <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#00E5B0] z-20" />
-          <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#00E5B0] z-20" />
+        <div className="glass border border-[#00E5B0]/30 rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(0,229,176,0.1)] relative group transform transition-transform duration-700 hover:scale-[1.02] w-full max-w-[600px] bg-[#060D10]/80 backdrop-blur-2xl">
           
           {/* Cyber Header */}
           <div className="px-5 py-4 border-b border-[#00E5B0]/20 flex items-center justify-between bg-[#05070A]/90 relative z-10">
@@ -129,10 +129,10 @@ export function HeroSection() {
         </div>
 
         {/* Floating Badges */}
-        <div className="absolute -top-6 -right-6 px-4 py-1.5 rounded-none border border-[#00E5B0]/50 bg-[#00E5B0]/10 backdrop-blur-md text-[10px] font-mono text-[#00E5B0] font-bold shadow-[0_0_15px_rgba(0,229,176,0.2)] animate-float" style={{ animationDelay: '0s' }}>
+        <div className="absolute -top-6 -right-6 px-4 py-1.5 rounded-full border border-[#00E5B0]/50 bg-[#00E5B0]/10 backdrop-blur-md text-[10px] font-mono text-[#00E5B0] font-bold shadow-[0_0_15px_rgba(0,229,176,0.2)] animate-float" style={{ animationDelay: '0s' }}>
           CORE v2.0
         </div>
-        <div className="absolute -bottom-4 -left-4 px-4 py-1.5 rounded-none border border-[#00C2FF]/50 bg-[#00C2FF]/10 backdrop-blur-md text-[10px] font-mono text-[#00C2FF] font-bold shadow-[0_0_15px_rgba(0,194,255,0.2)] animate-float" style={{ animationDelay: '2s' }}>
+        <div className="absolute -bottom-4 -left-4 px-4 py-1.5 rounded-full border border-[#00C2FF]/50 bg-[#00C2FF]/10 backdrop-blur-md text-[10px] font-mono text-[#00C2FF] font-bold shadow-[0_0_15px_rgba(0,194,255,0.2)] animate-float" style={{ animationDelay: '2s' }}>
           UPLINK SECURE
         </div>
       </div>

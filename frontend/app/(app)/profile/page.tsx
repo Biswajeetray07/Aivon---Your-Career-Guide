@@ -152,20 +152,30 @@ const formatStatus = (s: string) => {
 };
 
 export default function ProfilePage() {
+  const [mounted, setMounted] = useState(false);
+  const [hexTime, setHexTime] = useState("00000000");
+  const [randHex1, setRandHex1] = useState("0000");
+  const [randHex2, setRandHex2] = useState("0");
   const [stats, setStats] = useState<{
     totalSolved: number; totalSubmissions: number; accuracy: number;
     byDifficulty: { EASY: number; MEDIUM: number; HARD: number };
-    recentActivity: unknown[];
+    recentActivity: SubmissionHistoryItem[];
   } | null>(null);
   const [user, setUser] = useState<{ name: string | null; email: string; rating: number; createdAt: string } | null>(null);
   const [submissions, setSubmissions] = useState<SubmissionHistoryItem[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
   const router = useRouter();
 
   useEffect(() => {
-    setMounted(true);
+    const timer = setTimeout(() => {
+      setMounted(true);
+      setHexTime(Date.now().toString(16).toUpperCase());
+      setRandHex1((Math.floor(Math.random() * 9000) + 1000).toString());
+      setRandHex2(Math.floor(Math.random() * 9).toString());
+    }, 0);
+    return () => clearTimeout(timer);
+    
     Promise.all([getMyStats(), getSession()])
       .then(([s, sess]) => { 
         if (!sess || !sess.user) {
@@ -236,13 +246,14 @@ export default function ProfilePage() {
   const topLang = Object.entries(langGroups).sort((a, b) => b[1] - a[1])[0];
 
   return (
-    <div className="min-h-screen pt-28 pb-20 container mx-auto px-6 md:px-12 font-space-grotesk">
+    <div className="min-h-screen pt-[120px] pb-20 w-full px-6 md:px-12 font-space-grotesk bg-transparent">
+      <div className="relative z-10 w-full max-w-[1500px] mx-auto">
 
       {/* ── User Header (Operative Dossier) ── */}
       {user && (
-        <div className="bg-[#05070A] border border-[#00E5B0]/30 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(0,229,176,0.1)] mb-12 relative flex flex-col stagger-1 animate-fade-in-up">
+        <div className="bg-[#05070A]/80 border-[0.5px] border-white/5 rounded-xl overflow-hidden shadow-hacker-glow backdrop-blur-lg mb-12 relative flex flex-col stagger-1 animate-fade-in-up">
           {/* Top Tech Bar */}
-          <div className="px-5 py-3 border-b border-[#00E5B0]/20 flex items-center justify-between bg-[#0A0F14] relative z-10 w-full">
+          <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between bg-[#0A0F14] relative z-10 w-full">
             <div className="flex items-center gap-3">
               <div className="w-2.5 h-2.5 rounded-sm bg-[#00E5B0] animate-pulse shadow-[0_0_8px_#00E5B0]" />
               <span className="text-[10px] font-geist-mono text-[#00E5B0] tracking-widest uppercase">
@@ -266,7 +277,7 @@ export default function ProfilePage() {
               <div className="absolute -top-2 -left-2 w-4 h-4 border-t-2 border-l-2 border-[#00C2FF] transition-all duration-300 group-hover:w-full group-hover:h-full group-hover:-top-1 group-hover:-left-1 group-hover:border-[#00E5B0] group-hover:opacity-50 z-20 pointer-events-none" />
               <div className="absolute -bottom-2 -right-2 w-4 h-4 border-b-2 border-r-2 border-[#00C2FF] transition-all duration-300 group-hover:w-full group-hover:h-full group-hover:-bottom-1 group-hover:-right-1 group-hover:border-[#00E5B0] group-hover:opacity-50 z-20 pointer-events-none" />
               
-              <div className="w-28 h-28 bg-[#060D10] flex items-center justify-center text-[#00E5B0] shadow-[inset_0_0_30px_rgba(0,229,176,0.15)] overflow-hidden border border-[#00E5B0]/30 relative z-10 [clip-path:polygon(15%_0%,_85%_0%,_100%_15%,_100%_85%,_85%_100%,_15%_100%,_0%_85%,_0%_15%)]">
+              <div className="w-28 h-28 bg-[#060D10] flex items-center justify-center text-[#00E5B0] shadow-sm overflow-hidden border border-white/5 relative z-10 [clip-path:polygon(15%_0%,_85%_0%,_100%_15%,_100%_85%,_85%_100%,_15%_100%,_0%_85%,_0%_15%)]">
                 {/* Scanner line overlay */}
                 <div className="absolute top-0 left-0 w-full h-[2px] bg-[#00E5B0]/50 shadow-[0_0_10px_#00E5B0] opacity-50 block -translate-y-full hover:animate-[scan_2s_linear_infinite] z-30" />
                 <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,229,176,0.05)_2px,rgba(0,229,176,0.05)_4px)] mix-blend-screen pointer-events-none z-30" />
@@ -326,7 +337,7 @@ export default function ProfilePage() {
             <div className="flex-1 text-center md:text-left relative z-10 flex flex-col justify-center">
               {/* Faux Metadata Above Name */}
               <div className="text-[#00C2FF] text-[9px] font-geist-mono uppercase tracking-[0.3em] mb-2 flex items-center justify-center md:justify-start gap-4 opacity-70">
-                <span><span className="text-white/30 mr-1 text-[8px]">ID:</span>Aivon-{Math.floor(Math.random() * 9000) + 1000}</span>
+                <span><span className="text-white/30 mr-1 text-[8px]">ID:</span>Aivon-{mounted ? randHex1 : "0000"}</span>
                 <span className="hidden md:inline text-white/10">|</span>
                 <span className="hidden md:inline"><span className="text-white/30 mr-1 text-[8px]">SYS_LATENCY:</span>14MS</span>
                 <span className="hidden md:inline text-white/10">|</span>
@@ -356,23 +367,23 @@ export default function ProfilePage() {
 
               {/* Terminal Logging Subtext */}
               <p className="text-[#00E5B0] text-xs font-geist-mono tracking-[0.2em] flex flex-col md:flex-row items-center gap-3 mt-2">
-                <span className="lowercase bg-[#00E5B0]/10 border border-[#00E5B0]/20 px-2 py-0.5 rounded-sm">{user.email}</span> 
+                <span className="lowercase bg-[#00E5B0]/10 border border-white/5 px-2 py-0.5 rounded-sm">{user.email}</span> 
                 <span className="hidden md:inline text-white/20">/</span> 
                 <span className="flex items-center gap-2 text-white/60 uppercase">
                   <span className="w-2 h-2 rounded-full bg-[#00E5B0] shadow-[0_0_8px_#00E5B0] animate-pulse" />
                   AUTH_START: {new Date(user.createdAt).toLocaleDateString()}
                 </span>
-                <span className="hidden md:inline text-[#00C2FF]/30 text-[10px] ml-auto">0x{Date.now().toString(16).toUpperCase()}</span>
+                <span className="hidden md:inline text-[#00C2FF]/30 text-[10px] ml-auto">0x{mounted ? hexTime : "00000000"}</span>
               </p>
             </div>
             
             {/* Active Processing Node (Neural Rating) */}
-            <div className="text-center md:text-right shrink-0 relative z-10 bg-[#0A0F14]/80 border border-[#FACC15]/30 p-5 rounded-none shadow-[inset_0_0_20px_rgba(250,204,21,0.05)] min-w-[160px] group overflow-hidden">
+            <div className="text-center md:text-right shrink-0 relative z-10 bg-[#0A0F14]/80 border border-white/5 p-5 rounded-none shadow-[inset_0_0_20px_rgba(250,204,21,0.05)] min-w-[160px] group overflow-hidden">
               {/* Corner Brackets */}
-              <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-[#FACC15]/50 group-hover:border-[#FACC15] transition-colors" />
-              <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-[#FACC15]/50 group-hover:border-[#FACC15] transition-colors" />
-              <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-[#FACC15]/50 group-hover:border-[#FACC15] transition-colors" />
-              <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-[#FACC15]/50 group-hover:border-[#FACC15] transition-colors" />
+              <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-white/5 group-hover:border-[#FACC15] transition-colors" />
+              <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-white/5 group-hover:border-[#FACC15] transition-colors" />
+              <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-white/5 group-hover:border-[#FACC15] transition-colors" />
+              <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-white/5 group-hover:border-[#FACC15] transition-colors" />
 
               {/* Scanning background line */}
               <div className="absolute -left-full top-1/2 w-[200%] h-[1px] bg-[#FACC15]/20 -rotate-45 block transform -translate-y-1/2 group-hover:animate-[scan_3s_linear_infinite]" />
@@ -384,8 +395,8 @@ export default function ProfilePage() {
               
               <div className="relative flex items-center justify-center md:justify-end mt-2 mb-1">
                 {/* Decorative spinning ring */}
-                <div className="absolute w-14 h-14 border border-dashed border-[#FACC15]/30 rounded-full animate-[spin_15s_linear_infinite]" />
-                <div className="absolute w-10 h-10 border border-[#FACC15]/10 rounded-full animate-[spin_10s_linear_infinite_reverse]" />
+                <div className="absolute w-14 h-14 border border-dashed border-white/5 rounded-full animate-[spin_15s_linear_infinite]" />
+                <div className="absolute w-10 h-10 border border-white/5 rounded-full animate-[spin_10s_linear_infinite_reverse]" />
                 
                 <div className="text-5xl font-vt323 text-[#FACC15] drop-shadow-[0_0_15px_rgba(250,204,21,0.4)] relative z-10 group-hover:text-white transition-colors duration-300">
                   {user.rating}
@@ -393,8 +404,8 @@ export default function ProfilePage() {
               </div>
               
               {/* Hex Data Stream */}
-              <div className="bg-[#05070A] px-2 py-0.5 mt-3 border border-[#FACC15]/20 text-[8px] font-geist-mono text-[#FACC15]/50 flex justify-between items-center relative z-10 overflow-hidden group-hover:text-[#FACC15]/80 transition-colors">
-                <span>0xAF{Math.floor(Math.random() * 9)}9</span>
+              <div className="bg-[#05070A] px-2 py-0.5 mt-3 border border-white/5 text-[8px] font-geist-mono text-[#FACC15]/50 flex justify-between items-center relative z-10 overflow-hidden group-hover:text-[#FACC15]/80 transition-colors">
+                <span>0xAF{mounted ? randHex2 : "0"}9</span>
                 <span className="group-hover:animate-pulse">PRC_RUN</span>
               </div>
             </div>
@@ -464,7 +475,7 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12 stagger-3 animate-fade-in-up">
 
             {/* Verdict Donut (Hacker Frame) */}
-            <div className="bg-[#05070A] border border-[#00E5B0]/30 overflow-hidden shadow-[0_0_20px_rgba(0,229,176,0.1)] flex flex-col h-full relative group">
+            <div className="bg-[#05070A] border border-white/5 overflow-hidden shadow-sm flex flex-col h-full relative group">
               {/* Terminal Frame Brackets ([ ┐ ) */}
               <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#00E5B0]" />
               <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#00E5B0]" />
@@ -472,7 +483,7 @@ export default function ProfilePage() {
               <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#00E5B0]" />
 
               {/* Hardcore Header */}
-              <div className="px-4 py-2 border-b border-[#00E5B0]/20 flex items-center justify-between bg-[#0A0F14]/80 relative z-10 w-full mb-2">
+              <div className="px-4 py-2 border-b border-white/5 flex items-center justify-between bg-[#0A0F14]/80 relative z-10 w-full mb-2">
                 <span className="text-[10px] font-geist-mono text-[#00E5B0] tracking-[0.2em] font-bold flex items-center gap-2">
                   <span className="text-[#00C2FF] animate-pulse">■</span> [ // VERDICT_DATA_STREAM ]
                 </span>
@@ -488,7 +499,7 @@ export default function ProfilePage() {
                   {submissions.length > 0 ? (
                     <VerdictDonut data={verdictData} />
                   ) : (
-                    <div className="text-[#00E5B0]/50 text-xs text-center py-10 font-geist-mono uppercase tracking-widest border border-dashed border-[#00E5B0]/20 p-4 w-full block">No neural links established yet.</div>
+                    <div className="text-[#00E5B0]/50 text-xs text-center py-10 font-geist-mono uppercase tracking-widest border border-dashed border-white/5 p-4 w-full block">No neural links established yet.</div>
                   )}
                 </div>
               </div>
@@ -523,7 +534,7 @@ export default function ProfilePage() {
           </div>
 
           {/* ── Difficulty Breakdown (Target Matrix - Server Rack) ── */}
-          <div className="bg-[#05070A] border border-[#00E5B0]/30 overflow-hidden shadow-[0_0_20px_rgba(0,229,176,0.1)] mb-12 relative flex flex-col stagger-4 animate-fade-in-up">
+          <div className="bg-[#05070A] border border-white/5 overflow-hidden shadow-sm mb-12 relative flex flex-col stagger-4 animate-fade-in-up">
             {/* Terminal Frame Brackets */}
             <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#00E5B0]" />
             <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#00E5B0]" />
@@ -531,7 +542,7 @@ export default function ProfilePage() {
             <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#00E5B0]" />
 
             {/* Hardcore Tech Header */}
-            <div className="px-5 py-3 border-b border-[#00E5B0]/20 flex items-center justify-between bg-[#0A0F14]/90 relative z-10 w-full">
+            <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between bg-[#0A0F14]/90 relative z-10 w-full">
               <div className="flex items-center gap-3">
                 <span className="text-[#00C2FF] animate-pulse">■</span>
                 <span className="text-[10px] font-geist-mono text-[#00E5B0] font-bold tracking-[0.2em] uppercase">
@@ -605,7 +616,7 @@ export default function ProfilePage() {
                 <span className="text-[8px] font-geist-mono text-white/30 hidden sm:inline">REC_TRACE: ACTIVE</span>
                 <button 
                   onClick={() => setIsHistoryOpen(true)}
-                  className="px-3 py-1.5 border border-[#00C2FF]/30 bg-[#00C2FF]/5 hover:bg-[#00C2FF]/15 text-[9px] font-geist-mono text-[#00C2FF] transition-all tracking-[0.2em] uppercase flex items-center gap-2 group/btn relative overflow-hidden backdrop-blur-sm"
+                  className="px-3 py-1.5 border border-white/5 bg-[#00C2FF]/5 hover:bg-[#00C2FF]/15 text-[9px] font-geist-mono text-[#00C2FF] transition-all tracking-[0.2em] uppercase flex items-center gap-2 group/btn relative overflow-hidden backdrop-blur-sm"
                 >
                   <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-[#00C2FF]/20 to-transparent -translate-x-[150%] group-hover/btn:translate-x-[150%] transition-transform duration-500 ease-in-out" />
                   HISTORY <span className="text-[10px] opacity-70 group-hover/btn:opacity-100 group-hover/btn:translate-x-0.5 transition-all">↗</span>
@@ -616,11 +627,11 @@ export default function ProfilePage() {
             <div className="relative w-full px-5 pb-5">
               <div className="flex flex-col gap-[2px] font-geist-mono text-[11px] uppercase tracking-wider relative z-10">
                 {(() => {
-                  const sourceArray = submissions.length > 0 ? submissions : stats.recentActivity;
-                  const uniqueSubmissions = [];
+                  const sourceArray = submissions.length > 0 ? submissions : (stats?.recentActivity || []);
+                  const uniqueSubmissions: SubmissionHistoryItem[] = [];
                   const seenProblems = new Set();
                   
-                  for (const s of sourceArray as Array<any>) {
+                  for (const s of sourceArray) {
                     const id = s.problem?.slug || s.problem?.title || s.id;
                     if (!seenProblems.has(id)) {
                       seenProblems.add(id);
@@ -645,13 +656,13 @@ export default function ProfilePage() {
                     let bgGlow = "hover:bg-white/5 hover:border-white/10";
                     if (s.status === "ACCEPTED") {
                       statusColor = "text-[#00E5B0]";
-                      bgGlow = "hover:bg-[#00E5B0]/5 hover:border-[#00E5B0]/20";
+                      bgGlow = "hover:bg-[#00E5B0]/5 hover:border-white/5";
                     } else if (["WRONG_ANSWER", "WRONG_ANSWER_ON_HIDDEN_TEST", "RUNTIME_ERROR", "COMPILATION_ERROR"].includes(s.status)) {
                       statusColor = "text-[#FF5F56]";
-                      bgGlow = "hover:bg-[#FF5F56]/5 hover:border-[#FF5F56]/20";
+                      bgGlow = "hover:bg-[#FF5F56]/5 hover:border-white/5";
                     } else if (["TIME_LIMIT_EXCEEDED", "MEMORY_LIMIT_EXCEEDED"].includes(s.status)) {
                       statusColor = "text-[#FACC15]";
-                      bgGlow = "hover:bg-[#FACC15]/5 hover:border-[#FACC15]/20";
+                      bgGlow = "hover:bg-[#FACC15]/5 hover:border-white/5";
                     }
 
                     return (
@@ -717,14 +728,14 @@ export default function ProfilePage() {
             <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#00C2FF]" />
 
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-[#00C2FF]/20 flex items-center justify-between bg-[#05070A] relative z-10 w-full mb-2 shrink-0">
+            <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-[#05070A] relative z-10 w-full mb-2 shrink-0">
               <span className="text-[12px] md:text-[14px] font-geist-mono text-[#00C2FF] font-bold tracking-[0.2em] flex items-center gap-3">
                 <span className="text-white animate-pulse">■</span> [ // FULL_ACTIVITY_ARCHIVE ]
               </span>
               <div className="flex items-center gap-6">
                 {(() => {
                   const sourceArray = submissions.length > 0 ? submissions : (stats?.recentActivity || []);
-                  const uniqueCount = new Set(sourceArray.map((s: any) => s.problem?.slug || s.problem?.title || s.id)).size;
+                  const uniqueCount = new Set(sourceArray.map(s => s.problem?.slug || s.problem?.title || s.id)).size;
                   return (
                     <span className="text-[9px] md:text-[10px] font-geist-mono text-white/40 tracking-widest hidden sm:block">
                       TOTAL_UNIQUE_TARGETS: <span className="text-[#00E5B0]">{uniqueCount}</span>
@@ -745,10 +756,10 @@ export default function ProfilePage() {
               <div className="flex flex-col gap-[2px] font-geist-mono text-[11px] uppercase tracking-wider relative z-10">
                 {(() => {
                   const sourceArray = submissions.length > 0 ? submissions : (stats?.recentActivity || []);
-                  const uniqueSubmissions = [];
+                  const uniqueSubmissions: SubmissionHistoryItem[] = [];
                   const seenProblems = new Set();
                   
-                  for (const s of sourceArray as Array<any>) {
+                  for (const s of sourceArray) {
                     const id = s.problem?.slug || s.problem?.title || s.id;
                     if (!seenProblems.has(id)) {
                       seenProblems.add(id);
@@ -771,13 +782,13 @@ export default function ProfilePage() {
                     let bgGlow = "hover:bg-white/5 hover:border-white/10";
                     if (s.status === "ACCEPTED") {
                       statusColor = "text-[#00E5B0]";
-                      bgGlow = "hover:bg-[#00E5B0]/5 hover:border-[#00E5B0]/20";
+                      bgGlow = "hover:bg-[#00E5B0]/5 hover:border-white/5";
                     } else if (["WRONG_ANSWER", "WRONG_ANSWER_ON_HIDDEN_TEST", "RUNTIME_ERROR", "COMPILATION_ERROR"].includes(s.status)) {
                       statusColor = "text-[#FF5F56]";
-                      bgGlow = "hover:bg-[#FF5F56]/5 hover:border-[#FF5F56]/20";
+                      bgGlow = "hover:bg-[#FF5F56]/5 hover:border-white/5";
                     } else if (["TIME_LIMIT_EXCEEDED", "MEMORY_LIMIT_EXCEEDED"].includes(s.status)) {
                       statusColor = "text-[#FACC15]";
-                      bgGlow = "hover:bg-[#FACC15]/5 hover:border-[#FACC15]/20";
+                      bgGlow = "hover:bg-[#FACC15]/5 hover:border-white/5";
                     }
 
                     return (
@@ -819,6 +830,7 @@ export default function ProfilePage() {
           </div>
         </div>
       , document.body)}
+      </div>
     </div>
   );
 }

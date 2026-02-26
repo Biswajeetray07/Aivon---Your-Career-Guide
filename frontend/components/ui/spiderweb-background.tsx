@@ -2,7 +2,11 @@
 
 import { useEffect, useRef } from "react";
 
-export function SpiderWebBackground() {
+interface SpiderWebProps {
+  variant?: "default" | "green";
+}
+
+export function SpiderWebBackground({ variant = "default" }: SpiderWebProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -26,26 +30,36 @@ export function SpiderWebBackground() {
 
     // Spider-web / Neural Network Nodes
     const numNodes = Math.min(100, (width * height) / 10000);
-    const nodes: { x: number; y: number; vx: number; vy: number; radius: number; colorType: "red" | "cyan" | "blue" }[] = [];
+    const nodes: { x: number; y: number; vx: number; vy: number; radius: number; colorType: "primary" | "secondary" | "accent" }[] = [];
 
-    const colors = {
-      red: "#FF2A2A",
-      cyan: "#00E5B0",
-      blue: "#0F1E38"
-    };
+    const colors = variant === "green" 
+      ? {
+          primary: "#00E5B0", // Neon Green
+          secondary: "#00C2FF", // Cyber Blue
+          accent: "#0F1E38" // Deep Cobalt
+        }
+      : {
+          primary: "#FF2A2A", // Crimson Red
+          secondary: "#00E5B0", // Neon Cyan
+          accent: "#0F1E38" // Deep Cobalt
+        };
+
+    // For rendering webs, determine which colors dominate
+    const primaryStr = variant === "green" ? "0, 229, 176" : "255, 42, 42";
+    const secondaryStr = variant === "green" ? "0, 194, 255" : "0, 229, 176";
 
     for (let i = 0; i < numNodes; i++) {
-      const typeRand = Math.random();
-      const colorType = typeRand > 0.8 ? "red" : (typeRand > 0.5 ? "cyan" : "blue");
-      nodes.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 1.5,
-        vy: (Math.random() - 0.5) * 1.5,
-        radius: Math.random() * 2 + 1,
-        colorType
-      });
-    }
+        const typeRand = Math.random();
+        const colorType = typeRand > 0.8 ? "primary" : (typeRand > 0.5 ? "secondary" : "accent");
+        nodes.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: (Math.random() - 0.5) * 1.5,
+          vy: (Math.random() - 0.5) * 1.5,
+          radius: Math.random() * 2 + 1,
+          colorType
+        });
+      }
 
     const maxDistance = 150;
 
@@ -78,12 +92,12 @@ export function SpiderWebBackground() {
           if (dist < maxDistance) {
             const opacity = 1 - (dist / maxDistance);
             
-            // Web lines are predominantly cyan/blue, with occasional red highlights
+            // Web lines
             let lineColor = `rgba(15, 30, 56, ${opacity * 0.5})`; // Deep Cobalt Blue base
-            if (node.colorType === "red" || target.colorType === "red") {
-              lineColor = `rgba(255, 42, 42, ${opacity * 0.4})`; // Crimson red webs
-            } else if (node.colorType === "cyan" && target.colorType === "cyan") {
-              lineColor = `rgba(0, 229, 176, ${opacity * 0.6})`; // Neon cyan webs
+            if (node.colorType === "primary" || target.colorType === "primary") {
+              lineColor = `rgba(${primaryStr}, ${opacity * 0.4})`;
+            } else if (node.colorType === "secondary" && target.colorType === "secondary") {
+              lineColor = `rgba(${secondaryStr}, ${opacity * 0.6})`;
             }
 
             ctx.beginPath();
@@ -99,8 +113,8 @@ export function SpiderWebBackground() {
         ctx.beginPath();
         const baseColor = colors[node.colorType];
         
-        // Add glow to red and cyan nodes
-        if (node.colorType !== "blue") {
+        // Add glow to primary and secondary nodes
+        if (node.colorType !== "accent") {
            ctx.shadowBlur = 10;
            ctx.shadowColor = baseColor;
         } else {
@@ -113,10 +127,10 @@ export function SpiderWebBackground() {
         ctx.shadowBlur = 0; // Reset
       }
 
-      // Draw random glitch horizontal scanner line
+      // Draw random glitch horizontal scanner line (green or red based on variant)
       if (Math.random() > 0.95) {
         const y = Math.random() * height;
-        ctx.fillStyle = "rgba(255, 42, 42, 0.05)";
+        ctx.fillStyle = variant === "green" ? "rgba(0, 229, 176, 0.05)" : "rgba(255, 42, 42, 0.05)";
         ctx.fillRect(0, y, width, Math.random() * 5 + 1);
       }
 

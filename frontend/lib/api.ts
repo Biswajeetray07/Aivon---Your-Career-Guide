@@ -121,7 +121,7 @@ export interface SubmissionHistoryItem {
   runtime: number | null; memory: number | null;
   details: { passedCases?: number; totalCases?: number } | null;
   createdAt: string;
-  problem: { id: string; title: string; slug: string };
+  problem: { id: string; title: string; slug: string; difficulty: string };
 }
 
 export const getMySubmissions = (params?: { limit?: number }) => {
@@ -139,7 +139,7 @@ export const getLeaderboard = () =>
 
 // Stats
 export const getMyStats = () =>
-  apiGet<{ totalSolved: number; totalSubmissions: number; accuracy: number; byDifficulty: { EASY: number; MEDIUM: number; HARD: number }; recentActivity: unknown[] }>(
+  apiGet<{ totalSolved: number; totalSubmissions: number; accuracy: number; byDifficulty: { EASY: number; MEDIUM: number; HARD: number }; recentActivity: SubmissionHistoryItem[] }>(
     "/api/stats/me"
   );
 

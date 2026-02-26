@@ -8,6 +8,7 @@ const navItems = [
   { href: "/dashboard", label: "Command Center", icon: "⎈" },
   { href: "/problems", label: "Problem Matrix", icon: "⚡" },
   { href: "/leaderboard", label: "Global Nexus", icon: "🏆" },
+  { href: "/chat", label: "AI Terminal", icon: "🤖" },
   { href: "/profile", label: "Operative Profile", icon: "👤" },
 ];
 

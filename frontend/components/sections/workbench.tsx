@@ -12,14 +12,9 @@ export function Workbench() {
         <p className="text-[var(--text-secondary)] mt-2 text-sm font-mono uppercase tracking-wider">Active experiments, test protocols, and things that are breaking (so you don&apos;t have to).</p>
       </div>
 
-      <GlassCard className="max-w-4xl mx-auto overflow-hidden animate-fade-in-up stagger-2 bg-[#060D10]/80 p-0 border border-[#00E5B0]/30 rounded-none relative shadow-[0_0_40px_rgba(0,229,176,0.1)] hover:shadow-[0_0_60px_rgba(0,229,176,0.2)] transition-shadow duration-500 backdrop-blur-2xl group">
+      <GlassCard className="max-w-4xl mx-auto overflow-hidden animate-fade-in-up stagger-2 bg-[#060D10]/80 p-0 border border-[#00E5B0]/30 rounded-2xl relative shadow-[0_0_40px_rgba(0,229,176,0.1)] hover:shadow-[0_0_60px_rgba(0,229,176,0.2)] transition-shadow duration-500 backdrop-blur-2xl group">
         <div className="absolute top-0 right-0 w-[500px] h-[300px] bg-[#00E5B0]/10 blur-[100px] pointer-events-none rounded-bl-full" />
         
-        {/* Decorative Corner Cuts */}
-        <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#00E5B0] z-20 pointer-events-none" />
-        <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#00E5B0] z-20 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#00E5B0] z-20 pointer-events-none" />
-        <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#00E5B0] z-20 pointer-events-none" />
 
         {/* Terminal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#00E5B0]/20 bg-[#05070A]/90 relative z-10 font-geist-mono">
@@ -59,7 +54,7 @@ export function Workbench() {
                     <span>PROGRESS</span>
                     <span className={isHigh ? "text-[#00E5B0]" : "text-[#00C2FF]"}>{item.progress}%</span>
                   </div>
-                  <div className="h-1.5 w-full bg-[#05070A] rounded-none overflow-hidden border border-[#00E5B0]/20">
+                  <div className="h-1.5 w-full bg-[#05070A] rounded-full overflow-hidden border border-[#00E5B0]/20">
                     <div 
                       className={`h-full ${barColor} relative overflow-hidden transition-all duration-1000 ease-out`}
                       style={{ width: `${item.progress}%` }}

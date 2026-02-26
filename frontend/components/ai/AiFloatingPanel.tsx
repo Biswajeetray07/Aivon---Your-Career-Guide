@@ -40,9 +40,9 @@ export interface AiFloatingPanelProps {
 }
 
 const TITLES: Record<AiPanelMode, { icon: string; label: string; color: string }> = {
-  "explain-error": { icon: "✨", label: "Error Analysis",      color: "#f97316" },
-  performance:     { icon: "📊", label: "Performance Review",  color: "#22c55e" },
-  improve:         { icon: "🔀", label: "Alt Approach",        color: "#00FFFF" },
+  "explain-error": { icon: "🚨", label: "DIAGNOSTIC: ERROR",      color: "#FF5F56" },
+  performance:     { icon: "⚡", label: "SYS_REVIEW: PERF",  color: "#00E5B0" },
+  improve:         { icon: "🔀", label: "ALT_PROTOCOL",        color: "#00C2FF" },
 };
 
 export default function AiFloatingPanel({
@@ -135,33 +135,36 @@ export default function AiFloatingPanel({
       ref={panelRef}
       style={{
         position: "fixed", left: pos.x, top: pos.y, zIndex: 9999,
-        width: 380,
+        width: 420,
         maxHeight: "75vh",
-        background: "rgba(15, 15, 25, 0.97)",
-        border: `1px solid ${t.color}40`,
-        borderRadius: 16,
-        boxShadow: `0 12px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.05)`,
-        backdropFilter: "blur(12px)",
+        background: "#05070A",
+        border: `1px solid ${t.color}50`,
+        borderRadius: 8,
+        boxShadow: `0 20px 50px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.02), inset 0 0 20px ${t.color}10`,
         overflow: "hidden",
-        fontFamily: "'Space Grotesk', 'Inter', sans-serif",
+        fontFamily: "'Geist Mono', 'Space Grotesk', sans-serif",
         animation: "panelFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
       }}
     >
       <style>{`@keyframes panelFadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }`}</style>
+      
+      {/* Decorative Top Scanline */}
+      <div style={{ height: 2, width: '100%', background: `linear-gradient(90deg, transparent, ${t.color}, transparent)` }} />
+
       {/* Header — draggable */}
       <div
         onMouseDown={onMouseDown}
         style={{
-          display: "flex", alignItems: "center", gap: 8,
-          padding: "10px 14px",
-          background: `linear-gradient(135deg, ${t.color}15, transparent)`,
+          display: "flex", alignItems: "center", gap: 10,
+          padding: "12px 16px",
+          background: `url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDUpIiAvPgo8L3N2Zz4='), linear-gradient(135deg, ${t.color}15, transparent)`,
           borderBottom: `1px solid ${t.color}20`,
           cursor: "grab", userSelect: "none",
         }}
       >
-        <span style={{ fontSize: 15 }}>{t.icon}</span>
-        <span style={{ fontSize: 13, fontWeight: 700, color: t.color, flex: 1 }}>{t.label}</span>
-        <button onClick={() => setMinimized(true)} style={headerBtn} title="Minimize">▼</button>
+        <span style={{ fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 2, background: `${t.color}20`, border: `1px solid ${t.color}50`, color: t.color }}>{t.icon}</span>
+        <span style={{ fontSize: 12, letterSpacing: '0.15em', fontWeight: 800, color: t.color, flex: 1, textTransform: 'uppercase' }}>{t.label}</span>
+        <button onClick={() => setMinimized(true)} style={headerBtn} title="Minimize">_</button>
         <button onClick={onClose} style={headerBtn} title="Close">✕</button>
       </div>
 
@@ -205,64 +208,70 @@ function ErrorContent({ data }: { data: ErrorExplanation }) {
   const steps = data.debugSteps ?? data.fixSteps;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      
+      {/* Main Diagnostic */}
       <div style={{
-        background: "linear-gradient(135deg, rgba(249,115,22,0.15), rgba(249,115,22,0.05))", 
-        border: "1px solid rgba(249,115,22,0.25)",
-        boxShadow: "0 4px 12px rgba(249,115,22,0.1)",
-        borderRadius: 10, padding: "12px 14px",
+        background: "#060D10", 
+        border: "1px solid #FF5F5640",
+        borderLeft: "3px solid #FF5F56",
+        borderRadius: 4, padding: "14px 16px",
+        position: "relative",
       }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: "#fdba74", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-          🚨 {isWA ? "Why Your Output is Wrong" : "What Happened"}
+        <div style={{ position: "absolute", top: 0, right: 0, width: 20, height: 20, background: "linear-gradient(225deg, #FF5F5640 50%, transparent 50%)" }} />
+        <div style={{ fontSize: 10, fontWeight: 800, color: "#FF5F56", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.15em" }}>
+          SYS.DIAGNOSTIC // {isWA ? "LOGIC_FAILURE" : "EXEC_CRASH"}
         </div>
-        <div style={{ fontSize: 13, color: "#e0e0e0", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{data.summary}</div>
+        <div style={{ fontSize: 13, color: "#fff", lineHeight: 1.6, whiteSpace: "pre-wrap", fontFamily: "var(--font-geist-mono)" }}>
+          {data.summary}
+        </div>
       </div>
 
+      {/* Root Cause / Issue */}
       <div>
-        <SectionLabel color="#ef4444">{isWA ? "Likely Issue" : "Root Cause"}</SectionLabel>
-        <div style={{ fontSize: 13, color: "#c0c0d0", lineHeight: 1.6 }}>
+        <SectionLabel color="#00C2FF">► {isWA ? "IDENTIFIED_ANOMALY" : "ROOT_CAUSE"}</SectionLabel>
+        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", lineHeight: 1.6, paddingLeft: 12, borderLeft: "1px dashed #00C2FF50" }}>
           {data.likelyIssue ?? data.rootCause}
         </div>
       </div>
 
+      {/* Steps to Fix */}
       <div>
-        <SectionLabel color="#22c55e">{isWA ? "Debug Steps" : "How to Fix"}</SectionLabel>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <SectionLabel color="#00E5B0">► RECOMMENDED_OVERRIDE</SectionLabel>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {steps.map((step, i) => (
-            <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+            <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start", background: "#060D10", padding: "10px", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 4 }}>
               <span style={{
-                flexShrink: 0, width: 22, height: 22, borderRadius: "50%",
-                background: "rgba(34,197,94,0.15)", display: "flex", alignItems: "center",
-                justifyContent: "center", fontSize: 11, fontWeight: 800, color: "#22c55e",
-              }}>{i + 1}</span>
-              <span style={{ fontSize: 13, color: "#c0c0d0", lineHeight: 1.5 }}>{step}</span>
+                flexShrink: 0, color: "#00E5B0", fontSize: 10, fontWeight: 800, marginTop: 2,
+              }}>[0{i + 1}]</span>
+              <span style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", lineHeight: 1.5 }}>{step}</span>
             </div>
           ))}
         </div>
       </div>
 
+      {/* Edge Cases */}
       {isWA && data.edgeCasesToCheck && data.edgeCasesToCheck.length > 0 && (
         <div>
-          <SectionLabel color="#60a5fa">Edge Cases to Test</SectionLabel>
+          <SectionLabel color="#FFB000">► EDGE_CASES</SectionLabel>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {data.edgeCasesToCheck.map((c, i) => (
-              <div key={i} style={{ display: "flex", gap: 8 }}>
-                <span style={{ color: "#60a5fa", fontSize: 13 }}>→</span>
-                <span style={{ fontSize: 13, color: "#c0c0d0", lineHeight: 1.5 }}>{c}</span>
+              <div key={i} style={{ display: "flex", gap: 8, fontSize: 12 }}>
+                <span style={{ color: "#FFB000" }}>--&gt;</span>
+                <span style={{ color: "rgba(255,255,255,0.7)", lineHeight: 1.5 }}>{c}</span>
               </div>
             ))}
           </div>
         </div>
       )}
 
+      {/* Concept Focus */}
       <div style={{
-        background: "linear-gradient(135deg, rgba(124,58,237,0.15), rgba(124,58,237,0.05))", 
-        border: "1px solid rgba(124,58,237,0.25)",
-        boxShadow: "0 4px 12px rgba(124,58,237,0.1)",
-        borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10,
+        background: "#060D10", border: "1px dashed #00C2FF50",
+        borderRadius: 4, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12,
       }}>
-        <span style={{ fontSize: 16 }}>📚</span>
-        <span style={{ fontSize: 12, color: "#00FFFF" }}>Concept to Review: <strong style={{color: "#fff"}}>{data.conceptToReview}</strong></span>
+        <div style={{ width: 6, height: 6, background: "#00C2FF", animation: "pulse 2s infinite" }} />
+        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.1em" }}>REQ_KNOWLEDGE : <strong style={{color: "#00C2FF"}}>{data.conceptToReview}</strong></span>
       </div>
     </div>
   );
@@ -270,24 +279,29 @@ function ErrorContent({ data }: { data: ErrorExplanation }) {
 
 function PerformanceContent({ data }: { data: PerformanceReview }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <div style={{ display: "flex", gap: 10 }}>
-        <ComplexityBadge label="Time" value={data.timeComplexity} color="#60a5fa" />
-        <ComplexityBadge label="Space" value={data.spaceComplexity} color="#34d399" />
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", gap: 12 }}>
+        <ComplexityBadge label="TIME_COMPLEXITY" value={data.timeComplexity} color="#00C2FF" />
+        <ComplexityBadge label="SPACE_COMPLEXITY" value={data.spaceComplexity} color="#00E5B0" />
       </div>
+      
       <div>
-        <SectionLabel color="#22c55e">Analysis</SectionLabel>
-        <div style={{ fontSize: 13, color: "#c0c0d0", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{data.feedback}</div>
+        <SectionLabel color="#00E5B0">► SYSTEM_ANALYSIS</SectionLabel>
+        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", lineHeight: 1.7, whiteSpace: "pre-wrap", borderLeft: "1px solid #00E5B030", paddingLeft: 12 }}>
+          {data.feedback}
+        </div>
       </div>
+      
       {data.improvementTip && (
-        <div style={{ background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.2)", borderRadius: 8, padding: "10px 12px" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#eab308", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>💡 Tip</div>
-          <div style={{ fontSize: 13, color: "#c0c0d0", lineHeight: 1.5 }}>{data.improvementTip}</div>
+        <div style={{ background: "#060D10", border: "1px solid #FFB00040", borderLeft: "3px solid #FFB000", borderRadius: 4, padding: "12px 14px" }}>
+          <div style={{ fontSize: 10, fontWeight: 800, color: "#FFB000", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.15em" }}>{"// OPTIMIZATION_TIP"}</div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", lineHeight: 1.6 }}>{data.improvementTip}</div>
         </div>
       )}
+      
       {data.interviewNote && (
-        <div style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)", borderRadius: 8, padding: "8px 12px" }}>
-          <span style={{ fontSize: 12, color: "#00FFFF" }}>🎯 {data.interviewNote}</span>
+        <div style={{ background: "transparent", border: "1px dashed #00C2FF40", borderRadius: 4, padding: "8px 12px" }}>
+          <span style={{ fontSize: 11, color: "#00C2FF", letterSpacing: "0.05em", textTransform: "uppercase" }}>[ TARGET_NOTE: {data.interviewNote} ]</span>
         </div>
       )}
     </div>
@@ -299,30 +313,33 @@ function ImproveContent({ data }: { data: ImproveExplanation }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       
       <div>
-         <SectionLabel color="#22c55e">Feedback on Current Approach</SectionLabel>
-         <div style={{ fontSize: 13, color: "#c0c0d0", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+         <SectionLabel color="#00C2FF">► CURRENT_STATE_ASSESSMENT</SectionLabel>
+         <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", lineHeight: 1.7, whiteSpace: "pre-wrap", borderLeft: "1px solid #00C2FF30", paddingLeft: 12 }}>
            {data.feedback}
          </div>
       </div>
 
-      <div style={{ display: "flex", gap: 10 }}>
-        <ComplexityBadge label="Optimal Time" value={data.timeComplexity ?? "?"} color="#60a5fa" />
-        <ComplexityBadge label="Optimal Space" value={data.spaceComplexity ?? "?"} color="#34d399" />
+      <div style={{ display: "flex", gap: 12 }}>
+        <ComplexityBadge label="OPTIMAL_TIME" value={data.timeComplexity ?? "?"} color="#00C2FF" />
+        <ComplexityBadge label="OPTIMAL_SPACE" value={data.spaceComplexity ?? "?"} color="#00E5B0" />
       </div>
       
       <div style={{
-        background: "linear-gradient(135deg, rgba(167,139,250,0.1), rgba(167,139,250,0.02))", 
-        border: "1px solid rgba(167,139,250,0.2)",
-        boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
-        borderRadius: 12, padding: "16px 18px"
+        background: "#060D10", 
+        border: "1px solid #00E5B030",
+        borderTop: "3px solid #00E5B0",
+        borderRadius: 4, padding: "16px",
+        position: "relative"
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-          <span style={{ fontSize: 16 }}>🔀</span>
-          <span style={{ fontSize: 12, fontWeight: 800, color: "#00FFFF", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "'Space Grotesk', sans-serif" }}>
-            Alternative Approach
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+          <span style={{ width: 8, height: 8, background: "#00E5B0", borderRadius: "1px" }} />
+          <span style={{ fontSize: 11, fontWeight: 800, color: "#00E5B0", textTransform: "uppercase", letterSpacing: "0.15em" }}>
+            ALTERNATIVE_PROTOCOL
           </span>
         </div>
-        <ParsedMarkdown text={data.alternativeApproach} />
+        <div className="prose prose-invert prose-p:text-sm prose-pre:bg-[#0A0F14] prose-pre:border prose-pre:border-white/10 prose-code:text-[#00C2FF] max-w-none">
+          <ParsedMarkdown text={data.alternativeApproach} />
+        </div>
       </div>
 
     </div>
@@ -331,16 +348,17 @@ function ImproveContent({ data }: { data: ImproveExplanation }) {
 
 function ComplexityBadge({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div style={{ flex: 1, textAlign: "center", padding: "10px 8px", background: `${color}10`, border: `1px solid ${color}25`, borderRadius: 10 }}>
-      <div style={{ fontSize: 16, fontWeight: 800, color, fontFamily: "'JetBrains Mono', monospace" }}>{value}</div>
-      <div style={{ fontSize: 10, color: "#6b7280", marginTop: 3, textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</div>
+    <div style={{ flex: 1, textAlign: "center", padding: "12px 8px", background: "#060D10", border: `1px solid ${color}30`, borderRadius: 4, position: "relative", overflow: "hidden" }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${color}, transparent)` }} />
+      <div style={{ fontSize: 18, fontWeight: 800, color, fontFamily: "'JetBrains Mono', monospace", textShadow: `0 0 10px ${color}50` }}>{value}</div>
+      <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", marginTop: 6, textTransform: "uppercase", letterSpacing: "0.15em", fontWeight: 700 }}>{label}</div>
     </div>
   );
 }
 
 function SectionLabel({ children, color }: { children: React.ReactNode; color: string }) {
   return (
-    <div style={{ fontSize: 11, fontWeight: 700, color, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+    <div style={{ fontSize: 10, fontWeight: 800, color, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.15em", fontFamily: "var(--font-geist-mono)" }}>
       {children}
     </div>
   );

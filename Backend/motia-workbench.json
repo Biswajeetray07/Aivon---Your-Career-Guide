@@ -21,6 +21,10 @@
   {
     "id": "submission-flow",
     "config": {
+      "src/submissions/update-user-stats.step.ts": {
+        "x": 700,
+        "y": 526
+      },
       "src/submissions/run-code.step.ts": {
         "x": 0,
         "y": 0

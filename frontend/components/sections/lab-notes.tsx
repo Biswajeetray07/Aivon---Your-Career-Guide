@@ -24,13 +24,13 @@ export function LabNotes() {
             <GlassCard
               key={note.id}
               onClick={() => setExpandedNote(isExpanded ? null : note.id)}
-              className={`p-6 md:p-8 flex flex-col cursor-pointer group rounded-none transition-all duration-300 animate-fade-in-up ${isExpanded ? "border-[#00E5B0]/50 scale-[1.02] shadow-[0_0_40px_rgba(0,229,176,0.15)] z-10 bg-[#060D10]/90" : "hover:border-[#00E5B0]/30 bg-[#060D10]/80 border-[#00C2FF]/20"}`}
+              className={`p-6 md:p-8 flex flex-col cursor-pointer group rounded-2xl transition-all duration-300 animate-fade-in-up ${isExpanded ? "border-[#00E5B0]/50 scale-[1.02] shadow-[0_0_40px_rgba(0,229,176,0.15)] z-10 bg-[#060D10]/90" : "hover:border-[#00E5B0]/30 bg-[#060D10]/80 border-[#00C2FF]/20"} overflow-hidden`}
               style={{ animationDelay: `${(idx + 1) * 100}ms` }}
             >
-              <div className={`absolute inset-0 bg-gradient-to-tr ${note.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500 rounded-none pointer-events-none`} />
+              <div className={`absolute inset-0 bg-gradient-to-tr ${note.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500 rounded-2xl pointer-events-none`} />
               
               <div className="flex items-center justify-between mb-6 z-10 relative">
-                <span className="px-3 py-1.5 rounded-none bg-[#05070A] border border-[#00E5B0]/20 text-[10px] font-geist-mono font-bold text-[var(--text-muted)] uppercase tracking-wider group-hover:border-[#00E5B0]/50 group-hover:text-[#00E5B0] transition-colors shadow-[0_0_10px_rgba(0,229,176,0.05)]">
+                <span className="px-3 py-1.5 rounded bg-[#05070A] border border-[#00E5B0]/20 text-[10px] font-geist-mono font-bold text-[var(--text-muted)] uppercase tracking-wider group-hover:border-[#00E5B0]/50 group-hover:text-[#00E5B0] transition-colors shadow-[0_0_10px_rgba(0,229,176,0.05)]">
                   Experiment {note.id.toString().padStart(3, '0')}
                 </span>
                 <span className="font-geist-mono text-xs text-[var(--text-muted)] tracking-wider">{note.date}</span>

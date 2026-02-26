@@ -9,7 +9,7 @@ export function GlassCard({ className, hoverLift, ...props }: GlassCardProps) {
   return (
     <div
       className={cn(
-        "glass border border-[var(--border)] rounded-2xl relative overflow-hidden",
+        "glass shadow-hacker-glow rounded-2xl relative overflow-hidden",
         hoverLift && "hover-lift",
         className
       )}

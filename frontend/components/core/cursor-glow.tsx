@@ -7,19 +7,16 @@ export function CursorGlow() {
 
   return (
     <div
-      className="pointer-events-none fixed inset-0 z-0 transition-opacity duration-300 hidden lg:block mix-blend-screen"
+      className="pointer-events-none fixed inset-0 z-[9999] transition-opacity duration-300 hidden lg:block mix-blend-screen"
     >
       <div
-        className={cn(
-          "absolute rounded-full blur-3xl",
-          isHovering ? "w-[500px] h-[500px] opacity-25" : "w-[400px] h-[400px] opacity-15"
-        )}
+        className="absolute rounded-full blur-[80px] pointer-events-none w-[200px] h-[200px] opacity-15"
         style={{
-          background: "var(--glow-color)",
+          background: "radial-gradient(circle, rgba(0, 229, 176, 0.4) 0%, rgba(0, 194, 255, 0.2) 40%, transparent 80%)",
           left: position.x,
           top: position.y,
           transform: "translate(-50%, -50%)",
-          transition: "width 0.3s ease, height 0.3s ease, opacity 0.3s ease"
+          transition: "left 0.1s ease-out, top 0.1s ease-out"
         }}
       />
     </div>

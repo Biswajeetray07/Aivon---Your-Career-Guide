@@ -416,15 +416,13 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
   );
 
   return (
-    <div className="h-screen w-full bg-[#05070A] text-[var(--text-primary)] font-geist-mono overflow-hidden relative">
-      
-      {/* ── 3D Hacker Background ──────────────────────────────────────── */}
+    <div className="h-screen w-full bg-transparent text-[var(--text-primary)] font-geist-mono overflow-hidden relative">
       <HackerBackground />
 
       <div className="flex flex-col h-full w-full max-w-[1920px] mx-auto overflow-hidden relative z-10 p-2 gap-2 animate-fade-in-up">
         
         {/* ── Top Bar ─────────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between shrink-0 bg-[#060D10]/80 backdrop-blur-xl border border-[#00E5B0]/30 rounded-xl p-3 shadow-[0_0_20px_rgba(0,229,176,0.1)]">
+        <div className="flex items-center justify-between shrink-0 bg-[#060D10]/80 backdrop-blur-md border border-white/5 rounded-xl p-3 shadow-sm">
           <Link href="/problems" className="flex items-center gap-2 text-[#00E5B0] hover:text-white transition-colors uppercase tracking-widest text-[10px] font-bold group">
             <span className="opacity-50 group-hover:-translate-x-1 transition-transform">[</span>
             ⟵ RETURN TO MATRIX
@@ -442,7 +440,7 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
           {/* ── Description panel (Mission Briefing) ────────────────── */}
           <div
             ref={descRef}
-            className="flex flex-col shrink-0 border border-[#00E5B0]/30 bg-[#060D10]/80 backdrop-blur-xl rounded-xl overflow-hidden shadow-[0_0_20px_rgba(0,229,176,0.05)] lg:h-full"
+            className="flex flex-col shrink-0 border border-white/5 bg-[#060D10]/80 backdrop-blur-md rounded-xl overflow-hidden shadow-sm lg:h-full"
             style={{
               width: isSmallScreen ? "100%" : desc.width,
               height: "100%",
@@ -482,12 +480,14 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
                 </div>
 
                 {/* AI action buttons */}
-                <div className="flex flex-wrap gap-3 mb-8">
-                  <button onClick={() => handleSideAI("hint")} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--primary)]/30 bg-[var(--primary)]/10 text-[var(--primary)] text-[11px] font-bold uppercase tracking-widest hover:bg-[var(--primary)] hover:text-[var(--background)] transition-all shadow-[0_0_10px_var(--glow-color)]">
-                    <Sparkles size={12} /> Hint
+                <div className="flex flex-wrap gap-4 mb-8">
+                  <button onClick={() => handleSideAI("hint")} className="relative group overflow-hidden flex items-center gap-2 px-5 py-2.5 rounded-lg border border-white/5 bg-[#0A0F14]/80 text-[#00C2FF] text-[11px] font-bold uppercase tracking-[0.15em] hover:border-white/5 hover:text-white transition-all shadow-sm hover:shadow-sm">
+                    <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-[#00C2FF] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <Sparkles size={14} className="group-hover:animate-pulse" /> [ REQUEST HINT ]
                   </button>
-                  <button onClick={() => handleSideAI("explain")} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--accent-cyan)]/30 bg-[var(--accent-cyan)]/10 text-[var(--accent-cyan)] text-[11px] font-bold uppercase tracking-widest hover:bg-[var(--accent-cyan)] hover:text-[var(--background)] transition-all shadow-[0_0_10px_rgba(0,229,255,0.3)]">
-                    <BookOpen size={12} /> Explain
+                  <button onClick={() => handleSideAI("explain")} className="relative group overflow-hidden flex items-center gap-2 px-5 py-2.5 rounded-lg border border-white/5 bg-[#0A0F14]/80 text-[#00E5B0] text-[11px] font-bold uppercase tracking-[0.15em] hover:border-white/5 hover:text-white transition-all shadow-sm hover:shadow-sm">
+                    <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-[#00E5B0] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <BookOpen size={14} className="group-hover:animate-pulse" /> [ EXPLAIN TASK ]
                   </button>
                 </div>
 
@@ -512,13 +512,13 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
                 <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 relative z-10 scrollbar-thin scrollbar-thumb-[#00E5B0]/20 scrollbar-track-transparent">
                   {chatHistory.length === 1 && chatHistory[0].role === "assistant" ? (
                     <div className="flex flex-col items-center justify-center h-full text-center max-w-sm mx-auto animate-fade-in-up">
-                      <div className="w-16 h-16 rounded-sm bg-[#060D10] border border-[#00E5B0]/30 shadow-[0_0_15px_rgba(0,229,176,0.2)] flex items-center justify-center text-2xl mb-6 font-mono text-[#00E5B0] relative">
+                      <div className="w-16 h-16 rounded-sm bg-[#060D10] border border-white/5 shadow-sm flex items-center justify-center text-2xl mb-6 font-mono text-[#00E5B0] relative">
                          <div className="absolute inset-0 border border-[#00E5B0] animate-pulse opacity-20" />
                          AI
                       </div>
-                      <h3 className="text-sm tracking-widest uppercase font-bold text-[#00E5B0] mb-2">Neural Link Active</h3>
-                      <p className="text-xs text-[var(--text-secondary)] mb-8 font-mono">
-                        Awaiting instructions for <span className="text-white">{problem.title}</span>_
+                      <h3 className="text-sm tracking-[0.2em] uppercase font-bold text-[#00E5B0] mb-2 drop-shadow-sm">Neural Link Active</h3>
+                      <p className="text-xs text-[#00E5B0]/60 mb-8 font-mono tracking-wide">
+                        Awaiting instructions for <span className="text-[#00C2FF] font-bold">[{problem.title}]</span>_
                       </p>
 
                       <div className="w-full space-y-3">
@@ -531,7 +531,7 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
                           <button 
                             key={i}
                             onClick={() => handleChatSubmit(undefined, action.prompt)}
-                            className="w-full flex items-center gap-4 bg-[#060D10] border border-white/5 hover:border-[#00E5B0]/50 p-3 rounded-none text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)] hover:text-[#00E5B0] transition-all group shadow-md"
+                            className="w-full flex items-center gap-4 bg-[#060D10] border border-white/5 hover:border-white/5 p-3 rounded-none text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)] hover:text-[#00E5B0] transition-all group shadow-md"
                           >
                             <span className="text-[#00E5B0] group-hover:scale-110 transition-transform">{action.icon}</span>
                             <span className="flex-1 text-left">&gt; {action.text}</span>
@@ -547,11 +547,27 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
                       const isUser = msg.role === "user";
                       return (
                       <div key={idx} className={`relative w-full flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`p-4 text-xs font-mono max-w-[90%] border-l-2 ${isUser ? 'border-[#FACC15] bg-[#FACC15]/5 text-white' : 'border-[#00E5B0] bg-[#00E5B0]/5 text-[var(--text-secondary)] prose-h2:text-white prose-h3:text-white prose-strong:text-[#00E5B0] prose-code:text-[#FACC15] prose prose-invert max-w-none'}`}>
-                           <div className="text-[9px] uppercase tracking-widest font-bold mb-2 opacity-50 flex items-center gap-2">
-                              {isUser ? <><span className="text-[#FACC15]">USER</span> // QUERY</> : <><span className="text-[#00E5B0]">SYS</span> // RESPONSE</>}
+                        <div className={`p-5 text-[13px] font-mono max-w-[90%] border ${
+                          isUser 
+                            ? 'border-white/5 bg-[#060D10]/90 text-white rounded-tl-2xl rounded-tr-sm rounded-br-2xl rounded-bl-2xl shadow-sm' 
+                            : 'border-white/5 bg-[#0A0F14]/90 text-white/80 rounded-tr-2xl rounded-tl-sm rounded-bl-2xl rounded-br-2xl shadow-sm prose-h2:text-white prose-h3:text-white prose-strong:text-[#00E5B0] prose-code:text-[#00C2FF] prose prose-invert max-w-none'
+                        }`}>
+                           <div className="text-[10px] uppercase tracking-[0.2em] font-bold mb-3 flex items-center gap-2">
+                              {isUser ? (
+                                <>
+                                  <span className="w-1.5 h-1.5 rounded-[1px] bg-[#00C2FF] shadow-[0_0_5px_#00C2FF]" />
+                                  <span className="text-[#00C2FF]/60">USER // QUERY</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="w-1.5 h-1.5 rounded-[1px] bg-[#00E5B0] shadow-[0_0_5px_#00E5B0] animate-pulse" />
+                                  <span className="text-[#00E5B0]/60">SYS // RESPONSE</span>
+                                </>
+                              )}
                            </div>
-                          {isUser ? msg.content : <ParsedMarkdown text={msg.content} />}
+                          <div className={isUser ? "leading-relaxed break-words" : ""}>
+                            {isUser ? msg.content : <ParsedMarkdown text={msg.content} />}
+                          </div>
                         </div>
                       </div>
                       );
@@ -570,28 +586,29 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
                 </div>
                 
                 {/* Chat Input Field */}
-                <form onSubmit={handleChatSubmit} className="flex gap-2 p-3 bg-[#060D10] border-t border-[#00E5B0]/20 shrink-0 relative z-10">
-                  <div className="flex-1 flex items-center bg-[#05070A] border border-white/10 focus-within:border-[#00E5B0]/50 transition-colors">
-                    <span className="text-[#00E5B0] pl-3 font-mono text-sm">&gt;</span>
+                <form onSubmit={handleChatSubmit} className="flex gap-2 p-3 bg-[#060D10] border-t border-white/5 shrink-0 relative z-10 w-full">
+                  <div className="flex-1 flex items-center bg-[#05070A] border border-white/10 focus-within:border-white/5 focus-within:shadow-sm transition-all rounded-lg overflow-hidden relative">
+                    <span className="text-[#00E5B0] pl-4 font-mono text-[13px] font-bold">&gt;</span>
                     <input 
                       type="text"
                       value={chatInput}
                       onChange={(e) => setChatInput(e.target.value)}
-                      placeholder="ENTER COMMAND..."
+                      placeholder="Enter command..."
                       disabled={chatLoading}
-                      className="w-full bg-transparent px-3 py-3 text-xs text-white font-mono outline-none placeholder:text-white/20 uppercase tracking-wide"
+                      className="w-full bg-transparent px-3 py-3 md:py-4 text-[13px] text-white font-mono outline-none placeholder:text-white/20 placeholder:uppercase tracking-wide"
                     />
+                    <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-[#00E5B0]/50 to-transparent opacity-0 focus-within:opacity-100 transition-opacity" />
                   </div>
                   {chatLoading ? (
                     <button 
                       type="button"
                       onClick={() => abortControllerRef.current?.abort()}
-                      className="px-4 bg-[#FF5F56]/10 border border-[#FF5F56]/30 text-[#FF5F56] text-[10px] font-bold uppercase tracking-widest hover:bg-[#FF5F56] hover:text-white transition-all"
+                      className="px-5 md:px-6 bg-[#FF5F56]/10 border border-white/5 text-[#FF5F56] text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-[#FF5F56] hover:text-white transition-all rounded-lg shadow-[0_0_10px_rgba(255,95,86,0.1)]"
                     >
-                      KILL PROCESS
+                      KILL
                     </button>
                   ) : (
-                    <button type="submit" disabled={!chatInput.trim()} className="px-6 bg-[#00E5B0]/10 border border-[#00E5B0]/30 text-[#00E5B0] text-[10px] font-bold uppercase tracking-widest hover:bg-[#00E5B0] hover:text-black transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+                    <button type="submit" disabled={!chatInput.trim()} className="px-5 md:px-6 bg-[#00E5B0]/10 border border-white/5 text-[#00E5B0] text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-[#00E5B0] hover:text-[#05070A] transition-all disabled:opacity-30 disabled:cursor-not-allowed rounded-lg shadow-sm">
                       EXECUTE
                     </button>
                   )}
@@ -610,38 +627,49 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
           style={{ minHeight: isSmallScreen ? 600 : 0 }}
         >
           {/* Code Matrix */}
-          <div className="flex-1 flex flex-col border border-[#00E5B0]/30 bg-[#060D10]/80 backdrop-blur-xl rounded-xl shadow-[0_0_30px_rgba(0,229,176,0.15)] overflow-hidden relative">
+          <div className="flex-1 flex flex-col border border-white/5 bg-[#060D10]/80 backdrop-blur-md rounded-xl shadow-sm overflow-hidden relative">
           {/* Toolbar */}
-          <div className="flex items-center justify-between h-14 px-4 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-md shrink-0">
-            <div className="flex items-center gap-2">
-              {/* Mac Window Dots */}
-              <div className="hidden sm:flex items-center gap-1.5 mr-4">
-                <div className="w-3 h-3 rounded-full bg-red-500/80 border border-red-500/50" />
-                <div className="w-3 h-3 rounded-full bg-yellow-500/80 border border-yellow-500/50" />
-                <div className="w-3 h-3 rounded-full bg-green-500/80 border border-green-500/50" />
+          <div className="flex items-center justify-between h-14 px-4 border-b border-white/5 bg-[#0A0F14]/90 backdrop-blur-sm shrink-0">
+            <div className="flex items-center gap-3">
+              {/* Connection Status Dots */}
+              <div className="hidden sm:flex items-center gap-1.5 mr-3 px-2 py-1 bg-black/50 rounded-sm border border-white/5">
+                <div className="w-1.5 h-1.5 rounded-sm bg-[#00E5B0] animate-pulse shadow-[0_0_5px_#00E5B0]" />
+                <div className="w-1.5 h-1.5 rounded-sm bg-white/20" />
+                <div className="w-1.5 h-1.5 rounded-sm bg-white/20" />
               </div>
               <select value={language} onChange={(e) => setLanguage(e.target.value)}
-                className="bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-xs text-[var(--text-primary)] font-mono uppercase tracking-widest cursor-pointer outline-none hover:border-[var(--primary)]/50 transition-colors">
-                {LANGUAGES.map((l) => <option key={l} value={l} className="bg-[var(--background)]">{l.toUpperCase()}</option>)}
+                className="bg-[#05070A] border border-white/5 rounded-sm px-3 py-1.5 text-[11px] text-[#00E5B0] font-mono uppercase tracking-[0.15em] cursor-pointer outline-none hover:border-white/5 transition-all focus:border-[#00E5B0] focus:shadow-sm">
+                {LANGUAGES.map((l) => <option key={l} value={l} className="bg-[#05070A]">{l.toUpperCase()}</option>)}
               </select>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-4">
               <button 
                 onClick={handleRun} disabled={running || submitting}
-                className="flex items-center gap-2 px-4 py-1.5 bg-[var(--card)] border border-[var(--border)] text-[var(--text-primary)] text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all hover:bg-[var(--background)] hover:border-[var(--text-muted)] disabled:opacity-50">
-                {running ? <span className="typing-cursor">Running</span> : <><Play size={12}/> Run</>}
+                className="relative overflow-hidden flex items-center justify-center gap-2 bg-[#060D10] border border-white/5 text-[#00C2FF] px-5 py-2 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-[#0A1418] hover:border-white/5 hover:text-white hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed group/runbtn">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#00C2FF]/15 to-transparent -translate-x-full group-hover/runbtn:translate-x-full transition-transform duration-1000 z-0" />
+                <span className="relative z-10 flex items-center justify-center w-3 h-3 mr-1">
+                  <span className="absolute inset-0 border border-current rounded-full" />
+                  <span className="w-1 h-1 bg-current rounded-full group-hover/runbtn:animate-ping" />
+                </span>
+                <span className="relative z-10">{running ? <span className="typing-cursor">COMPILING</span> : "COMPILE"}</span>
               </button>
+              
               <button 
                 onClick={handleSubmit} disabled={running || submitting}
-                className="flex items-center gap-2 px-4 py-1.5 bg-[var(--primary)] border border-transparent text-[var(--background)] text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all hover:scale-105 hover:shadow-[0_0_15px_var(--glow-color)] disabled:opacity-50 disabled:hover:scale-100 disabled:shadow-none">
-                {submitting ? <span className="typing-cursor">Submitting</span> : <><UploadCloud size={12}/> Submit</>}
+                className="relative overflow-hidden flex items-center justify-center gap-2 bg-[#060D10] border border-white/5 text-[#00E5B0] px-6 py-2 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-[#0A1418] hover:border-white/5 hover:text-white hover:shadow-sm shadow-sm hover:shadow-sm disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed group/execbtn">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#00E5B0]/15 to-transparent -translate-x-full group-hover/execbtn:translate-x-full transition-transform duration-1000 z-0" />
+                <span className="relative z-10 flex items-center justify-center w-3 h-3 mr-1">
+                  <span className="absolute inset-0 border border-current rounded-full" />
+                  <span className="w-1 h-1 bg-current rounded-full group-hover/execbtn:animate-ping" />
+                </span>
+                <span className="relative z-10">{submitting ? <span className="typing-cursor font-bold">UPLOADING</span> : "EXECUTE"}</span>
               </button>
             </div>
           </div>
 
           {/* Monaco Editor */}
           <div className="flex-1 overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-b from-[var(--primary)]/5 to-transparent pointer-events-none z-10" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#00E5B0]/5 to-transparent pointer-events-none z-10" />
             <Editor
               height="100%"
               language={language === "cpp" ? "cpp" : language}
@@ -673,7 +701,7 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
             <>
               {terminalOpen && <ResizeHandleV onMouseDown={term.startResize} />}
 
-              <div className="flex flex-col shrink-0 border border-t border-[var(--border)] border-[#00E5B0]/30 bg-[#060D10]/95 backdrop-blur-xl rounded-xl shadow-[0_0_20px_rgba(0,229,176,0.1)] transition-all duration-300 relative z-20 overflow-hidden" style={{ height: terminalOpen ? term.height : 0 }}>
+              <div className="flex flex-col shrink-0 border border-t border-[var(--border)] border-white/5 bg-[#060D10]/95 backdrop-blur-md rounded-xl shadow-sm transition-all duration-300 relative z-20 overflow-hidden" style={{ height: terminalOpen ? term.height : 0 }}>
                 {terminalOpen && (
                   <>
                     <VerdictHeader
@@ -714,9 +742,14 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
               {!terminalOpen && (
                 <button
                   onClick={() => setTerminalOpen(true)}
-                  className="absolute bottom-6 right-6 flex items-center gap-2 px-4 py-2 bg-[#060D10]/80 backdrop-blur-md border border-[#FACC15]/30 rounded-none text-xs font-bold uppercase tracking-widest text-white hover:text-[#FACC15] hover:border-[#FACC15] transition-all shadow-lg z-50 group"
+                  className="absolute bottom-6 right-6 flex items-center justify-center gap-3 px-5 py-3 bg-[#060D10] border border-white/5 text-[#FACC15] text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-[#0A1418] hover:border-white/5 hover:text-white shadow-[0_0_20px_rgba(250,204,21,0.1)] group/termbtn z-50 overflow-hidden"
                 >
-                  <TerminalIcon size={14} className="group-hover:scale-110 transition-transform" /> Console
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FACC15]/15 to-transparent -translate-x-full group-hover/termbtn:translate-x-full transition-transform duration-1000 z-0" />
+                  <span className="relative z-10 flex items-center justify-center w-3 h-3 mr-1">
+                    <span className="absolute inset-0 border border-current rounded-full" />
+                    <span className="w-1 h-1 bg-current rounded-full group-hover/termbtn:animate-ping" />
+                  </span>
+                  <span className="relative z-10">CONSOLE_LOG</span>
                 </button>
               )}
             </>
@@ -784,26 +817,37 @@ function TerminalTabBar({
   onImprove: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between px-4 min-h-[46px] border-b border-[var(--border)] bg-[var(--background)] shrink-0">
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest font-mono mr-2">Terminal Out</span>
+    <div className="flex items-center justify-between px-4 min-h-[46px] border-b border-white/5 bg-[#060D10]/95 shrink-0 relative overflow-hidden">
+      <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-[#00E5B0]/0 via-[#00E5B0]/50 to-[#00E5B0]/0" />
+      <div className="flex items-center gap-3">
+        <span className="w-1.5 h-1.5 rounded-sm bg-[#00E5B0] animate-pulse shadow-[0_0_5px_#00E5B0]"/>
+        <span className="text-[10px] font-bold text-[#00E5B0] uppercase tracking-[0.2em] font-mono mr-2">SYS.TERMINAL_OUT</span>
       </div>
-      <div className="flex gap-2 items-center">
+      <div className="flex gap-4 items-center">
         {isFailure && testResults && testResults.length > 0 && (
-          <QuickBtn label="Explain Error" color="var(--accent-red)" icon={<Bug size={10} />} onClick={onExplainError} />
+          <button onClick={onExplainError} className="relative group overflow-hidden flex items-center gap-2 px-6 py-2 rounded-lg border border-white/5 bg-[#0A0F14]/80 text-[#FF5F56] text-[10px] font-bold uppercase tracking-[0.15em] hover:border-white/5 hover:text-white transition-all shadow-[0_0_15px_rgba(255,95,86,0.05)] hover:shadow-[0_0_20px_rgba(255,95,86,0.2)]">
+            <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-[#FF5F56] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <Bug size={12} className="group-hover:animate-ping" /> DIAGNOSE ERROR
+          </button>
         )}
         {isAccepted && (
           <>
-            <QuickBtn label="Performance" color="var(--accent-green)" icon={<Sparkles size={10} />} onClick={onPerformance} />
-            <QuickBtn label="Improve" color="var(--accent-cyan)" icon={<SearchCode size={10} />} onClick={onImprove} />
+            <button onClick={onPerformance} className="relative group overflow-hidden flex items-center gap-2 px-6 py-2 rounded-lg border border-white/5 bg-[#0A0F14]/80 text-[#00E5B0] text-[10px] font-bold uppercase tracking-[0.15em] hover:border-white/5 hover:text-white transition-all shadow-sm hover:shadow-sm">
+              <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-[#00E5B0] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <Sparkles size={12} className="group-hover:animate-pulse" /> PERFORMANCE
+            </button>
+            <button onClick={onImprove} className="relative group overflow-hidden flex items-center gap-2 px-6 py-2 rounded-lg border border-white/5 bg-[#0A0F14]/80 text-[#00C2FF] text-[10px] font-bold uppercase tracking-[0.15em] hover:border-white/5 hover:text-white transition-all shadow-sm hover:shadow-sm">
+              <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-[#00C2FF] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <SearchCode size={12} className="group-hover:animate-pulse" /> ALT APPROACH
+            </button>
           </>
         )}
-        <div className="w-px h-4 bg-[var(--border)] mx-1" />
+        <div className="w-px h-6 bg-[var(--border)] mx-2 opacity-50" />
         <button
           onClick={onToggleTerminal}
-          className="px-3 rounded-md text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+          className="px-3 rounded-md text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] hover:text-white transition-colors"
         >
-          ▼ Hide
+          ▼ HIDE
         </button>
       </div>
     </div>

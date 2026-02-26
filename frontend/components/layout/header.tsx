@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { getSession } from "@/lib/api";
-import { ThemeToggle } from "@/components/core/theme-toggle";
 import { cn } from "@/lib/utils";
 import { StatusDot } from "@/components/ui/badge";
 import { Menu, X, LogOut, Lock } from "lucide-react";
@@ -14,6 +13,7 @@ import Image from "next/image";
 const NAV_LINKS = [
   { href: "/problems", label: "Arena", protected: true },
   { href: "/leaderboard", label: "Leaderboard", protected: true },
+  { href: "/chat", label: "AI Terminal", protected: true },
 ];
 
 export function Header() {
@@ -60,7 +60,8 @@ export function Header() {
     if (status === "authenticated") {
       loadBackendProfile();
     } else if (status === "unauthenticated") {
-      setUser(null);
+      const timer = setTimeout(() => setUser(null), 0);
+      return () => clearTimeout(timer);
     }
   }, [status, session]);
 
@@ -142,12 +143,12 @@ export function Header() {
 
         {/* Right Side */}
         <div className="hidden md:flex items-center gap-6">
-          <div className="flex items-center gap-2 px-3 py-1 bg-[#05070A]/80 border-l-2 border-[#00E5B0]">
-            <StatusDot animate colorClass="bg-[#00E5B0]" />
-            <span className="text-[10px] font-geist-mono text-[#00E5B0] uppercase tracking-widest hidden lg:block">SYS: ONLINE</span>
+          <div className={cn("flex items-center gap-2 px-3 py-1 bg-[#05070A]/80 border-l-2", status === "authenticated" ? "border-[#00E5B0]" : "border-[#FF5F56]")}>
+            <StatusDot animate={status === "authenticated"} colorClass={status === "authenticated" ? "bg-[#00E5B0]" : "bg-[#FF5F56]"} />
+            <span className={cn("text-[10px] font-geist-mono uppercase tracking-widest hidden lg:block", status === "authenticated" ? "text-[#00E5B0]" : "text-[#FF5F56]")}>
+              {status === "authenticated" ? "SYS: ONLINE" : "SYS: OFFLINE"}
+            </span>
           </div>
-
-          <ThemeToggle />
 
           <div className="w-[1px] h-6 bg-[var(--border)]" />
 

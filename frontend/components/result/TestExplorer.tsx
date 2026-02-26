@@ -30,7 +30,7 @@ interface TestExplorerProps {
 
 type Tab = "detail" | "console";
 
-const CODE_BG = "rgba(0,0,0,0.28)";
+const CODE_BG = "#060D10";
 
 export default function TestExplorer({ testResults, mode, visibleCount, activeIndex, onSelect }: TestExplorerProps) {
   const [internalIdx, setInternalIdx] = useState(0);
@@ -87,24 +87,31 @@ export default function TestExplorer({ testResults, mode, visibleCount, activeIn
               key={i}
               onClick={() => { setActiveIdx(i); setTab("detail"); }}
               style={{
-                flexShrink: 0, padding: "4px 12px", borderRadius: 16, fontSize: 11, fontWeight: 700,
-                fontFamily: "inherit", cursor: "pointer", whiteSpace: "nowrap",
+                flexShrink: 0, padding: "6px 14px", borderRadius: 2, fontSize: 11, fontWeight: 800,
+                fontFamily: "'Geist Mono', monospace", cursor: "pointer", whiteSpace: "nowrap",
                 background: activeIdx === i
-                  ? (tr.passed ? "rgba(34,197,94,0.18)" : "rgba(239,68,68,0.18)")
-                  : "rgba(255,255,255,0.04)",
-                border: `1.5px solid ${activeIdx === i
-                  ? (tr.passed ? "rgba(34,197,94,0.5)" : "rgba(239,68,68,0.5)")
-                  : "rgba(255,255,255,0.08)"}`,
-                color: tr.passed ? "#22c55e" : "#ef4444",
+                  ? (tr.passed ? "rgba(0,229,176,0.1)" : "rgba(255,95,86,0.1)")
+                  : "rgba(255,255,255,0.02)",
+                border: `1px solid ${activeIdx === i
+                  ? (tr.passed ? "rgba(0,229,176,0.5)" : "rgba(255,95,86,0.5)")
+                  : "rgba(255,255,255,0.1)"}`,
+                borderBottom: activeIdx === i 
+                  ? `2px solid ${tr.passed ? "#00E5B0" : "#FF5F56"}`
+                  : "1px solid rgba(255,255,255,0.1)",
+                color: tr.passed ? "#00E5B0" : "#FF5F56",
                 transition: "all var(--transition-fast)",
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                boxShadow: activeIdx === i ? `0 0 10px ${tr.passed ? "rgba(0,229,176,0.2)" : "rgba(255,95,86,0.2)"}` : "none",
               }}
-              onMouseEnter={e => { if (activeIdx !== i) e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
-              onMouseLeave={e => { if (activeIdx !== i) e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
+              onMouseEnter={e => { if (activeIdx !== i) e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+              onMouseLeave={e => { if (activeIdx !== i) e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}
             >
-              {tr.passed ? "🟢" : "🔴"} Case {i + 1}
+              <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: tr.passed ? "#00E5B0" : "#FF5F56", marginRight: 8, boxShadow: `0 0 5px ${tr.passed ? "#00E5B0" : "#FF5F56"}` }} />
+              CASE.0{i + 1}
               {tr.runtime != null && (
-                <span style={{ marginLeft: 6, opacity: 0.7, fontWeight: 500, fontSize: 11 }}>
-                  {tr.runtime}ms
+                <span style={{ marginLeft: 8, opacity: 0.6, fontSize: 10 }}>
+                  ({tr.runtime}ms)
                 </span>
               )}
             </button>
@@ -148,30 +155,33 @@ export default function TestExplorer({ testResults, mode, visibleCount, activeIn
             {/* Error badge */}
             {hasError && (
               <div style={{
-                background: "rgba(239,68,68,0.07)", padding: "10px 12px",
-                borderRadius: 6, border: "1px solid rgba(239,68,68,0.22)",
+                background: "#060D10", padding: "16px",
+                borderRadius: 4, border: "1px solid rgba(255,95,86,0.3)",
+                borderLeft: "3px solid #FF5F56",
+                boxShadow: "0 0 15px rgba(255,95,86,0.1)",
               }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: active.errorDetails?.message ? 6 : 0 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "#f97316" }}>
-                    {active.errorDetails?.verdict ?? (active.compileOutput ? "Compile Error" : "Runtime Error")}
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: active.errorDetails?.message ? 12 : 0 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: "#FF5F56", fontFamily: "'Geist Mono', monospace", letterSpacing: "0.15em", textTransform: "uppercase" }}>
+                    [!] {active.errorDetails?.verdict ?? (active.compileOutput ? "COMPILE_FAULT" : "RUNTIME_CRASH")}
                   </span>
                   {active.errorDetails?.errorType && (
                     <span style={{
-                      fontSize: 11, padding: "2px 8px",
-                      background: "rgba(239,68,68,0.18)", border: "1px solid rgba(239,68,68,0.35)",
-                      borderRadius: 12, color: "#fca5a5", fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: 10, padding: "2px 8px", fontWeight: 800,
+                      background: "rgba(255,95,86,0.1)", border: "1px solid rgba(255,95,86,0.2)",
+                      borderRadius: 2, color: "#FF5F56", fontFamily: "'Geist Mono', monospace", letterSpacing: "0.1em", textTransform: "uppercase"
                     }}>
                       {active.errorDetails.errorType}
                     </span>
                   )}
                   {active.errorDetails?.line != null && (
-                    <span style={{ fontSize: 11, color: "#6b7280" }}>Line {active.errorDetails.line}</span>
+                    <span style={{ fontSize: 10, color: "#FF5F56", opacity: 0.7, fontFamily: "'Geist Mono', monospace", letterSpacing: "0.1em" }}>LINE_{active.errorDetails.line}</span>
                   )}
                 </div>
                 {active.errorDetails?.message && (
                   <pre style={{
                     fontSize: 12, color: "#fca5a5", fontFamily: "'JetBrains Mono', monospace",
-                    background: "rgba(0,0,0,0.25)", padding: "8px 10px", borderRadius: 6,
+                    background: "rgba(255,95,86,0.05)", padding: "12px", borderRadius: 4,
+                    border: "1px solid rgba(255,95,86,0.1)",
                     whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0,
                   }}>
                     {active.errorDetails.message}
@@ -181,51 +191,53 @@ export default function TestExplorer({ testResults, mode, visibleCount, activeIn
             )}
 
             {/* Input */}
-            <Field label="Input" hidden={isHidden}>
-              {isHidden ? "🔒 Hidden test case" : active.input}
+            <Field label="SYS.DAT_IN" hidden={isHidden}>
+              {isHidden ? "🔒 HIDDEN_PAYLOAD" : active.input}
             </Field>
 
             {/* Stdout */}
             {active.stdout && !isHidden && (
-              <Field label="Stdout">{active.stdout}</Field>
+              <Field label="SYS.STDOUT">{active.stdout}</Field>
             )}
 
             {/* Your Output */}
             <div>
-              <Label color={active.passed ? "#22c55e" : "#ef4444"}>
-                {active.passed ? "Output ✓" : "Your Output ✗"}
+              <Label color={active.passed ? "#00E5B0" : "#FF5F56"}>
+                {active.passed ? "SYS.DAT_OUT // VERIFIED" : "SYS.DAT_OUT // MISMATCH"}
               </Label>
               <div style={{
-                background: active.passed ? "rgba(34,197,94,0.05)" : "rgba(239,68,68,0.05)",
-                border: `1px solid ${active.passed ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)"}`,
-                padding: "10px 14px", borderRadius: 6, fontSize: 13,
+                background: active.passed ? "rgba(0,229,176,0.05)" : "rgba(255,95,86,0.05)",
+                border: `1px solid ${active.passed ? "rgba(0,229,176,0.2)" : "rgba(255,95,86,0.2)"}`,
+                borderLeft: `3px solid ${active.passed ? "#00E5B0" : "#FF5F56"}`,
+                padding: "12px 16px", borderRadius: 2, fontSize: 13,
                 fontFamily: "'JetBrains Mono', monospace",
-                lineHeight: 1.5,
-                color: active.passed ? "#22c55e" : "#ef4444",
+                lineHeight: 1.6,
+                color: active.passed ? "#00E5B0" : "#FF5F56",
                 whiteSpace: "pre-wrap", wordBreak: "break-all",
-                transition: "background var(--transition-fast)",
+                transition: "all var(--transition-fast)",
               }}
-              onMouseEnter={e => e.currentTarget.style.background = active.passed ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)"}
-              onMouseLeave={e => e.currentTarget.style.background = active.passed ? "rgba(34,197,94,0.05)" : "rgba(239,68,68,0.05)"}
+              onMouseEnter={e => { e.currentTarget.style.background = active.passed ? "rgba(0,229,176,0.08)" : "rgba(255,95,86,0.08)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = active.passed ? "rgba(0,229,176,0.05)" : "rgba(255,95,86,0.05)"; }}
               >
-                {active.actual !== null && active.actual !== undefined ? active.actual : "(no output)"}
+                {active.actual !== null && active.actual !== undefined ? active.actual : "(NO_DATA)"}
               </div>
             </div>
 
             {/* Expected */}
             {!isHidden && (
               <div>
-                <Label color="#22c55e">Expected</Label>
+                <Label color="#00C2FF">SYS.EXPECTED</Label>
                 <div style={{
-                  background: "rgba(34,197,94,0.04)", border: "1px solid rgba(34,197,94,0.12)",
-                  padding: "10px 14px", borderRadius: 6, fontSize: 13,
-                  fontFamily: "'JetBrains Mono', monospace", color: "#22c55e",
-                  lineHeight: 1.5,
+                  background: "rgba(0,194,255,0.05)", border: "1px solid rgba(0,194,255,0.2)",
+                  borderLeft: "3px solid #00C2FF",
+                  padding: "12px 16px", borderRadius: 2, fontSize: 13,
+                  fontFamily: "'JetBrains Mono', monospace", color: "#00C2FF",
+                  lineHeight: 1.6,
                   whiteSpace: "pre-wrap", wordBreak: "break-all",
-                  transition: "background var(--transition-fast)",
+                  transition: "all var(--transition-fast)",
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = "rgba(34,197,94,0.07)"}
-                onMouseLeave={e => e.currentTarget.style.background = "rgba(34,197,94,0.04)"}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,194,255,0.08)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,194,255,0.05)"; }}
                 >
                   {active.expected}
                 </div>
@@ -238,27 +250,29 @@ export default function TestExplorer({ testResults, mode, visibleCount, activeIn
           <>
             {active.compileOutput && (
               <div>
-                <Label color="#eab308">Compile Output</Label>
+                <Label color="#FACC15">SYS.COMPILE_OUT</Label>
                 <pre style={{
-                  background: "rgba(234,179,8,0.05)", padding: 10, borderRadius: 7, fontSize: 12,
-                  fontFamily: "'JetBrains Mono', monospace", color: "#fbbf24",
+                  background: "#060D10", padding: "16px", borderRadius: 4, fontSize: 12,
+                  border: "1px solid rgba(250,204,21,0.2)", borderLeft: "3px solid #FACC15",
+                  fontFamily: "'JetBrains Mono', monospace", color: "#FACC15",
                   overflowX: "auto", margin: 0, whiteSpace: "pre-wrap",
                 }}>{active.compileOutput}</pre>
               </div>
             )}
             {active.stderr && (
               <div>
-                <Label color="#ef4444">Standard Error</Label>
+                <Label color="#FF5F56">SYS.STDERR</Label>
                 <pre style={{
-                  background: "rgba(239,68,68,0.05)", padding: 10, borderRadius: 7, fontSize: 12,
-                  fontFamily: "'JetBrains Mono', monospace", color: "#fca5a5",
+                  background: "#060D10", padding: "16px", borderRadius: 4, fontSize: 12,
+                  border: "1px solid rgba(255,95,86,0.2)", borderLeft: "3px solid #FF5F56",
+                  fontFamily: "'JetBrains Mono', monospace", color: "#FF5F56",
                   overflowX: "auto", margin: 0, whiteSpace: "pre-wrap",
                 }}>{active.stderr}</pre>
               </div>
             )}
             {!active.compileOutput && !active.stderr && (
-              <div style={{ textAlign: "center", color: "#4a4a6a", fontSize: 13, marginTop: 20, fontFamily: "'JetBrains Mono', monospace" }}>
-                No console output.
+              <div style={{ textAlign: "center", color: "rgba(255,255,255,0.4)", fontSize: 12, marginTop: 32, fontFamily: "'Geist Mono', monospace", fontWeight: 800, letterSpacing: "0.15em" }}>
+                [ SYSTEM.CONSOLE: NO_OUTPUT_DETECTED ]
               </div>
             )}
           </>
@@ -271,9 +285,12 @@ export default function TestExplorer({ testResults, mode, visibleCount, activeIn
 function Label({ children, color }: { children: React.ReactNode; color: string }) {
   return (
     <div style={{
-      fontSize: 10, fontWeight: 700, color, marginBottom: 4,
-      textTransform: "uppercase", letterSpacing: "0.08em",
+      fontSize: 10, fontWeight: 800, color, marginBottom: 6,
+      textTransform: "uppercase", letterSpacing: "0.15em",
+      display: "flex", alignItems: "center", gap: 6,
+      fontFamily: "'Geist Mono', monospace"
     }}>
+      <span style={{ color, opacity: 0.6 }}>&gt;</span>
       {children}
     </div>
   );
@@ -282,17 +299,18 @@ function Label({ children, color }: { children: React.ReactNode; color: string }
 function Field({ label, children, hidden }: { label: string; children: React.ReactNode; hidden?: boolean }) {
   return (
     <div>
-      <Label color="#4a4a6a">{label}</Label>
+      <Label color={hidden ? "#6b7280" : "#00C2FF"}>{label}</Label>
       <div style={{
         background: hidden ? "rgba(255,255,255,0.02)" : CODE_BG,
-        padding: "10px 14px", borderRadius: 6, fontSize: 13,
-        fontFamily: "'JetBrains Mono', monospace", color: hidden ? "#6b7280" : "#9ca3af",
-        lineHeight: 1.5,
+        padding: "12px 16px", borderRadius: 2, fontSize: 13,
+        fontFamily: "'JetBrains Mono', monospace", color: hidden ? "#6b7280" : "#d1d5db",
+        lineHeight: 1.6,
         whiteSpace: "pre-wrap", wordBreak: "break-all",
-        border: hidden ? "1px dashed rgba(255,255,255,0.06)" : "1px solid transparent",
-        transition: "background var(--transition-fast)",
+        border: hidden ? "1px dashed rgba(255,255,255,0.1)" : "1px solid rgba(0,194,255,0.15)",
+        borderLeft: hidden ? undefined : "3px solid #00C2FF",
+        transition: "all var(--transition-fast)",
       }}
-      onMouseEnter={e => { if (!hidden) e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
+      onMouseEnter={e => { if (!hidden) e.currentTarget.style.background = "rgba(0,194,255,0.03)"; }}
       onMouseLeave={e => { if (!hidden) e.currentTarget.style.background = CODE_BG; }}
       >
         {children}

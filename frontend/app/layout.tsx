@@ -16,18 +16,25 @@ import { Providers } from "./providers";
 import SessionSync from "@/components/SessionSync";
 import { CursorGlow } from "@/components/core/cursor-glow";
 import { Header } from "@/components/layout/header";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { GlobalBackground } from "@/components/ui/global-background";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} ${vt323.variable} antialiased bg-[var(--background)] text-[var(--text-primary)] min-h-screen`} suppressHydrationWarning>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} ${vt323.variable} antialiased bg-[#05070A] text-[var(--text-primary)] min-h-screen relative overflow-x-hidden`} suppressHydrationWarning>
+        <GlobalBackground />
         <Providers>
-          <div className="relative min-h-screen overflow-hidden scanlines flex flex-col">
-            <CursorGlow />
+          <div className="relative z-10 flex flex-col min-h-screen scanlines">
             <Header />
             <SessionSync />
-            {children}
+            <TooltipProvider>
+              <div className="flex-1 w-full pt-0">
+                {children}
+              </div>
+            </TooltipProvider>
           </div>
+          <CursorGlow />
         </Providers>
       </body>
     </html>

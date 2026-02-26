@@ -18,19 +18,19 @@ interface VerdictHeaderProps {
 }
 
 const VERDICTS: Record<string, { label: string; color: string; bg: string; emoji: string }> = {
-  ACCEPTED:                    { label: "Accepted",            color: "#22c55e", bg: "rgba(34,197,94,0.1)",    emoji: "✅" },
-  WRONG_ANSWER:                { label: "Wrong Answer",        color: "#ef4444", bg: "rgba(239,68,68,0.1)",   emoji: "❌" },
-  WRONG_ANSWER_ON_HIDDEN_TEST: { label: "Hidden Test Failed",  color: "#f43f5e", bg: "rgba(244,63,94,0.1)",   emoji: "🕵️‍♂️" },
-  TIME_LIMIT_EXCEEDED:         { label: "Time Limit Exceeded", color: "#eab308", bg: "rgba(234,179,8,0.1)",   emoji: "⏱️" },
-  MEMORY_LIMIT_EXCEEDED:       { label: "Memory Limit Exceeded", color: "#eab308", bg: "rgba(234,179,8,0.1)",   emoji: "🧠" },
-  COMPILATION_ERROR:           { label: "Compile Error",       color: "#ef4444", bg: "rgba(239,68,68,0.1)",   emoji: "🔴" },
-  RUNTIME_ERROR:               { label: "Runtime Error",       color: "#f97316", bg: "rgba(249,115,22,0.1)",  emoji: "💥" },
-  INTERNAL_ERROR:        { label: "Internal Error",        color: "#6b7280", bg: "rgba(107,114,128,0.1)", emoji: "⚠️" },
-  ERROR:                 { label: "Error",                 color: "#6b7280", bg: "rgba(107,114,128,0.1)", emoji: "⚠️" },
-  PENDING:               { label: "Queued…",              color: "#3b82f6", bg: "rgba(59,130,246,0.1)",   emoji: "⌛" },
-  QUEUED:                { label: "Queued…",              color: "#3b82f6", bg: "rgba(59,130,246,0.1)",   emoji: "⌛" },
-  RUNNING:               { label: "Running…",             color: "#3b82f6", bg: "rgba(59,130,246,0.1)",   emoji: "🔄" },
-  REQUEST_ERROR:         { label: "Request Error",         color: "#6b7280", bg: "rgba(107,114,128,0.1)", emoji: "⚠️" },
+  ACCEPTED:                    { label: "SYS.VERDICT // ACCEPTED",            color: "#00E5B0", bg: "#060D10",    emoji: "🚀" },
+  WRONG_ANSWER:                { label: "SYS.VERDICT // WRONG_ANSWER",        color: "#FF5F56", bg: "#060D10",   emoji: "❌" },
+  WRONG_ANSWER_ON_HIDDEN_TEST: { label: "SYS.VERDICT // REJECTED_HIDDEN",     color: "#FF5F56", bg: "#060D10",   emoji: "🕵️‍♂️" },
+  TIME_LIMIT_EXCEEDED:         { label: "SYS.VERDICT // TIME_LIMIT",          color: "#FFB000", bg: "#060D10",   emoji: "⏱️" },
+  MEMORY_LIMIT_EXCEEDED:       { label: "SYS.VERDICT // MEMORY_OVERFLOW",     color: "#FFB000", bg: "#060D10",   emoji: "🧠" },
+  COMPILATION_ERROR:           { label: "SYS.VERDICT // COMPILE_FAIL",        color: "#FF5F56", bg: "#060D10",   emoji: "🔴" },
+  RUNTIME_ERROR:               { label: "SYS.VERDICT // RUNTIME_CRASH",       color: "#FF5F56", bg: "#060D10",  emoji: "💥" },
+  INTERNAL_ERROR:              { label: "SYS.VERDICT // INTERNAL_FAULT",      color: "#6b7280", bg: "#060D10", emoji: "⚠️" },
+  ERROR:                       { label: "SYS.VERDICT // ERROR",               color: "#6b7280", bg: "#060D10", emoji: "⚠️" },
+  PENDING:                     { label: "SYS.STATUS // SCHEDULED",            color: "#00C2FF", bg: "#060D10",   emoji: "⌛" },
+  QUEUED:                      { label: "SYS.STATUS // QUEUED",               color: "#00C2FF", bg: "#060D10",   emoji: "⌛" },
+  RUNNING:                     { label: "SYS.STATUS // EXECUTING",            color: "#00C2FF", bg: "#060D10",   emoji: "🔄" },
+  REQUEST_ERROR:               { label: "SYS.VERDICT // CONNECTION_LOST",     color: "#6b7280", bg: "#060D10", emoji: "⚠️" },
 };
 
 function getVerdict(status: string) {
@@ -58,27 +58,28 @@ export default function VerdictHeader({
     <div style={{
       padding: "16px 20px",
       background: v.bg,
-      borderBottom: `1px solid ${v.color}25`,
+      borderBottom: `1px solid ${v.color}20`,
+      borderLeft: `3px solid ${v.color}`,
       transition: "all 0.3s",
       display: "flex",
       flexDirection: "column",
-      gap: 12,
+      gap: 16,
+      position: "relative",
     }}>
+      <div style={{ position: "absolute", inset: 0, backgroundImage: `linear-gradient(90deg, transparent, ${v.color}05 50%, transparent)`, pointerEvents: "none" }} />
       {/* Title row */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <h2 style={{
-          fontSize: 17, fontWeight: 800, margin: 0,
-          color: v.color, display: "flex", alignItems: "center", gap: 8,
-          letterSpacing: "-0.3px",
+          fontSize: 14, fontWeight: 800, margin: 0,
+          color: v.color, display: "flex", alignItems: "center", gap: 10,
+          letterSpacing: "0.15em", textTransform: "uppercase",
         }}>
-          <span>{v.emoji}</span>
+          <span style={{ fontSize: 18 }}>{v.emoji}</span>
           <span>{v.label}</span>
           {!done && (
-            <svg style={{ width: 18, height: 18, animation: "spin 0.9s linear infinite" }}
-              xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" stroke={v.color} strokeWidth="3" strokeOpacity="0.25"/>
-              <path fill={v.color} d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-            </svg>
+            <div style={{ color: v.color, display: "flex", alignItems: "center", marginLeft: 8 }}>
+              <span className="typing-cursor ml-1"></span>
+            </div>
           )}
         </h2>
 
@@ -86,19 +87,19 @@ export default function VerdictHeader({
       </div>
 
       {done ? (
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", animation: "panelFadeIn var(--transition-fast)" }}>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", animation: "panelFadeIn var(--transition-fast)", position: "relative", zIndex: 10 }}>
           {passedCases !== undefined && totalCases !== undefined && (
-            <Pill
+            <DataBlock
               value={`${passedCases} / ${totalCases}`}
-              label={mode === "run" ? "samples" : "tests"}
-              color={passedCases === totalCases ? "#22c55e" : "#ef4444"}
+              label={mode === "run" ? "SAMPLES_PASSED" : "TESTS_CLEARED"}
+              color={passedCases === totalCases ? "#00E5B0" : "#FF5F56"}
             />
           )}
           {runtime != null && (
-            <Pill value={`${runtime} ms`} label="runtime" color="#00FFFF" />
+            <DataBlock value={`${runtime} ms`} label="EXECUTION_TIME" color="#00C2FF" />
           )}
           {memory != null && (
-            <Pill value={`${(memory / 1024).toFixed(1)} MB`} label="memory" color="#60a5fa" />
+            <DataBlock value={`${(memory / 1024).toFixed(1)} MB`} label="MEMORY_ALLOC" color="#00C2FF" />
           )}
         </div>
       ) : (
@@ -145,15 +146,16 @@ export default function VerdictHeader({
   );
 }
 
-function Pill({ value, label, color }: { value: string; label: string; color: string }) {
+function DataBlock({ value, label, color }: { value: string; label: string; color: string }) {
   return (
     <div style={{
-      display: "flex", flexDirection: "column", alignItems: "center",
-      background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
-      borderRadius: 8, padding: "4px 10px", minWidth: 60,
+      display: "flex", flexDirection: "column", alignItems: "flex-start",
+      background: "transparent", border: `1px solid ${color}30`,
+      borderLeft: `3px solid ${color}`,
+      padding: "8px 12px", minWidth: 100,
     }}>
-      <span style={{ fontSize: 13, fontWeight: 700, color }}>{value}</span>
-      <span style={{ fontSize: 9, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", marginTop: 2 }}>{label}</span>
+      <span style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 4, fontWeight: 700 }}>{label}</span>
+      <span style={{ fontSize: 15, fontWeight: 800, color }}>{value}</span>
     </div>
   );
 }

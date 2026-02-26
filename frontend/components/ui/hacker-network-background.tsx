@@ -32,65 +32,56 @@ export function HackerNetworkBackground() {
     }
 
     // Network Node properties
-    class Node {
-        x: number;
-        y: number;
-        vx: number;
-        vy: number;
-        radius: number;
-        connections: number[];
-        pulse: number;
-        pulseDir: number;
+    type Node = {
+        x: number; y: number; vx: number; vy: number; radius: number; connections: number[]; pulse: number; pulseDir: number;
+    };
 
-        constructor() {
-            this.x = Math.random() * width;
-            this.y = Math.random() * height;
-            // Strict linear movement (horizontal or vertical, not diagonal)
-            const isHorizontal = Math.random() > 0.5;
-            const speed = (Math.random() * 0.5 + 0.1) * (Math.random() > 0.5 ? 1 : -1);
-            
-            this.vx = isHorizontal ? speed : 0;
-            this.vy = isHorizontal ? 0 : speed;
-            
-            this.radius = Math.random() * 1.5 + 0.5;
-            this.connections = [];
-            
-            this.pulse = Math.random();
-            this.pulseDir = Math.random() > 0.5 ? 0.02 : -0.02;
-        }
+    const createNode = (): Node => {
+        const isHorizontal = Math.random() > 0.5;
+        const speed = (Math.random() * 0.5 + 0.1) * (Math.random() > 0.5 ? 1 : -1);
+        return {
+            x: Math.random() * width,
+            y: Math.random() * height,
+            vx: isHorizontal ? speed : 0,
+            vy: isHorizontal ? 0 : speed,
+            radius: Math.random() * 1.5 + 0.5,
+            connections: [],
+            pulse: Math.random(),
+            pulseDir: Math.random() > 0.5 ? 0.02 : -0.02,
+        };
+    };
 
-        update() {
-            this.x += this.vx;
-            this.y += this.vy;
+    const updateNode = (node: Node, mouseX: number, mouseY: number) => {
+        node.x += node.vx;
+        node.y += node.vy;
 
-            // Wrap around
-            if (this.x < 0) this.x = width;
-            if (this.x > width) this.x = 0;
-            if (this.y < 0) this.y = height;
-            if (this.y > height) this.y = 0;
-            
-            // Pulse effect
-            this.pulse += this.pulseDir;
-            if (this.pulse > 1 || this.pulse < 0) this.pulseDir *= -1;
-            
-            // Mouse repel
-            if (mouse.x !== -1000) {
-                const dx = mouse.x - this.x;
-                const dy = mouse.y - this.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < 100) {
-                    this.x -= (dx / dist) * 2;
-                    this.y -= (dy / dist) * 2;
-                }
+        // Wrap around
+        if (node.x < 0) node.x = width;
+        if (node.x > width) node.x = 0;
+        if (node.y < 0) node.y = height;
+        if (node.y > height) node.y = 0;
+        
+        // Pulse effect
+        node.pulse += node.pulseDir;
+        if (node.pulse > 1 || node.pulse < 0) node.pulseDir *= -1;
+        
+        // Mouse repel
+        if (mouseX !== -1000) {
+            const dx = mouseX - node.x;
+            const dy = mouseY - node.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 100) {
+                node.x -= (dx / dist) * 2;
+                node.y -= (dy / dist) * 2;
             }
         }
-    }
+    };
 
     const nodes: Node[] = [];
     // Lower node count than spider web for cleaner "data flow" feel
     const nodeCount = Math.floor((width * height) / 25000); 
     for(let i=0; i<nodeCount; i++) {
-        nodes.push(new Node());
+        nodes.push(createNode());
     }
 
     // Mouse interaction
@@ -149,51 +140,45 @@ export function HackerNetworkBackground() {
       }
 
       // 3. Draw Network Nodes & Data Streams
-      nodes.forEach(node => node.update());
-      
       ctx.lineWidth = 1;
       for (let i = 0; i < nodes.length; i++) {
-          // Draw Node
-          ctx.beginPath();
-          ctx.arc(nodes[i].x, nodes[i].y, nodes[i].radius, 0, Math.PI * 2);
-          
-          // Pulsing opacity
-          const opacity = 0.3 + (nodes[i].pulse * 0.7);
-          ctx.fillStyle = `rgba(0, 229, 176, ${opacity})`;
-          ctx.fill();
+        const node = nodes[i];
+        
+        // Update connections (recalculate each frame for dynamic connections)
+        node.connections = [];
+        for (let j = i + 1; j < nodes.length; j++) {
+            const other = nodes[j];
+            const dx = node.x - other.x;
+            const dy = node.y - other.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < 150) { // Connect nodes that are close
+                node.connections.push(j);
+                
+                // Line opacity based on strict axis alignment (optional hacker style)
+                const isAxisAligned = Math.abs(dx) < 10 || Math.abs(dy) < 10;
+                
+                // Draw connecting line
+                ctx.beginPath();
+                ctx.moveTo(node.x, node.y);
+                ctx.lineTo(other.x, other.y);
+                if (isAxisAligned) {
+                  ctx.strokeStyle = `rgba(0, 194, 255, ${1 - distance / 150})`; // Bright cyan for straight lines
+                } else {
+                  ctx.strokeStyle = `rgba(0, 194, 255, ${(1 - distance / 150) * 0.2})`; // Faint cyan for diagonals
+                }
+                ctx.stroke();
+            }
+        }
 
-          // Draw Connections (Data Streams)
-          for (let j = i + 1; j < nodes.length; j++) {
-              const dx = nodes[i].x - nodes[j].x;
-              const dy = nodes[i].y - nodes[j].y;
-              const distance = Math.sqrt(dx * dx + dy * dy);
-
-              // Connect nodes that are close
-              if (distance < 150) {
-                  // Only draw purely horizontal or vertical connections to look like a circuit board
-                  const isStrictlyHorizontal = Math.abs(dy) < 5;
-                  const isStrictlyVertical = Math.abs(dx) < 5;
-                  
-                  // Allow diagonal connections if they are very close
-                  const isCloseDiagonal = distance < 80;
-
-                  if (isStrictlyHorizontal || isStrictlyVertical || isCloseDiagonal) {
-                      ctx.beginPath();
-                      ctx.moveTo(nodes[i].x, nodes[i].y);
-                      
-                      if (isCloseDiagonal && !isStrictlyHorizontal && !isStrictlyVertical) {
-                          // Draw a circuit-like right-angle connection instead of a straight line
-                          ctx.lineTo(nodes[i].x, nodes[j].y);
-                      }
-                      
-                      ctx.lineTo(nodes[j].x, nodes[j].y);
-                      
-                      // Connection opacity
-          ctx.strokeStyle = `rgba(0, 229, 176, ${(1 - distance / 150) * 0.3})`;
-                      ctx.stroke();
-                  }
-              }
-          }
+        // Draw node
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, node.radius * (1 + (node.pulse * 0.5)), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0, 194, 255, ${0.5 + node.pulse * 0.5})`; // Spiderman Hacker Cyan Glow
+        ctx.fill();
+        
+        // Move node
+        updateNode(node, mouse.x, mouse.y);
       }
 
       // 4. Cursor Interaction Ring
