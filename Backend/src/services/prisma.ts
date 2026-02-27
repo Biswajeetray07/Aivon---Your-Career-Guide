@@ -9,6 +9,11 @@ declare global {
 // Standard Prisma instantiation for Node.js environments
 const prisma = global._prisma ?? new PrismaClient({
   log: ["error", "warn"],
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL
+    }
+  }
 });
 
 if (process.env.NODE_ENV !== "production") {
@@ -16,10 +21,17 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // Proactive connection test on startup (for logging)
+// We use a timeout to ensure we don't hang the worker indefinitely
 if (process.env.NODE_ENV === "production") {
-  prisma.$connect()
-    .then(() => console.log("✅ Database connected successfully"))
-    .catch((err) => console.error("❌ Database connection failed:", err));
+  console.log("🚀 Starting DB connection test...");
+  const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("DB Connection Timeout (30s)")), 30000));
+  
+  Promise.race([prisma.$connect(), timeout])
+    .then(() => console.log("✅ Database linked successfully"))
+    .catch((err) => {
+        console.error("❌ Database link failed:", err.message);
+        // Don't exit yet, let the handler report the error
+    });
 }
 
 export default prisma;
