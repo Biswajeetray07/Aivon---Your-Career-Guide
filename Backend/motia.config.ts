@@ -1,7 +1,16 @@
-import { defineConfig } from '@motiadev/core'
+import { defineConfig, DefaultQueueEventAdapter, DefaultCronAdapter, MemoryStreamAdapterManager, MemoryStateAdapter } from '@motiadev/core'
 import endpointPlugin from '@motiadev/plugin-endpoint/plugin'
 import cors from 'cors'
 
+/**
+ * 🏆 PRODUCTION OPTIMIZATION
+ * 
+ * We use InMemory adapters to SKIP the internal Redis server boot,
+ * saving ~200MB of RAM on Render's free tier.
+ * 
+ * Required Render Env Vars:
+ *   MOTIA_DOCKER_DISABLE_WORKBENCH=true  (disables the Workbench UI)
+ */
 const corsMiddleware = cors({
   origin: [
     'https://aivon-mentor.vercel.app',
@@ -16,9 +25,16 @@ const corsMiddleware = cors({
 
 export default defineConfig({
   plugins: [endpointPlugin],
+  // ✅ CRITICAL: Use InMemory adapters to bypass Redis startup
+  adapters: {
+    events: new DefaultQueueEventAdapter(),
+    cron: new DefaultCronAdapter(),
+    streams: new MemoryStreamAdapterManager(),
+    state: new MemoryStateAdapter(),
+  },
   app: (app) => {
-    // Must be the VERY FIRST middleware
     app.use(corsMiddleware);
   }
 })
+
 
