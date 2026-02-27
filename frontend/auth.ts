@@ -18,7 +18,7 @@ import type { NextAuthConfig } from "next-auth";
  * (merging by email if they already have a credentials account).
  */
 
-const BACKEND_URL = process.env.BACKEND_URL || "http://127.0.0.1:3002";
+const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3000";
 
 const config: NextAuthConfig = {
   trustHost: true,

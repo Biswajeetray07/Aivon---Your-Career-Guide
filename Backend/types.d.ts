@@ -12,7 +12,6 @@ declare module 'motia' {
   }
 
   interface Handlers {
-    'UpdateUserStats': EventHandler<never, never>
     'RunCode': ApiRouteHandler<{ problemId: string; language: string; code: string }, ApiResponse<200, { status: string; runtime: number | unknown; testResults: Array<{ input: string; expected: string; actual: string | unknown; stdout?: string | unknown; stderr: string | unknown; compileOutput: string | unknown; passed: boolean; runtime: number | unknown; errorDetails?: { verdict: string; errorType: string; line: number | unknown; message: string } | unknown }>; passedCases: number; totalCases: number }> | ApiResponse<400, { error: string }> | ApiResponse<401, { error: string }> | ApiResponse<404, { error: string }> | ApiResponse<429, { error: string }>, never>
     'MySubmissions': ApiRouteHandler<Record<string, unknown>, ApiResponse<200, { submissions: Array<{ id: string; status: string; language: string; runtime: number | unknown; memory: number | unknown; createdAt: string; problem: { id: string; title: string; slug: string; difficulty: string } }> }>, never>
     'GetSubmission': ApiRouteHandler<Record<string, unknown>, ApiResponse<200, {}> | ApiResponse<404, { error: string }>, never>
@@ -25,6 +24,7 @@ declare module 'motia' {
     'GetLeaderboard': ApiRouteHandler<Record<string, unknown>, ApiResponse<200, { leaderboard: Array<{ rank: number; userId: string; name: string | unknown; email: string; rating: number; solved: number }> }>, never>
     'LogGreeting': EventHandler<{ requestId: string; greeting: string; processedBy: string }, never>
     'HelloAPI': ApiRouteHandler<Record<string, unknown>, ApiResponse<200, { message: string; status: string; appName: string }>, { topic: 'process-greeting'; data: { timestamp: string; appName: string; greetingPrefix: string; requestId: string } }>
+    'UpdateChatThread': ApiRouteHandler<{ title: string }, ApiResponse<200, { success: boolean }> | ApiResponse<401, { error: string }> | ApiResponse<404, { error: string }>, never>
     'ListChatThreads': ApiRouteHandler<Record<string, unknown>, ApiResponse<200, { threads: Array<{ id: string; title: string | unknown; createdAt: unknown; updatedAt: unknown }> }> | ApiResponse<401, { error: string }>, never>
     'GetChatThread': ApiRouteHandler<Record<string, unknown>, ApiResponse<200, { thread: { id: string; title: string | unknown; createdAt: unknown; messages: Array<{ role: string; content: string; createdAt: unknown }> } }> | ApiResponse<401, { error: string }> | ApiResponse<404, { error: string }>, never>
     'DeleteChatThread': ApiRouteHandler<Record<string, unknown>, ApiResponse<200, { success: boolean }> | ApiResponse<401, { error: string }> | ApiResponse<404, { error: string }>, never>
@@ -35,16 +35,17 @@ declare module 'motia' {
     'OAuthToken': ApiRouteHandler<{ email: string }, ApiResponse<200, { token: string; user: { id: string; email: string; name: string | unknown } }> | ApiResponse<400, { error: string }> | ApiResponse<404, { error: string }>, never>
     'AuthLogin': ApiRouteHandler<{ email: string; password: string }, ApiResponse<200, { token: string; user: { id: string; email: string; name: string | unknown; role: string; rating: number } }> | ApiResponse<400, { error: string }> | ApiResponse<401, { error: string }> | ApiResponse<429, { error: string }>, never>
     'CompleteOnboarding': ApiRouteHandler<{ username: string; goals: Array<string> }, ApiResponse<200, { success: boolean }> | ApiResponse<400, { error: string }> | ApiResponse<409, { error: string }>, never>
-    'ArenaAPI': ApiRouteHandler<Record<string, unknown>, unknown, never>
     'AiImproveCode': ApiRouteHandler<{ problemId: string; language: string; code: string }, ApiResponse<200, { feedback: string; alternativeApproach: string; timeComplexity: string; spaceComplexity: string }> | ApiResponse<400, { error: string }> | ApiResponse<404, { error: string }>, never>
     'AiGetHint': ApiRouteHandler<{ problemId: string; userCode?: string }, ApiResponse<200, { hint: string }> | ApiResponse<400, { error: string }> | ApiResponse<404, { error: string }>, never>
     'AiExplain': ApiRouteHandler<{ problemId: string }, ApiResponse<200, { explanation: string; approach: string; keyInsights: Array<string> }> | ApiResponse<400, { error: string }> | ApiResponse<404, { error: string }>, never>
     'AiCodeFeedback': ApiRouteHandler<{ problemId: string; language: string; code: string }, ApiResponse<200, { feedback: string; timeComplexity: string; spaceComplexity: string; improvementTip?: string; interviewNote?: string }> | ApiResponse<400, { error: string }> | ApiResponse<404, { error: string }>, never>
     'GenerateOracleFiles': ApiRouteHandler<{ problemId: string }, ApiResponse<200, { success: boolean; message: string; judgeMeta?: unknown }> | ApiResponse<400, { error: string }> | ApiResponse<404, { error: string }> | ApiResponse<500, { error: string }>, never>
     'AiExplainError': ApiRouteHandler<{ problemId: string; language: string; code: string; errorDetails: { verdict: string; errorType: string; line: number | unknown; message: string }; testcase?: { input?: string; expected?: string; received?: string | unknown; isHidden?: boolean } }, ApiResponse<200, { summary: string; rootCause: string; fixSteps: Array<string>; conceptToReview: string; likelyIssue?: string; debugSteps?: Array<string>; edgeCasesToCheck?: Array<string> }> | ApiResponse<400, { error: string }> | ApiResponse<404, { error: string }>, never>
+    'AiChat': ApiRouteHandler<{ threadId?: string; problemId: string | unknown; userCode?: string; language?: string; messages: Array<unknown> }, ApiResponse<200, { reply: string; threadId: string }> | ApiResponse<400, { error: string }> | ApiResponse<404, { error: string }> | ApiResponse<429, { error: string }>, never>
     'ErrorIntelAnalyze': ApiRouteHandler<{ language: string; stdout?: string | unknown; stderr?: string | unknown; compileOutput?: string | unknown; exitCode: number; timeMs?: number; memoryKb?: number; expectedOutput?: string | unknown; userOutput?: string | unknown; testInput?: string | unknown; judge0StatusId: number }, ApiResponse<200, { category: string; confidence: number; badge: string; humanSummary: string; pattern?: unknown; enriched?: unknown; hints: unknown; raw: unknown }> | ApiResponse<400, { error: string }>, never>
     'ProcessGreeting': EventHandler<{ timestamp: string; appName: string; greetingPrefix: string; requestId: string }, { topic: 'greeting-processed'; data: { requestId: string; greeting: string; processedBy: string } }>
-    'AiChat': ApiRouteHandler<{ threadId?: string; problemId: string | unknown; userCode?: string; language?: string; messages: Array<unknown> }, ApiResponse<200, { reply: string; threadId: string }> | ApiResponse<400, { error: string }> | ApiResponse<404, { error: string }> | ApiResponse<429, { error: string }>, never>
+    'UpdateUserStats': EventHandler<never, never>
+    'ArenaAPI': ApiRouteHandler<Record<string, unknown>, unknown, never>
   }
     
 }

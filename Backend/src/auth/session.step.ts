@@ -6,7 +6,7 @@ import { authMiddleware } from "../middlewares/auth.middleware";
 export const config: ApiRouteConfig = {
   type: "api",
   name: "AuthSession",
-  path: "/api/auth/session",
+  path: "/api/auth/me",
   method: "GET",
   emits: [],
   flows: ["auth-flow"],

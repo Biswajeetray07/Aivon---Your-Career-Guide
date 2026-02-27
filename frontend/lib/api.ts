@@ -11,6 +11,7 @@ function buildHeaders(extra: Record<string, string> = {}) {
   const token = getToken();
   return {
     "Content-Type": "application/json",
+    "x-backend": "true",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...extra,
   };
@@ -99,7 +100,7 @@ export const register = (email: string, password: string, name?: string) =>
 
 export const getSession = () =>
   apiGet<{ user: { id: string; email: string; name: string | null; role: string; rating: number; createdAt: string } }>(
-    "/api/auth/session"
+    "/api/auth/me"
   );
 
 // ─── Problems ─────────────────────────────────────────────────────────────────

@@ -118,7 +118,8 @@ export const handler: any = async (
   // Helper to push real-time updates to the standalone Socket.IO server
   const pushUpdate = async (event: any) => {
     try {
-      await fetch("http://localhost:3003/emit", {
+      const socketUrl = process.env.SOCKET_URL_INTERNAL || "http://localhost:3003";
+      await fetch(`${socketUrl}/emit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
