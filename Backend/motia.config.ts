@@ -2,6 +2,7 @@ import { defineConfig, DefaultQueueEventAdapter, DefaultCronAdapter, MemoryStrea
 import endpointPlugin from '@motiadev/plugin-endpoint/plugin'
 import cors from 'cors'
 import { Server as SocketServer } from 'socket.io'
+import type { Express } from 'express'
 
 const ALLOWED_ORIGINS = [
   'https://aivon-mentor.vercel.app',
@@ -18,76 +19,116 @@ const corsMiddleware = cors({
 });
 
 /**
- * 🔌 Socket.io Motia Plugin
+ * 🔌 Attach Socket.io to Express app
  * 
- * Motia's 'app' hook runs before the HTTP server is created.
- * Motia's plugin system provides access to the live 'server' instance,
- * allowing us to attach Socket.io correctly on the same port.
+ * Strategy: Express stores its HTTP server reference internally after
+ * server.listen() is called. We use a polling interval to wait until
+ * the server is available, then attach Socket.io to it.
+ * 
+ * This works because Motia calls `const server = http.createServer(app)`
+ * and then `server.listen(port)`, but we only get the `app` reference
+ * in the callback (before the server is created). So we wait.
  */
-function socketIoPlugin(context: any) {
-    const { app, server } = context;
+function attachSocketIo(app: Express) {
+  // Register the /emit endpoint immediately (Express routes work regardless)
+  app.post('/emit', (req: any, res: any) => {
+    const io = (app as any).__socketio;
+    if (!io) {
+      return res.status(503).json({ error: 'Socket.io not yet initialized' });
+    }
     
-    if (!server) {
-        console.warn('⚠️ [Socket.io Plugin] HTTP server not found in context');
-        return { workbench: [] };
+    const { topic, submissionId, event, payload } = req.body || {};
+    const targetTopic = topic || submissionId;
+    const targetEvent = event || 'judge-update';
+    const targetPayload = payload !== undefined ? payload : event;
+
+    if (!targetTopic) {
+      return res.status(400).json({ error: 'Missing topic/submissionId' });
     }
 
-    const io = new SocketServer(server, {
-        cors: {
-            origin: ALLOWED_ORIGINS,
-            methods: ['GET', 'POST'],
-            credentials: true,
-        },
-        path: '/socket.io/',
-    });
+    io.to(targetTopic).emit(targetEvent, targetPayload);
+    res.json({ success: true, topic: targetTopic });
+  });
 
-    // Internal /emit route to allow Motia steps to push data to clients
-    app.post('/emit', (req: any, res: any) => {
-        const { topic, submissionId, event, payload } = req.body || {};
-        const targetTopic = topic || submissionId;
-        const targetEvent = event || 'judge-update';
-        const targetPayload = payload !== undefined ? payload : event;
+  // Poll for the HTTP server to become available
+  let attempts = 0;
+  const maxAttempts = 60; // 30 seconds max
+  
+  const interval = setInterval(() => {
+    attempts++;
 
-        if (!targetTopic) {
-            return res.status(400).json({ error: 'Missing topic/submissionId' });
-        }
+    // Express stores the server on the app when you call app.listen(),
+    // but Motia uses http.createServer(app) + server.listen(). 
+    // The 'request' event is bound to the app by http.createServer.
+    // We can find the server by checking if the app has been mounted.
 
-        io.to(targetTopic).emit(targetEvent, targetPayload);
-        res.json({ success: true, topic: targetTopic });
-    });
-
-    io.on('connection', (socket) => {
-        console.log(`📡 [Socket.io] Client connected: ${socket.id}`);
-        
-        socket.on('subscribe', (topics: string | string[]) => {
-            const arr = Array.isArray(topics) ? topics : [topics];
-            arr.forEach(t => {
-                if (typeof t === 'string' && t.trim()) {
-                    socket.join(t);
-                    console.log(`✅ [Socket.io] Subscribed ${socket.id} to ${t}`);
-                }
+    // Look for any active TCP server that has this app as a handler
+    try {
+      // When http.createServer(app) is called, Node binds `app` as
+      // the 'request' listener. We can't easily reverse-lookup.
+      // Instead, let's check process._getActiveHandles() for HTTP servers.
+      const handles = (process as any)._getActiveHandles?.() || [];
+      for (const handle of handles) {
+        if (handle?.constructor?.name === 'Server' && typeof handle.address === 'function') {
+          const addr = handle.address();
+          if (addr && addr.port) {
+            // Found the HTTP server!
+            const httpServer = handle;
+            
+            const io = new SocketServer(httpServer, {
+              cors: {
+                origin: ALLOWED_ORIGINS,
+                methods: ['GET', 'POST'],
+                credentials: true,
+              },
+              path: '/socket.io/',
+              transports: ['websocket', 'polling'],
             });
-        });
 
-        socket.on('unsubscribe', (topics: string | string[]) => {
-            const arr = Array.isArray(topics) ? topics : [topics];
-            arr.forEach(t => socket.leave(t));
-        });
+            // Store reference on app for /emit endpoint
+            (app as any).__socketio = io;
 
-        socket.on('disconnect', () => {
-            console.log(`🔌 [Socket.io] Client disconnected: ${socket.id}`);
-        });
-    });
+            io.on('connection', (socket) => {
+              console.log(`📡 [Socket.io] Client connected: ${socket.id}`);
+              
+              socket.on('subscribe', (topics: string | string[]) => {
+                const arr = Array.isArray(topics) ? topics : [topics];
+                arr.forEach(t => {
+                  if (typeof t === 'string' && t.trim()) {
+                    socket.join(t);
+                  }
+                });
+              });
 
-    console.log('🚀 [Socket.io Plugin] Successfully attached to server');
-    return { workbench: [] };
+              socket.on('unsubscribe', (topics: string | string[]) => {
+                const arr = Array.isArray(topics) ? topics : [topics];
+                arr.forEach(t => socket.leave(t));
+              });
+
+              socket.on('disconnect', () => {
+                console.log(`🔌 [Socket.io] Client disconnected: ${socket.id}`);
+              });
+            });
+
+            console.log(`🚀 [Socket.io] Successfully attached to HTTP server on port ${addr.port}`);
+            clearInterval(interval);
+            return;
+          }
+        }
+      }
+    } catch (err) {
+      // Silently retry
+    }
+
+    if (attempts >= maxAttempts) {
+      console.warn('⚠️ [Socket.io] Timed out waiting for HTTP server (30s). Real-time disabled.');
+      clearInterval(interval);
+    }
+  }, 500);
 }
 
 export default defineConfig({
-  plugins: [
-    endpointPlugin,
-    socketIoPlugin
-  ],
+  plugins: [endpointPlugin],
   adapters: {
     events: new DefaultQueueEventAdapter(),
     cron: new DefaultCronAdapter(),
@@ -96,5 +137,6 @@ export default defineConfig({
   },
   app: (app) => {
     app.use(corsMiddleware);
+    attachSocketIo(app);
   }
 })
