@@ -44,7 +44,8 @@ async function apiFetch<T>(
 
   let res: Response;
   try {
-    res = await fetch(`${API}${path}`, {
+    const fullUrl = API ? `${API}${path}` : path;
+    res = await fetch(fullUrl, {
       method,
       headers: buildHeaders(),
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
@@ -53,12 +54,18 @@ async function apiFetch<T>(
     });
   } catch (err: any) {
     const errorMsg = err?.message?.toLowerCase() || "";
-    if (err?.name === "AbortError" || errorMsg.includes("abort") || errorMsg.includes("load failed") || errorMsg.includes("failed to fetch") || signal?.aborted) {
-      const abortErr = new Error("AbortError");
+    if (err?.name === "AbortError" || signal?.aborted) {
+      const abortErr = new Error(err?.message || "Request timed out");
       abortErr.name = "AbortError";
       throw abortErr;
     }
-    throw new Error(err?.message || "Failed to reach server (fetch failed). Ensure the backend is running.");
+    
+    // Provide a more helpful message for common fetch failures
+    let finalMsg = err?.message || "Network Error";
+    if (errorMsg.includes("load failed") || errorMsg.includes("failed to fetch")) {
+      finalMsg = "Connection failed. Please ensure the backend is running and reachable.";
+    }
+    throw new Error(finalMsg);
   } finally {
     clearTimeout(timeoutId);
   }

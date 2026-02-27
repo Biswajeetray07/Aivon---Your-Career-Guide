@@ -122,7 +122,7 @@ export default function RegisterPage() {
                   <div className="p-4 flex flex-col gap-2">
                     <div className="flex items-center gap-2 text-[#FF2A2A] text-[10px] font-bold uppercase tracking-widest mb-1">
                       <div className="w-1.5 h-1.5 rounded-full bg-[#FF2A2A] animate-pulse" />
-                      Validation Conflict Detected
+                      Neural Link Error
                     </div>
                     
                     {Array.isArray(error) ? (
@@ -141,7 +141,7 @@ export default function RegisterPage() {
                       </ul>
                     ) : (
                       <p className="text-[11px] text-[#FF2A2A]/90 font-geist-mono pl-4 border-l border-[#FF2A2A]/20">
-                        {typeof error === 'string' ? error : JSON.stringify(error)}
+                        {typeof error === 'string' ? error : (error?.error || error?.message || JSON.stringify(error))}
                       </p>
                     )}
                   </div>

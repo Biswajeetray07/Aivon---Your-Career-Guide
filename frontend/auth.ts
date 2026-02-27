@@ -45,7 +45,10 @@ const config: NextAuthConfig = {
         try {
           const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+              "Content-Type": "application/json",
+              "x-backend": "true" 
+            },
             body: JSON.stringify({
               email: credentials?.email,
               password: credentials?.password,
