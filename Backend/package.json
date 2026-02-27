@@ -3,7 +3,7 @@
   "description": "This is a **Motia** project bootstrapped with the Motia CLI.",
   "type": "module",
   "scripts": {
-    "postinstall": "motia install",
+    "postinstall": "motia install && node scripts/patch-motia-redis.js",
     "dev": "concurrently \"motia dev --port 3000\" \"npx tsx src/services/socket-server.ts\"",
     "start": "motia start -p ${PORT:-3000}",
     "generate-types": "motia generate-types",
