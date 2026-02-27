@@ -46,21 +46,36 @@ function fixDatabaseUrl(url: string | undefined): string | undefined {
 const rawUrl = process.env.DATABASE_URL;
 const finalUrl = fixDatabaseUrl(rawUrl);
 
-if (!rawUrl) {
-    console.error("🔴 CRITICAL: DATABASE_URL is EMPTY in environment!");
+// Sanitized URL Logging (hides password)
+try {
+    if (finalUrl) {
+        const scrubbed = finalUrl.replace(/:([^:@]+)@/, ":****@");
+        console.log(`📡 [Prisma Check] Target: ${scrubbed}`);
+    } else {
+        console.error("🔴 [Prisma Check] DATABASE_URL is EMPTY!");
+    }
+} catch (e) {
+    console.warn("⚠️ Could not log sanitized URL");
 }
 
 const pool = new Pool({ 
   connectionString: finalUrl,
   ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
-  max: 10, // Reduced for free tier stability
+  max: 10,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000, // Speed up failure detection
+  connectionTimeoutMillis: 10000, 
 });
 
-// Proactive Connection Logging
+// Immediately test the pool
+pool.connect().then(client => {
+    console.log("✅ [Prisma Check] Pool connected successfully to Supabase.");
+    client.release();
+}).catch(err => {
+    console.error("❌ [Prisma Check] Pool failed to connect:", err.message);
+});
+
 pool.on('error', (err) => {
-  console.error('🔥 Unexpected error on idle client', err.message);
+  console.error('🔥 [Prisma Check] Unexpected error on idle client:', err.message);
 });
 
 const adapter = new PrismaPg(pool);
@@ -69,6 +84,7 @@ const prisma = global._prisma ?? new PrismaClient({
   adapter,
   log: ["error", "warn"],
 });
+
 
 if (process.env.NODE_ENV !== "production") {
   global._prisma = prisma;
