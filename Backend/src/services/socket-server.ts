@@ -5,6 +5,7 @@ import { createRequire } from "module";
 const ALLOWED_ORIGINS = [
   "http://localhost:3000",
   "http://localhost:3001",
+  "https://aivon-mentor.vercel.app",
   process.env.FRONTEND_URL,
 ].filter(Boolean) as string[];
 

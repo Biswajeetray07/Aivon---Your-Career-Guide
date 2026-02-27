@@ -7,27 +7,12 @@ declare global {
   var _prisma: any;
 }
 
-const getSafeDatabaseUrl = () => {
-  const url = process.env.DATABASE_URL;
-  if (!url) return url;
-  
-  // Handle passwords with special characters (like @) by properly re-encoding
-  try {
-    const parsed = new URL(url);
-    if (parsed.password && parsed.password.includes("@")) {
-      parsed.password = encodeURIComponent(parsed.password);
-    }
-    return parsed.toString();
-  } catch (e) {
-    return url;
-  }
-};
-
 const pool = new Pool({ 
-  connectionString: getSafeDatabaseUrl(),
+  connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
-  max: 10, // Limit connections to prevent pool exhaustion on small instances
-  connectionTimeoutMillis: 10000, // 10s timeout for initial connection
+  max: 20, 
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 15000,
 });
 
 const adapter = new PrismaPg(pool);
