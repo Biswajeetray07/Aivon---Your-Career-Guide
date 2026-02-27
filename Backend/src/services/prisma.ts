@@ -1,13 +1,6 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
-import path from "path";
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-
-// Synchronously load the Prisma Client from the generated path
-// to bypass the Top-level await issue in CJS environments.
-const clientPath = path.join(process.cwd(), "generated", "prisma", "index.js");
-const { PrismaClient } = require(clientPath);
+import { PrismaClient } from "../generated/prisma/client.ts";
 
 declare global {
   // eslint-disable-next-line no-var
