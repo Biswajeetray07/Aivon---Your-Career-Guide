@@ -165,6 +165,14 @@ interface DualStageOptions {
  */
 async function runCoderBrain(system: string, prompt: string): Promise<string> {
   const fullPrompt = `${system}\n\n${prompt}`;
+  
+  if (HAS_GEMINI && IS_PROD) {
+    const { data } = await askGeminiChat({ 
+      messages: [{ role: "system", content: system }, { role: "user", content: prompt }] 
+    });
+    return data.message.content;
+  }
+
   try {
     const res = await axios.post("http://127.0.0.1:11434/api/generate", {
       model: "qwen2.5-coder:7b",
@@ -188,6 +196,14 @@ async function runCoderBrain(system: string, prompt: string): Promise<string> {
  */
 async function runTeacherBrain(system: string, prompt: string): Promise<string> {
   const fullPrompt = `${system}\n\n${prompt}`;
+
+  if (HAS_GEMINI && IS_PROD) {
+    const { data } = await askGeminiChat({ 
+      messages: [{ role: "system", content: system }, { role: "user", content: prompt }] 
+    });
+    return data.message.content;
+  }
+
   try {
     const res = await axios.post("http://127.0.0.1:11434/api/generate", {
       model: "qwen3:8b",
