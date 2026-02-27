@@ -5,6 +5,7 @@ import { PrismaClient } from "@prisma/client";
 declare global {
   // eslint-disable-next-line no-var
   var _prisma: any;
+  var _prismaTested: boolean;
 }
 
 /**
@@ -46,18 +47,6 @@ function fixDatabaseUrl(url: string | undefined): string | undefined {
 const rawUrl = process.env.DATABASE_URL;
 const finalUrl = fixDatabaseUrl(rawUrl);
 
-// Sanitized URL Logging (hides password)
-try {
-    if (finalUrl) {
-        const scrubbed = finalUrl.replace(/:([^:@]+)@/, ":****@");
-        console.log(`📡 [Prisma Check] Target: ${scrubbed}`);
-    } else {
-        console.error("🔴 [Prisma Check] DATABASE_URL is EMPTY!");
-    }
-} catch (e) {
-    console.warn("⚠️ Could not log sanitized URL");
-}
-
 const pool = new Pool({ 
   connectionString: finalUrl,
   ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
@@ -66,13 +55,34 @@ const pool = new Pool({
   connectionTimeoutMillis: 10000, 
 });
 
-// Immediately test the pool
-pool.connect().then(client => {
-    console.log("✅ [Prisma Check] Pool connected successfully to Supabase.");
-    client.release();
-}).catch(err => {
-    console.error("❌ [Prisma Check] Pool failed to connect:", err.message);
-});
+// Test the connection ONLY once and NEVER during a build
+if (!global._prismaTested && process.env.NODE_ENV === "production") {
+    global._prismaTested = true;
+    
+    // Sanitized URL Logging
+    try {
+        if (finalUrl) {
+            const scrubbed = finalUrl.replace(/:([^:@]+)@/, ":****@");
+            console.log(`📡 [Prisma Check] Testing connection to: ${scrubbed}`);
+        }
+    } catch (e) {}
+
+    // Use a hard 5-second timeout for the initial check
+    const timeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Connection check timed out after 5s")), 5000)
+    );
+
+    Promise.race([
+        pool.connect(),
+        timeout
+    ]).then((client: any) => {
+        console.log("✅ [Prisma Check] Database connection VERIFIED.");
+        if (client && typeof client.release === 'function') client.release();
+    }).catch(err => {
+        console.error("⚠️ [Prisma Check] Connection check skipped/failed:", err.message);
+    });
+}
+
 
 pool.on('error', (err) => {
   console.error('🔥 [Prisma Check] Unexpected error on idle client:', err.message);
