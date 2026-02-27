@@ -1,4 +1,5 @@
-import "dotenv/config";
+import { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
 declare global {
@@ -6,8 +7,12 @@ declare global {
   var _prisma: any;
 }
 
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+
 // Standard Prisma instantiation for Node.js environments
 const prisma = global._prisma ?? new PrismaClient({
+  adapter,
   log: ["error", "warn"],
 });
 
