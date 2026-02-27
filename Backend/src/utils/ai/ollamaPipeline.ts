@@ -1,6 +1,10 @@
 import axios from "axios";
+import { askGeminiChat } from "./geminiPipeline";
 
 export type AiTaskType = "error_fix" | "complexity" | "optimize" | "dry_run" | "hint" | "concept" | "chat" | "improve";
+
+const IS_PROD = process.env.NODE_ENV === "production";
+const HAS_GEMINI = !!process.env.GOOGLE_API_KEY;
 
 const OLLAMA_URL = process.env.OLLAMA_API_URL || "http://127.0.0.1:11434/api/generate";
 const OLLAMA_CHAT_URL = process.env.OLLAMA_CHAT_API_URL || "http://127.0.0.1:11434/api/chat";
@@ -99,6 +103,28 @@ export interface OllamaChatParams {
 
 export async function askOllamaChat(params: OllamaChatParams) {
   const { messages, stream = false, modelOverride, signal } = params;
+
+  // 🚀 PRODUCTION AI (Gemini Flash)
+  // If we have a key and are in production, use Gemini as the primary engine.
+  // It's fast, free (for portfolio volume), and requires 0 local setup for visitors.
+  if (HAS_GEMINI && IS_PROD) {
+    try {
+      return await askGeminiChat({ messages });
+    } catch (error: any) {
+      console.error("⚠️ GEMINI PRODUCTION ERROR:", error?.message);
+      
+      // ✨ PORTFOLIO FALLBACK MODE
+      // If the API key expires or fails, don't show an error to the recruiter.
+      // Show a high-quality "Portfolio Mock Response" instead.
+      return {
+        data: {
+          message: {
+            content: "### 🌟 Aivon Neural Link (Demo Mode)\n\nI am currently operating in **Portfolio Mode**. While my live neural connection is currently resting, I can tell you that as Aivon AI, I am built to be your ultimate DSA partner. \n\nI specialize in tracing code logic, finding infinite loops, and teaching you the intuition behind complex algorithms. If you're a recruiter, this project demonstrates a full-stack **Dual-Stage AI Pipeline** that I usually use to analyze code in real-time!"
+          }
+        }
+      };
+    }
+  }
   
   // Aivon Learning Brain v2 setting for qwen3:8b, but allow coder override
   const model = modelOverride || "qwen3:8b";
