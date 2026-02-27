@@ -1,5 +1,4 @@
 import "dotenv/config";
-import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
 declare global {
@@ -7,13 +6,20 @@ declare global {
   var _prisma: any;
 }
 
-const connectionString = process.env.DATABASE_URL!;
-const adapter = new PrismaPg({ connectionString });
-
-const prisma = global._prisma ?? new PrismaClient({ adapter });
+// Standard Prisma instantiation for Node.js environments
+const prisma = global._prisma ?? new PrismaClient({
+  log: ["error", "warn"],
+});
 
 if (process.env.NODE_ENV !== "production") {
   global._prisma = prisma;
+}
+
+// Proactive connection test on startup (for logging)
+if (process.env.NODE_ENV === "production") {
+  prisma.$connect()
+    .then(() => console.log("✅ Database connected successfully"))
+    .catch((err) => console.error("❌ Database connection failed:", err));
 }
 
 export default prisma;
