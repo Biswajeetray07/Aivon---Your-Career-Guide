@@ -44,7 +44,6 @@ export const config: ApiRouteConfig = {
     400: z.object({ error: z.string() }),
     404: z.object({ error: z.string() }),
   },
-  includeFiles: ["../services/prisma.ts", "../utils/jwt.ts", "../middlewares/auth.middleware.ts", "../utils/ai/ollamaPipeline.ts"],
 };
 
 export const handler: any = async (req: any, { logger }: { logger: any }) => {
