@@ -9,11 +9,6 @@ declare global {
 // Standard Prisma instantiation for Node.js environments
 const prisma = global._prisma ?? new PrismaClient({
   log: ["error", "warn"],
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL
-    }
-  }
 });
 
 if (process.env.NODE_ENV !== "production") {
