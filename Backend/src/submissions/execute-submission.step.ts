@@ -115,11 +115,11 @@ export const handler: any = async (
   const judgeMode = ((submission.problem as any).judgeMode ?? "exact") as JudgeMode;
   const spjCode = (submission.problem as any).spjCode as string | null;
 
-  // Helper to push real-time updates to the standalone Socket.IO server
+  // Helper to push real-time updates via the embedded Socket.io /emit endpoint
   const pushUpdate = async (event: any) => {
     try {
-      const socketUrl = process.env.SOCKET_URL_INTERNAL || "http://localhost:3003";
-      await fetch(`${socketUrl}/emit`, {
+      const port = process.env.PORT || "3000";
+      await fetch(`http://localhost:${port}/emit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 

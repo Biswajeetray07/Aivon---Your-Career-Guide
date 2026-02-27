@@ -53,9 +53,9 @@ export const handler: any = async (req: any, { logger }: { logger: any }) => {
         return { status: 409, body: { error: "Email already registered" } };
     }
 
-    logger.info("Hashing password (bcrypt cost: 12)...");
+    logger.info("Hashing password (bcrypt cost: 10)...");
     const startHash = Date.now();
-    const passwordHash = await bcrypt.hash(password, 12);
+    const passwordHash = await bcrypt.hash(password, 10);
     logger.info(`Password hashed in ${Date.now() - startHash}ms`);
 
     logger.info("Creating user in database...");
