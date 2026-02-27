@@ -1,0 +1,37 @@
+services:
+  # 1. Motia Backend API
+  - type: web
+    name: aivon-backend
+    env: node
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: PORT
+        value: 3002
+      - key: DATABASE_URL
+        fromDatabase:
+          name: aivon-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GOOGLE_API_KEY
+        sync: false # Set manually in Render dashboard
+      - key: JUDGE0_API_KEY
+        sync: false # Set manually in Render dashboard
+      - key: SOCKET_URL_INTERNAL
+        fromService:
+          type: web
+          name: aivon-sockets
+          property: host
+
+  # 2. Standalone Socket.IO Server
+  - type: web
+    name: aivon-sockets
+    env: node
+    buildCommand: npm install
+    startCommand: npx tsx src/services/socket-server.ts
+    envVars:
+      - key: SOCKET_PORT
+        value: 3003
+      - key: FRONTEND_URL
+        sync: false # Set to your Vercel URL
