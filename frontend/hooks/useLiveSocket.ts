@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3000";
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL;
 
 type EventCallback = (payload: any) => void;
 
@@ -14,6 +14,10 @@ export function useLiveSocket(topics: string[]) {
 
   // 1. Manage the underlying connection and topics
   useEffect(() => {
+    // 🛡️ CRITICAL: If no socket URL is provided, stay silent.
+    // This prevents console errors in production where we aren't using sockets.
+    if (!SOCKET_URL) return;
+
     // If no topics requested, no need to connect
     if (!topics || topics.length === 0) return;
 
