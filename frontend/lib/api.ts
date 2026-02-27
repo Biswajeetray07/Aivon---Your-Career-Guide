@@ -184,6 +184,10 @@ export const getMyStats = () =>
     "/api/stats/me"
   );
 
+// ─── Rating ───────────────────────────────────────────────────────────────────
+export const getUserRating = () =>
+  apiGet<{ rating: number; rank: number; percentile: number; totalUsers: number }>("/api/user/rating");
+
 // ─── AI ───────────────────────────────────────────────────────────────────────
 export const getHint = (problemId: string, userCode?: string) =>
   apiPost<{ hint: string }>("/api/ai/hint", { problemId, userCode });

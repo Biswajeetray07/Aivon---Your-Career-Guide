@@ -1,14 +1,15 @@
 import type { EventConfig } from "motia";
 import prisma from "../services/prisma";
+import { calculateEloChange } from "../utils/elo";
 
 export const config: EventConfig = {
   type: "event",
   name: "UpdateUserStats",
-  description: "Updates user rating and solved problem counts after a submission completes",
+  description: "Updates user rating via ELO system and solved problem counts after a submission completes",
   subscribes: ["submission-complete"],
   emits: [],
   flows: ["submission-flow"],
-  includeFiles: ["../services/prisma.ts"],
+  includeFiles: ["../services/prisma.ts", "../utils/elo.ts"],
 };
 
 export const handler: any = async (
@@ -30,33 +31,25 @@ export const handler: any = async (
 
   logger.info("UpdateUserStats triggered", { submissionId, status, userId });
 
-  // Helper to push real-time updates via the embedded Socket.io /emit endpoint
-  const pushUpdate = async (topic: string, event: string, payload: any) => {
+  const pushUpdate = async (topic: string, event: string, data: any) => {
     try {
       const port = process.env.PORT || "3000";
       await fetch(`http://localhost:${port}/emit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, event, payload }),
+        body: JSON.stringify({ topic, event, payload: data }),
       });
     } catch (err) {
       logger.warn(`Failed to push real-time update to ${topic}`, { err: String(err) });
     }
   };
 
-  if (status !== "ACCEPTED" && status !== "Accepted") {
-    logger.info("Submission not accepted, skipping rating update", { submissionId });
-    // Still emit a stats update so their profile unloads any spinners instantly
-    await pushUpdate(`user_${userId}`, "stats_updated", { status });
-    return;
-  }
+  const isAccepted = status === "ACCEPTED" || status === "Accepted";
 
   try {
-    // Basic Rating Logic: +10 for each unique problem solved
-    // Check if this is the first time the user solved this problem
     const submission = await prisma.submission.findUnique({
       where: { id: submissionId },
-      include: { problem: true },
+      include: { problem: { select: { difficulty: true } } },
     });
 
     if (!submission) {
@@ -64,50 +57,81 @@ export const handler: any = async (
       return;
     }
 
-    const previousAccepted = await prisma.submission.count({
-      where: {
-        userId,
-        problemId: submission.problemId,
-        status: { in: ["ACCEPTED", "Accepted"] },
-        id: { not: submissionId },
-      },
+    const difficulty = submission.problem?.difficulty || "MEDIUM";
+
+    // Check if this is the user's first accepted solve for this problem
+    const previousAccepted = isAccepted
+      ? await prisma.submission.count({
+          where: {
+            userId,
+            problemId: submission.problemId,
+            status: { in: ["ACCEPTED", "Accepted"] },
+            id: { not: submissionId },
+          },
+        })
+      : 1;
+
+    const isFirstSolve = isAccepted && previousAccepted === 0;
+
+    // Get current rating
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { rating: true, name: true },
     });
 
-    if (previousAccepted === 0) {
-      logger.info("First time solved! Updating rating.", { userId, problemId: submission.problemId });
-      
-      const updatedUser = await prisma.user.update({
-        where: { id: userId },
-        data: {
-          rating: { increment: 10 },
-        },
-        select: { rating: true, name: true }
-      });
-
-      logger.info("User rating updated", { userId, newIncrement: 10 });
-
-      // Emitting Real-Time System Events
-      
-      // 1. Leaderboard Event
-      await pushUpdate("leaderboard", "leaderboard_update", {
-         userId,
-         name: updatedUser.name,
-         newRating: updatedUser.rating,
-      });
-
-    } else {
-      logger.info("Problem already solved by user. No rating change.", { userId, problemId: submission.problemId });
+    if (!user) {
+      logger.error("User not found", { userId });
+      return;
     }
 
-    // 2. Personal Profile Event
-    await pushUpdate(`user_${userId}`, "stats_updated", { status: "ACCEPTED" });
+    // Calculate ELO change
+    const { newRating, delta } = calculateEloChange(
+      user.rating,
+      difficulty,
+      isAccepted,
+      isFirstSolve
+    );
 
-    // 3. Marketing Analytics Event
-    await pushUpdate("marketing_stats", "system_activity", {
-      type: "submission_solved",
-      problemId: submission.problemId
+    // Only update if there's a change
+    if (delta !== 0) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { rating: newRating },
+      });
+
+      logger.info("ELO rating updated", {
+        userId,
+        difficulty,
+        isAccepted,
+        isFirstSolve,
+        oldRating: user.rating,
+        newRating,
+        delta,
+      });
+
+      // Leaderboard real-time update
+      await pushUpdate("leaderboard", "leaderboard_update", {
+        userId,
+        name: user.name,
+        newRating,
+        delta,
+      });
+    }
+
+    // Personal profile event
+    await pushUpdate(`user_${userId}`, "stats_updated", {
+      status,
+      rating: delta !== 0 ? newRating : user.rating,
+      delta,
     });
 
+    // Marketing analytics event
+    if (isAccepted) {
+      await pushUpdate("marketing_stats", "system_activity", {
+        type: "submission_solved",
+        problemId: submission.problemId,
+      });
+    }
   } catch (err: any) {
     logger.error("Failed to update user stats", { error: err.message, submissionId });
   }
