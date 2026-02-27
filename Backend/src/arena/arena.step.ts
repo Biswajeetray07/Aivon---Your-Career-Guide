@@ -9,7 +9,7 @@ export const config: ApiRouteConfig = {
   description: "Handles Arena matchmaking queue, match details, and match submissions",
   path: "/api/arena/:action",
   method: "POST",
-  emits: ["arena-submission-queued"],
+  emits: [],
   flows: ["submission-flow"],
   middleware: [authMiddleware()],
   includeFiles: ["../services/prisma.ts", "../middlewares/auth.middleware.ts"],
