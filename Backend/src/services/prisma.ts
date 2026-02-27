@@ -1,13 +1,13 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import path from "path";
-import { pathToFileURL } from "url";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
 
-// Dynamically import the ESM entry point (client.ts) at runtime,
-// bypassing Motia's compiler which can't handle Prisma's internal dependency tree.
-// Node.js natively resolves .ts files in the generated directory.
-const clientUrl = pathToFileURL(path.join(process.cwd(), "generated", "prisma", "client.ts")).href;
-const { PrismaClient } = await import(clientUrl);
+// Synchronously load the Prisma Client from the generated path
+// to bypass the Top-level await issue in CJS environments.
+const clientPath = path.join(process.cwd(), "generated", "prisma", "index.js");
+const { PrismaClient } = require(clientPath);
 
 declare global {
   // eslint-disable-next-line no-var
