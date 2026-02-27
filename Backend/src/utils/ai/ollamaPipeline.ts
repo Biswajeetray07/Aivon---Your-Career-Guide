@@ -1,10 +1,23 @@
 import axios from "axios";
-import { askGeminiChat } from "./geminiPipeline";
 
 export type AiTaskType = "error_fix" | "complexity" | "optimize" | "dry_run" | "hint" | "concept" | "chat" | "improve";
 
 const IS_PROD = process.env.NODE_ENV === "production";
 const HAS_GEMINI = !!process.env.GOOGLE_API_KEY;
+
+// Lazy-load Gemini to prevent server crash if package is missing
+let _geminiModule: any = null;
+async function getGemini() {
+  if (!_geminiModule) {
+    try {
+      _geminiModule = await import("./geminiPipeline");
+    } catch (e) {
+      console.warn("⚠️ Gemini pipeline not available:", (e as Error).message);
+      _geminiModule = null;
+    }
+  }
+  return _geminiModule;
+}
 
 const OLLAMA_URL = process.env.OLLAMA_API_URL || "http://127.0.0.1:11434/api/generate";
 const OLLAMA_CHAT_URL = process.env.OLLAMA_CHAT_API_URL || "http://127.0.0.1:11434/api/chat";
@@ -109,7 +122,9 @@ export async function askOllamaChat(params: OllamaChatParams) {
   // It's fast, free (for portfolio volume), and requires 0 local setup for visitors.
   if (HAS_GEMINI && IS_PROD) {
     try {
-      return await askGeminiChat({ messages });
+      const gemini = await getGemini();
+      if (!gemini) throw new Error("Gemini not available");
+      return await gemini.askGeminiChat({ messages });
     } catch (error: any) {
       console.error("⚠️ GEMINI PRODUCTION ERROR:", error?.message);
       
@@ -167,10 +182,13 @@ async function runCoderBrain(system: string, prompt: string): Promise<string> {
   const fullPrompt = `${system}\n\n${prompt}`;
   
   if (HAS_GEMINI && IS_PROD) {
-    const { data } = await askGeminiChat({ 
-      messages: [{ role: "system", content: system }, { role: "user", content: prompt }] 
-    });
-    return data.message.content;
+    const gemini = await getGemini();
+    if (gemini) {
+      const { data } = await gemini.askGeminiChat({ 
+        messages: [{ role: "system", content: system }, { role: "user", content: prompt }] 
+      });
+      return data.message.content;
+    }
   }
 
   try {
@@ -198,10 +216,13 @@ async function runTeacherBrain(system: string, prompt: string): Promise<string> 
   const fullPrompt = `${system}\n\n${prompt}`;
 
   if (HAS_GEMINI && IS_PROD) {
-    const { data } = await askGeminiChat({ 
-      messages: [{ role: "system", content: system }, { role: "user", content: prompt }] 
-    });
-    return data.message.content;
+    const gemini = await getGemini();
+    if (gemini) {
+      const { data } = await gemini.askGeminiChat({ 
+        messages: [{ role: "system", content: system }, { role: "user", content: prompt }] 
+      });
+      return data.message.content;
+    }
   }
 
   try {
