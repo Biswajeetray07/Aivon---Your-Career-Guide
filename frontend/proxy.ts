@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(_req: NextRequest) {
+export function proxy(_req: NextRequest) {
   // We use Server Components (like layout.tsx or page.tsx) for actual auth checks now.
   // This completely eliminates the Edge-runtime cryptography lag on every page navigation.
   return NextResponse.next();
