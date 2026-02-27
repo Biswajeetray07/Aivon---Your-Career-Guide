@@ -35,20 +35,38 @@ export const config: ApiRouteConfig = {
 
 export const handler: any = async (req: any, { logger }: { logger: any }) => {
   try {
+    logger.info("Starting registration request...");
     const { email, password, name } = bodySchema.parse(req.body);
+    logger.info("Body parsed successfully", { email });
 
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) return { status: 409, body: { error: "Email already registered" } };
+    logger.info("Checking for existing user in database...");
+    let existing;
+    try {
+        existing = await prisma.user.findUnique({ where: { email } });
+    } catch (dbErr: any) {
+        logger.error("Database check failed", { error: dbErr.message });
+        throw new Error(`Database Error: ${dbErr.message}`);
+    }
+    
+    if (existing) {
+        logger.info("Email already exists", { email });
+        return { status: 409, body: { error: "Email already registered" } };
+    }
 
+    logger.info("Hashing password (bcrypt cost: 12)...");
+    const startHash = Date.now();
     const passwordHash = await bcrypt.hash(password, 12);
+    logger.info(`Password hashed in ${Date.now() - startHash}ms`);
+
+    logger.info("Creating user in database...");
     const user = await prisma.user.create({ data: { email, passwordHash, name } });
+    logger.info("User created successfully", { userId: user.id });
 
     const token = signJwt({ userId: user.id, email: user.email, role: user.role });
-    logger.info("User registered", { userId: user.id });
-
     return { status: 201, body: { token, user: { id: user.id, email: user.email, name: user.name, role: user.role } } };
   } catch (err: any) {
-    logger.error("Register failed", { error: err.message });
+    logger.error("Register failed", { error: err.message, stack: err.stack });
     return { status: 400, body: { error: err.message ?? "Registration failed" } };
   }
 };
+
