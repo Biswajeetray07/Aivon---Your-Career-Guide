@@ -3,27 +3,15 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 
-// Store rate limit data in a temporary file to share state across Motia worker threads
-const rateLimitFile = path.join(os.tmpdir(), "aivon-rate-limit.json");
+// In-memory store for rate limiting (safer for shared environments without Redis)
+const store: Record<string, { count: number; resetTime: number }> = {};
 
 function getRateLimitStore(): Record<string, { count: number; resetTime: number }> {
-  try {
-    if (fs.existsSync(rateLimitFile)) {
-      const data = fs.readFileSync(rateLimitFile, "utf-8");
-      return JSON.parse(data);
-    }
-  } catch (e) {
-    // Ignore read errors
-  }
-  return {};
+  return store;
 }
 
-function saveRateLimitStore(store: Record<string, { count: number; resetTime: number }>) {
-  try {
-    fs.writeFileSync(rateLimitFile, JSON.stringify(store), "utf-8");
-  } catch (e) {
-    // Ignore write errors
-  }
+function saveRateLimitStore(newStore: Record<string, { count: number; resetTime: number }>) {
+  // No-op for in-memory store
 }
 
 /**
