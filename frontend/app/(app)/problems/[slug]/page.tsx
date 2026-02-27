@@ -20,6 +20,7 @@ import { StatusDot } from "@/components/ui/badge";
 import { HackerBackground } from "@/components/ui/hacker-background";
 import { Play, UploadCloud, Terminal as TerminalIcon, Sparkles, BookOpen, SearchCode, Bug } from "lucide-react";
 import { useEditorContext } from "@/stores/useEditorContext";
+import { copilot, CopilotManager } from "@/lib/copilot";
 
 const Editor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 
@@ -138,7 +139,6 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Editor context store (for AI awareness)
   const editorCtx = useEditorContext();
@@ -362,10 +362,10 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
     setChatHistory(newMessages);
     setChatLoading(true);
     
-    abortControllerRef.current = new AbortController();
+    const signal = copilot.getSignal();
 
     try {
-      const data = await chatWithAI(problem.id, newMessages, code, language, abortControllerRef.current.signal, undefined, { lastRun: editorCtx.lastRun || undefined });
+      const data = await chatWithAI(problem.id, newMessages, code, language, signal, undefined, { lastRun: editorCtx.lastRun || undefined });
       if (data && data.reply) {
         setChatHistory([...newMessages, { role: "assistant" as const, content: data.reply }]);
       } else {
@@ -379,7 +379,6 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
       }
     } finally {
       setChatLoading(false);
-      abortControllerRef.current = null;
     }
   }
 
@@ -393,10 +392,19 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
     if (!overrideInput) setChatInput("");
     setChatLoading(true);
 
-    abortControllerRef.current = new AbortController();
+    const codeHash = CopilotManager.hashCode(code);
+    const cached = copilot.getCachedResponse(problem.id, codeHash, inputToUse);
+    if (cached) {
+      setChatHistory([...newMessages, { role: "assistant" as const, content: cached }]);
+      setChatLoading(false);
+      return;
+    }
+
+    const signal = copilot.getSignal();
+    copilot.markRequest();
 
     try {
-      const data = await chatWithAI(problem.id, newMessages, code, language, abortControllerRef.current.signal, undefined, { lastRun: editorCtx.lastRun || undefined });
+      const data = await chatWithAI(problem.id, newMessages, code, language, signal, undefined, { lastRun: editorCtx.lastRun || undefined });
       if (data && data.reply) {
         setChatHistory([...newMessages, { role: "assistant" as const, content: data.reply }]);
       } else {
@@ -410,7 +418,6 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
       }
     } finally {
       setChatLoading(false);
-      abortControllerRef.current = null;
     }
   }
 
@@ -617,7 +624,7 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
                   {chatLoading ? (
                     <button 
                       type="button"
-                      onClick={() => abortControllerRef.current?.abort()}
+                      onClick={() => copilot.cancelPending()}
                       className="px-5 md:px-6 bg-[#FF5F56]/10 border border-white/5 text-[#FF5F56] text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-[#FF5F56] hover:text-white transition-all rounded-lg shadow-[0_0_10px_rgba(255,95,86,0.1)]"
                     >
                       KILL
