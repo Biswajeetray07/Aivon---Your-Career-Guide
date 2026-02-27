@@ -270,7 +270,7 @@ export default function ProfilePage() {
             <div className="flex items-center gap-3">
               <div className="w-2.5 h-2.5 rounded-sm bg-[#00E5B0] animate-pulse shadow-[0_0_8px_#00E5B0]" />
               <span className="text-[10px] font-geist-mono text-[#00E5B0] tracking-widest uppercase">
-                SYS_AUTH: OPERATIVE VERIFIED
+                SYS_AUTH: {stats && stats.totalSubmissions > 0 ? "VETERAN OPERATIVE" : "ROOKIE OPERATIVE"}
               </span>
             </div>
             <div className="flex gap-2">

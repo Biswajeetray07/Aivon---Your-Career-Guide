@@ -30,11 +30,11 @@ export const handler: any = async (
 
   logger.info("UpdateUserStats triggered", { submissionId, status, userId });
 
-  // Helper to push real-time updates to the standalone Socket.IO server
+  // Helper to push real-time updates via the embedded Socket.io /emit endpoint
   const pushUpdate = async (topic: string, event: string, payload: any) => {
-    const socketUrl = process.env.SOCKET_URL_INTERNAL || "http://localhost:3003";
     try {
-      await fetch(`${socketUrl}/emit`, {
+      const port = process.env.PORT || "3000";
+      await fetch(`http://localhost:${port}/emit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ topic, event, payload }),

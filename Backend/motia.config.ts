@@ -17,11 +17,77 @@ const corsMiddleware = cors({
   maxAge: 86400,
 });
 
-// Global socket.io instance — used by the /emit endpoint
-let io: SocketServer | null = null;
+/**
+ * 🔌 Socket.io Motia Plugin
+ * 
+ * Motia's 'app' hook runs before the HTTP server is created.
+ * Motia's plugin system provides access to the live 'server' instance,
+ * allowing us to attach Socket.io correctly on the same port.
+ */
+function socketIoPlugin(context: any) {
+    const { app, server } = context;
+    
+    if (!server) {
+        console.warn('⚠️ [Socket.io Plugin] HTTP server not found in context');
+        return { workbench: [] };
+    }
+
+    const io = new SocketServer(server, {
+        cors: {
+            origin: ALLOWED_ORIGINS,
+            methods: ['GET', 'POST'],
+            credentials: true,
+        },
+        path: '/socket.io/',
+    });
+
+    // Internal /emit route to allow Motia steps to push data to clients
+    app.post('/emit', (req: any, res: any) => {
+        const { topic, submissionId, event, payload } = req.body || {};
+        const targetTopic = topic || submissionId;
+        const targetEvent = event || 'judge-update';
+        const targetPayload = payload !== undefined ? payload : event;
+
+        if (!targetTopic) {
+            return res.status(400).json({ error: 'Missing topic/submissionId' });
+        }
+
+        io.to(targetTopic).emit(targetEvent, targetPayload);
+        res.json({ success: true, topic: targetTopic });
+    });
+
+    io.on('connection', (socket) => {
+        console.log(`📡 [Socket.io] Client connected: ${socket.id}`);
+        
+        socket.on('subscribe', (topics: string | string[]) => {
+            const arr = Array.isArray(topics) ? topics : [topics];
+            arr.forEach(t => {
+                if (typeof t === 'string' && t.trim()) {
+                    socket.join(t);
+                    console.log(`✅ [Socket.io] Subscribed ${socket.id} to ${t}`);
+                }
+            });
+        });
+
+        socket.on('unsubscribe', (topics: string | string[]) => {
+            const arr = Array.isArray(topics) ? topics : [topics];
+            arr.forEach(t => socket.leave(t));
+        });
+
+        socket.on('disconnect', () => {
+            console.log(`🔌 [Socket.io] Client disconnected: ${socket.id}`);
+        });
+    });
+
+    console.log('🚀 [Socket.io Plugin] Successfully attached to server');
+    return { workbench: [] };
+}
 
 export default defineConfig({
-  plugins: [endpointPlugin],
+  plugins: [
+    endpointPlugin,
+    socketIoPlugin
+  ],
   adapters: {
     events: new DefaultQueueEventAdapter(),
     cron: new DefaultCronAdapter(),
@@ -30,67 +96,5 @@ export default defineConfig({
   },
   app: (app) => {
     app.use(corsMiddleware);
-
-    // ─── Internal /emit endpoint for execute-submission.step.ts ───
-    // This replaces the standalone socket-server.ts
-    app.post('/emit', (req: any, res: any) => {
-      if (!io) {
-        return res.status(503).json({ error: 'Socket.io not initialized yet' });
-      }
-
-      const { topic, submissionId, event, payload } = req.body || {};
-      const targetTopic = topic || submissionId;
-      const targetEvent = event || 'judge-update';
-      const targetPayload = payload !== undefined ? payload : event;
-
-      if (!targetTopic) {
-        return res.status(400).json({ error: 'Missing topic/submissionId' });
-      }
-
-      io.to(targetTopic).emit(targetEvent, targetPayload);
-      res.json({ success: true, topic: targetTopic });
-    });
-
-    // ─── Attach Socket.io to the Express HTTP server ───
-    // We defer this to the next tick so Motia has time to create the server
-    setTimeout(() => {
-      try {
-        // Express stores the HTTP server reference internally
-        const server = (app as any)?.server || (app as any)?._server;
-        
-        if (!server) {
-          // Fallback: listen for the 'listening' event on the app
-          console.log('⚠️ [Socket.io] Could not find HTTP server reference, socket.io disabled');
-          return;
-        }
-
-        io = new SocketServer(server, {
-          cors: {
-            origin: ALLOWED_ORIGINS,
-            methods: ['GET', 'POST'],
-            credentials: true,
-          },
-          path: '/socket.io/',
-        });
-
-        io.on('connection', (socket) => {
-          socket.on('subscribe', (topics: string | string[]) => {
-            const arr = Array.isArray(topics) ? topics : [topics];
-            arr.forEach(t => {
-              if (typeof t === 'string' && t.trim()) socket.join(t);
-            });
-          });
-
-          socket.on('unsubscribe', (topics: string | string[]) => {
-            const arr = Array.isArray(topics) ? topics : [topics];
-            arr.forEach(t => socket.leave(t));
-          });
-        });
-
-        console.log('✅ [Socket.io] Real-time verdict server attached to Motia');
-      } catch (err: any) {
-        console.warn('⚠️ [Socket.io] Failed to attach:', err.message);
-      }
-    }, 2000); // Give Motia 2s to bind the server
   }
 })

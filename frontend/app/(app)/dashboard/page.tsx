@@ -135,13 +135,13 @@ export default function DashboardPage() {
           <div className="flex flex-col w-full lg:w-[50%] lg:pr-8 justify-center items-start text-left">
             <div className="flex items-center gap-3 text-[10px] sm:text-[11px] text-[var(--text-muted)] font-geist-mono font-bold tracking-[0.2em] uppercase mb-4 text-[#00E5B0]">
               <div className="w-2 h-2 rounded-sm bg-[#00E5B0] animate-pulse shadow-[0_0_8px_#00E5B0]" />
-              SYS_AUTH: OPERATIVE VERIFIED
+              {stats && stats.totalSubmissions > 0 ? "SYS_AUTH: OPERATIVE ACTIVE" : "SYS_AUTH: NEW RECRUIT"}
             </div>
             
             {/* Hacker Font Welcome Message (VT323) */}
             <div className="relative">
               <h1 className="text-5xl md:text-[64px] lg:text-[76px] font-vt323 tracking-widest uppercase m-0 leading-[0.9] text-transparent bg-clip-text bg-[linear-gradient(180deg,#FFFFFF_0%,#A1A1AA_100%)] relative flex flex-col items-start gap-1">
-                <span>WELCOME BACK,</span>
+                <span>{stats && stats.totalSubmissions > 0 ? "WELCOME BACK," : "WELCOME,"}</span>
                 <span className="text-[#00E5B0] text-[0.8em] tracking-[0.15em] bg-clip-text text-transparent bg-[linear-gradient(90deg,#00E5B0_0%,#00C2FF_100%)] border-b-2 border-white/5 pb-1">
                   {user.name || user.username || "OPERATIVE"}
                   <span className="inline-block w-[0.4em] h-[0.8em] bg-[#00E5B0] ml-2 animate-pulse align-middle" />

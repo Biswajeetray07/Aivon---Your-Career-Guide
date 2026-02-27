@@ -113,21 +113,17 @@ export default function ProblemsPage() {
       <div className="w-full mb-12 stagger-1 animate-fade-in-up flex flex-col xl:flex-row gap-8 items-stretch relative z-10">
         
         {/* Global Nexus Operative Dossier Header */}
-          <div className="flex-1 border-[0.5px] border-white/5 bg-[#060D10]/80 rounded-xl overflow-hidden shadow-hacker-glow relative flex flex-col">
+          <div className="flex-1 glass border border-[#00E5B0]/30 bg-[#060D10]/80 rounded-xl overflow-hidden shadow-[0_0_40px_rgba(0,229,176,0.1)] relative flex flex-col backdrop-blur-2xl">
           
-          {/* Top Tech Bar */}
-          <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between bg-[#0A0F14] relative z-10 w-full">
+          {/* Top Tech Bar — Aivon Terminal Style */}
+          <div className="px-5 py-4 border-b border-[#00E5B0]/20 flex items-center justify-between bg-[#05070A]/90 relative z-10 w-full">
             <div className="flex items-center gap-3">
-              <div className="w-2.5 h-2.5 rounded-sm bg-[#00C2FF] animate-pulse shadow-[0_0_8px_#00C2FF]" />
-              <span className="text-[10px] sm:text-[11px] font-geist-mono text-[#00C2FF] tracking-widest uppercase">
-                SYS_AUTH: ANONYMOUS OPERATIVE
-              </span>
+              <div className="w-2 h-2 bg-[#00E5B0] animate-pulse" />
+              <div className="w-2 h-2 bg-[#00C2FF]" />
             </div>
-            <div className="flex gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#FF5F56]/80" />
-              <div className="w-1.5 h-1.5 rounded-full bg-[#FFBD2E]/80" />
-              <div className="w-1.5 h-1.5 rounded-full bg-[#27C93F]/80" />
-            </div>
+            <span className="text-[10px] font-geist-mono text-[#00E5B0] tracking-[0.2em] font-bold">
+              terminal://aivon/targets
+            </span>
           </div>
           
           <div className="p-8 md:p-10 relative z-10 flex flex-col md:flex-row justify-between items-center gap-6 h-full flex-grow">

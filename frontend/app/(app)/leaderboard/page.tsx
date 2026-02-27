@@ -10,7 +10,7 @@ export default function LeaderboardPage() {
   const [data, setData] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const { listen } = useLiveSocket(["leaderboard"]);
+  const { connected, listen } = useLiveSocket(["leaderboard"]);
 
   useEffect(() => {
     getLeaderboard().then((d) => setData(d.leaderboard)).catch(e => console.warn("Leaderboard fetch failed:", e.message)).finally(() => setLoading(false));
@@ -89,9 +89,9 @@ export default function LeaderboardPage() {
             {/* Top Tech Bar */}
             <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between bg-[#0A0F14] relative z-10 w-full">
               <div className="flex items-center gap-3">
-                <div className="w-2.5 h-2.5 rounded-sm bg-[#00C2FF] animate-pulse shadow-[0_0_8px_#00C2FF]" />
+                <div className={`w-2.5 h-2.5 rounded-sm ${connected ? 'bg-[#00E5B0] animate-pulse shadow-[0_0_8px_#00E5B0]' : 'bg-[#FACC15] shadow-[0_0_8px_#FACC15]'}`} />
                 <span className="text-[10px] sm:text-[11px] font-geist-mono text-[#00C2FF] tracking-widest uppercase">
-                  NEXUS_UPLINK: SECURE CONNECTION
+                  NEXUS_UPLINK: {connected ? 'LIVE CONNECTION' : 'CONNECTING...'}
                 </span>
               </div>
               <div className="flex gap-2">
@@ -192,7 +192,7 @@ export default function LeaderboardPage() {
                <span className="text-[10px] sm:text-[12px] font-geist-mono text-[#00C2FF] tracking-[0.2em] font-bold flex items-center gap-3">
                  <span className="text-white animate-pulse">■</span> [ // GLOBAL_NEXUS_UPLINK ]
                </span>
-               <span className="text-[8px] sm:text-[10px] font-geist-mono text-[#00C2FF]/50 tracking-[0.2em] hidden sm:block uppercase">Live_Feed: Active</span>
+               <span className="text-[8px] sm:text-[10px] font-geist-mono text-[#00C2FF]/50 tracking-[0.2em] hidden sm:block uppercase">Live_Feed: {connected ? 'Active' : 'Pending'}</span>
              </div>
 
              {/* Table Headers (Clean Data Alignment) */}
