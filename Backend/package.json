@@ -5,7 +5,7 @@
   "scripts": {
     "postinstall": "motia install",
     "dev": "concurrently \"motia dev --port 3000\" \"npx tsx src/services/socket-server.ts\"",
-    "start": "concurrently \"motia start\" \"npx tsx src/services/socket-server.ts\"",
+    "start": "motia start",
     "generate-types": "motia generate-types",
     "build": "npx prisma generate && motia build",
     "clean": "rm -rf dist node_modules python_modules .motia .mermaid",
@@ -60,7 +60,6 @@
     "prisma": "^7.4.1",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.6",
-    "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.7.3",
     "vitest": "^4.0.18"
