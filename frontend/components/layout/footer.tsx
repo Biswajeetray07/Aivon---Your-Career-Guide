@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Github, Twitter, Mail, Heart, Terminal } from "lucide-react";
+import { Github, Twitter, Mail, Terminal } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 
 export function Footer() {
@@ -32,11 +32,8 @@ export function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 border-t border-[var(--border)] flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-[var(--text-muted)]">
-          <div className="flex items-center gap-2 font-mono">
-            Forged with <Heart size={14} className="text-[var(--red)] animate-pulse" /> & code
-          </div>
-          <div>© {new Date().getFullYear()} Aivon AI. All rights reserved.</div>
+        <div className="pt-8 border-t border-[var(--border)] flex items-center justify-center text-sm text-[var(--text-muted)]">
+          <div className="font-mono tracking-widest text-xs uppercase">© {new Date().getFullYear()} Aivon AI. All systems operational.</div>
         </div>
       </div>
     </footer>

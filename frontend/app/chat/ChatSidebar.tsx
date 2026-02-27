@@ -49,7 +49,7 @@ export function ChatSidebar({
         {/* New Chat */}
         <Button 
           onClick={onNewChat}
-          className="w-full bg-[#00C2FF]/10 hover:bg-[#00C2FF] text-[#00C2FF] hover:text-[#05070A] border border-[#00C2FF]/30 hover:shadow-[0_0_20px_rgba(0,229,176,0.4)] mb-8 justify-start font-mono transition-all duration-300 relative z-10 backdrop-blur-md rounded-xl h-12"
+          className="w-full bg-[#00C2FF]/10 hover:bg-[#00C2FF] text-[#00C2FF] hover:text-[#05070A] border border-[#00C2FF]/30 hover:shadow-[0_0_20px_rgba(0,229,176,0.4)] mb-8 justify-start font-mono transition-all duration-300 relative z-10 backdrop-blur-md rounded-xl h-12 btn-glass-hover"
         >
           <Sparkles className="w-4 h-4 mr-3" />
           [ INIT_NEW_UPLINK ]

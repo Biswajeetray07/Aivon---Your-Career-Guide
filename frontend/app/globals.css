@@ -529,6 +529,67 @@ label[for] {
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* ===============================
+   🎯 HOVER TARGET MATRIX (Task 7)
+   Shared hover for arena + problem cards
+   =============================== */
+
+.hover-target-matrix {
+  transition:
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.35s ease;
+  will-change: transform;
+}
+
+.hover-target-matrix:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0 30px rgba(0, 229, 176, 0.12);
+  border-color: rgba(0, 229, 176, 0.4);
+}
+
+/* ===============================
+   🔘 GLASS HOVER BUTTON (Task 11)
+   Hint + New Uplink buttons
+   =============================== */
+
+.btn-glass-hover {
+  position: relative;
+  backdrop-filter: blur(12px);
+  transition:
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.3s ease,
+    background-color 0.3s ease;
+}
+
+.btn-glass-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(0, 229, 176, 0.2);
+  background-color: rgba(0, 229, 176, 0.08);
+}
+
+/* ===============================
+   🔒 AUTOFILL OVERRIDES (Task 12)
+   Prevent yellow autofill on dark UI
+   =============================== */
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #05070a inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #00e5b0 !important;
+  transition: background-color 5000s ease-in-out 0s;
+  border-color: rgba(0, 229, 176, 0.3) !important;
+}
+
+/* Firefox autofill */
+input:autofill {
+  background-color: #05070a !important;
+  color: #ffffff !important;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

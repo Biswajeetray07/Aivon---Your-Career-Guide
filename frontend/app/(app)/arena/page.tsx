@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLiveSocket } from "@/hooks/useLiveSocket";
 import { apiPost } from "@/lib/api";
 import Link from "next/link";
-import { Shield, Swords, Trophy, Loader2, X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 
 type ArenaState = "LOBBY" | "QUEUED" | "MATCHED" | "COMPLETED";
 
@@ -144,7 +144,7 @@ export default function ArenaPage() {
               <div className="relative">
                 <div className="w-32 h-32 bg-[#060D10] border-2 border-[#00E5B0]/30 flex items-center justify-center [clip-path:polygon(15%_0%,85%_0%,100%_15%,100%_85%,85%_100%,15%_100%,0%_85%,0%_15%)] relative group">
                   <div className="absolute inset-0 bg-[conic-gradient(from_0deg,transparent_0deg,rgba(0,229,176,0.15)_90deg,transparent_90deg)] animate-[spin_4s_linear_infinite] pointer-events-none" />
-                  <Swords size={56} className="text-[#00E5B0] drop-shadow-[0_0_15px_#00E5B0] z-10" />
+                  <span className="text-5xl font-vt323 text-[#00E5B0] drop-shadow-[0_0_15px_#00E5B0] z-10 tracking-widest">VS</span>
                 </div>
               </div>
 
@@ -173,7 +173,7 @@ export default function ArenaPage() {
                 { label: "MATCHES", value: arenaStats.totalMatches, color: "#00E5B0" },
                 { label: "WIN_RATE", value: arenaStats.totalMatches > 0 ? `${arenaStats.winRate}%` : "—", color: "#FACC15" },
               ].map((s) => (
-                <div key={s.label} className="bg-[#060D10] border border-white/10 p-4 flex flex-col items-center gap-2">
+                <div key={s.label} className="bg-[#060D10] border border-white/10 p-4 flex flex-col items-center gap-2 hover-target-matrix">
                   <span className="text-[9px] font-geist-mono text-white/40 tracking-[0.2em] uppercase">{s.label}</span>
                   <span className="text-3xl font-vt323 tracking-widest" style={{ color: s.color }}>{s.value}</span>
                 </div>
@@ -196,7 +196,7 @@ export default function ArenaPage() {
               <div className="absolute inset-4 border-2 border-[#00C2FF]/20 rounded-full animate-[spin_5s_linear_infinite_reverse]" />
               <div className="absolute inset-8 border-2 border-dashed border-[#00E5B0]/40 rounded-full animate-pulse" />
               <div className="absolute inset-0 flex items-center justify-center">
-                <Shield size={36} className="text-[#00E5B0] animate-pulse drop-shadow-[0_0_15px_#00E5B0]" />
+                <span className="text-3xl font-vt323 text-[#00E5B0] animate-pulse drop-shadow-[0_0_15px_#00E5B0] tracking-widest">SCAN</span>
               </div>
             </div>
 
@@ -286,10 +286,11 @@ export default function ArenaPage() {
             exit={{ opacity: 0 }}
             className="w-full max-w-xl flex flex-col items-center gap-10"
           >
-            <Trophy
-              size={80}
-              className={`${winner === userId ? "text-[#FACC15] drop-shadow-[0_0_30px_#FACC15]" : "text-[#FF5F56]"} animate-bounce`}
-            />
+            <div
+              className={`text-8xl font-vt323 tracking-widest ${winner === userId ? "text-[#FACC15] drop-shadow-[0_0_30px_#FACC15]" : "text-[#FF5F56]"} animate-bounce`}
+            >
+              {winner === userId ? "★" : "✕"}
+            </div>
             <h2 className={`text-6xl font-vt323 tracking-widest uppercase ${winner === userId ? "text-[#FACC15]" : "text-[#FF5F56]"}`}>
               {winner === userId ? "VICTORY" : "DEFEAT"}
             </h2>

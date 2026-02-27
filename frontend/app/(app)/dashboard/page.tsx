@@ -240,7 +240,7 @@ export default function DashboardPage() {
             { tag: "[PRIORITY]", title: "Resume Target", desc: "Two Sum (Array)", color: "#FF5F56", link: "/problems/two-sum" },
             { tag: "[PATH]", title: "Learning Node", desc: "Binary Search Tree", color: "#00E5B0", link: "/problems" },
             { tag: "[ORACLE]", title: "Ask Aivon AI", desc: "Analyze weak spots", color: "#8A2BE2", link: "/chat" },
-            { tag: "[COMBAT]", title: "Enter Arena", desc: "Global Hierarchy", color: "#00C2FF", link: "/leaderboard" }
+            { tag: "[COMBAT]", title: "Enter Arena", desc: "Enter the competitive battleground", color: "#00C2FF", link: "/arena" }
           ].map((action, i) => (
             <Link key={i} href={action.link} className="bg-[#05070A]/80 border border-white/10 rounded-xl p-5 hover:border-white/20 transition-all duration-300 hover:bg-[#0A0F14] hover:-translate-y-1 group relative overflow-hidden flex flex-col gap-2">
               <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-current to-transparent opacity-10 rounded-bl-full pointer-events-none" style={{ color: action.color }} />
