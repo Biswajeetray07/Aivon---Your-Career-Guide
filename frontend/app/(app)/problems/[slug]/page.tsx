@@ -552,16 +552,16 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
                             ? 'border-white/5 bg-[#060D10]/90 text-white rounded-tl-2xl rounded-tr-sm rounded-br-2xl rounded-bl-2xl shadow-sm' 
                             : 'border-white/5 bg-[#0A0F14]/90 text-white/80 rounded-tr-2xl rounded-tl-sm rounded-bl-2xl rounded-br-2xl shadow-sm prose-h2:text-white prose-h3:text-white prose-strong:text-[#00E5B0] prose-code:text-[#00C2FF] prose prose-invert max-w-none'
                         }`}>
-                           <div className="text-[10px] uppercase tracking-[0.2em] font-bold mb-3 flex items-center gap-2">
+                          <div className={`text-[10px] uppercase tracking-[0.2em] font-bold mb-3 flex items-center gap-2 ${isUser ? 'justify-end' : 'justify-start'}`}>
                               {isUser ? (
                                 <>
+                                  <span className="text-[#00C2FF]/60">OPERATIVE //</span>
                                   <span className="w-1.5 h-1.5 rounded-[1px] bg-[#00C2FF] shadow-[0_0_5px_#00C2FF]" />
-                                  <span className="text-[#00C2FF]/60">USER // QUERY</span>
                                 </>
                               ) : (
                                 <>
                                   <span className="w-1.5 h-1.5 rounded-[1px] bg-[#00E5B0] shadow-[0_0_5px_#00E5B0] animate-pulse" />
-                                  <span className="text-[#00E5B0]/60">SYS // RESPONSE</span>
+                                  <span className="text-[#00E5B0]/60">NEXUS // AI</span>
                                 </>
                               )}
                            </div>

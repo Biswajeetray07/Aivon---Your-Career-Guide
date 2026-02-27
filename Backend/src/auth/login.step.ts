@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import prisma from "../services/prisma";
 import { signJwt } from "../utils/jwt";
 import { authMiddleware } from "../middlewares/auth.middleware";
+import { rateLimitMiddleware } from "../middlewares/rateLimit.middleware";
 
 const bodySchema = z.object({
   email: z.string().email(),
@@ -17,13 +18,15 @@ export const config: ApiRouteConfig = {
   method: "POST",
   emits: [],
   flows: ["auth-flow"],
+  middleware: [rateLimitMiddleware(60000, 10, "IP")], // 10 logins per minute per IP
   bodySchema,
   responseSchema: {
     200: z.object({ token: z.string(), user: z.object({ id: z.string(), email: z.string(), name: z.string().nullable(), role: z.string(), rating: z.number() }) }),
     400: z.object({ error: z.string() }),
     401: z.object({ error: z.string() }),
+    429: z.object({ error: z.string() }),
   },
-  includeFiles: ["../services/prisma.ts", "../utils/jwt.ts"],
+  includeFiles: ["../services/prisma.ts", "../utils/jwt.ts", "../middlewares/rateLimit.middleware.ts"],
 };
 
 export const handler: StepHandler<typeof config> = async (req, { logger }) => {

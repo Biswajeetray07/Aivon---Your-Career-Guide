@@ -25,14 +25,16 @@ if (process.env.NODE_ENV !== "production") {
 
 export default prisma;
 
-// Process crash guards
+// Process crash guards (H7 - Don't swallow errors)
 if (typeof process !== "undefined") {
   process.on("uncaughtException", (err) => {
-    console.error("💥 UNCAUGHT EXCEPTION:", err);
+    console.error("💥 FATAL UNCAUGHT EXCEPTION:", err);
+    if (process.env.NODE_ENV === "production") process.exit(1);
   });
   
   process.on("unhandledRejection", (err) => {
     console.error("💥 UNHANDLED REJECTION:", err);
+    if (process.env.NODE_ENV === "production") process.exit(1);
   });
 }
 

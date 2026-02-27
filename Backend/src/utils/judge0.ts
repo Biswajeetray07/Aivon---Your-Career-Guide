@@ -1,5 +1,9 @@
 import axios from "axios";
 
+if (!process.env.JUDGE0_API_KEY || !process.env.JUDGE0_API_HOST) {
+  console.warn("⚠️ WARNING: JUDGE0_API_KEY or JUDGE0_API_HOST environment variable is missing. Code execution will fail until configured.");
+}
+
 // ─── Language IDs for Judge0 CE ──────────────────────────────────────────────
 
 export const LANGUAGE_IDS: Record<string, number> = {

@@ -29,7 +29,7 @@ export const handler: any = async (req: any, { logger }: { logger: any }) => {
   console.log(`➡️ GET /api/problems/${req.pathParams.id}`);
 
   try {
-    const { id } = req.pathParams;
+    const { id } = (req.pathParams || req.params || {});
 
     console.log(`🔍 Fetching problem ${id} from DB...`);
     const problem = await prisma.problem.findFirst({

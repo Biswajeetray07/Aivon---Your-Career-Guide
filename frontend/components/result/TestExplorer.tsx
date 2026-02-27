@@ -1,5 +1,5 @@
-"use client";
 import { useState } from "react";
+import { ErrorPanel, type ErrorIntelData } from "../error/ErrorPanel";
 
 export interface TestResult {
   input: string;
@@ -16,6 +16,7 @@ export interface TestResult {
     line: number | null;
     message: string;
   } | null;
+  errorIntel?: ErrorIntelData;
 }
 
 interface TestExplorerProps {
@@ -153,7 +154,13 @@ export default function TestExplorer({ testResults, mode, visibleCount, activeIn
         {tab === "detail" && (
           <>
             {/* Error badge */}
-            {hasError && (
+            {hasError && active.errorIntel && (
+                <div className="mb-4">
+                  <ErrorPanel data={active.errorIntel} />
+                </div>
+            )}
+            
+            {hasError && !active.errorIntel && (
               <div style={{
                 background: "#060D10", padding: "16px",
                 borderRadius: 4, border: "1px solid rgba(255,95,86,0.3)",

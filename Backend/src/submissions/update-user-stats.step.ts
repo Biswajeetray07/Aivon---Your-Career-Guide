@@ -30,8 +30,23 @@ export const handler: any = async (
 
   logger.info("UpdateUserStats triggered", { submissionId, status, userId });
 
+  // Helper to push real-time updates to the standalone Socket.IO server
+  const pushUpdate = async (topic: string, event: string, payload: any) => {
+    try {
+      await fetch("http://localhost:3003/emit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic, event, payload }),
+      });
+    } catch (err) {
+      logger.warn(`Failed to push real-time update to ${topic}`, { err: String(err) });
+    }
+  };
+
   if (status !== "ACCEPTED" && status !== "Accepted") {
     logger.info("Submission not accepted, skipping rating update", { submissionId });
+    // Still emit a stats update so their profile unloads any spinners instantly
+    await pushUpdate(`user_${userId}`, "stats_updated", { status });
     return;
   }
 
@@ -60,17 +75,38 @@ export const handler: any = async (
     if (previousAccepted === 0) {
       logger.info("First time solved! Updating rating.", { userId, problemId: submission.problemId });
       
-      await prisma.user.update({
+      const updatedUser = await prisma.user.update({
         where: { id: userId },
         data: {
           rating: { increment: 10 },
         },
+        select: { rating: true, name: true }
       });
 
       logger.info("User rating updated", { userId, newIncrement: 10 });
+
+      // Emitting Real-Time System Events
+      
+      // 1. Leaderboard Event
+      await pushUpdate("leaderboard", "leaderboard_update", {
+         userId,
+         name: updatedUser.name,
+         newRating: updatedUser.rating,
+      });
+
     } else {
       logger.info("Problem already solved by user. No rating change.", { userId, problemId: submission.problemId });
     }
+
+    // 2. Personal Profile Event
+    await pushUpdate(`user_${userId}`, "stats_updated", { status: "ACCEPTED" });
+
+    // 3. Marketing Analytics Event
+    await pushUpdate("marketing_stats", "system_activity", {
+      type: "submission_solved",
+      problemId: submission.problemId
+    });
+
   } catch (err: any) {
     logger.error("Failed to update user stats", { error: err.message, submissionId });
   }

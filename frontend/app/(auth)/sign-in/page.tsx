@@ -27,7 +27,6 @@ export default function LoginPage() {
       });
       
       if (res?.error) {
-        console.error("NextAuth Error:", res.error);
         setError("Invalid email or password");
       } else {
         router.push("/dashboard");

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getMyStats, getSession, getMySubmissions, type SubmissionHistoryItem } from "@/lib/api";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Lock, ShieldAlert, Cpu } from "lucide-react";
+import { useLiveSocket } from "@/hooks/useLiveSocket";
 
 /* ─── SVG Donut for Verdict Distribution ─── */
 function VerdictDonut({ data }: { data: { label: string; count: number; color: string }[] }) {
@@ -157,15 +158,26 @@ export default function ProfilePage() {
   const [randHex1, setRandHex1] = useState("0000");
   const [randHex2, setRandHex2] = useState("0");
   const [stats, setStats] = useState<{
-    totalSolved: number; totalSubmissions: number; accuracy: number;
+    totalSolved: number; totalSubmissions: number; accuracy: number; streak: number;
     byDifficulty: { EASY: number; MEDIUM: number; HARD: number };
     recentActivity: SubmissionHistoryItem[];
   } | null>(null);
-  const [user, setUser] = useState<{ name: string | null; email: string; rating: number; createdAt: string } | null>(null);
+  const [user, setUser] = useState<{ id?: string, name: string | null; email: string; rating: number; createdAt: string } | null>(null);
   const [submissions, setSubmissions] = useState<SubmissionHistoryItem[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   const router = useRouter();
+
+  const { listen } = useLiveSocket(user?.id ? [`user_${user.id}`] : []);
+
+  useEffect(() => {
+    const unlisten = listen("stats_updated", () => {
+      // Re-fetch when stats change via another window submission
+      getMyStats().then(setStats).catch(() => {});
+      getMySubmissions({ limit: 20 }).then(d => setSubmissions(d.submissions)).catch(() => {});
+    });
+    return unlisten;
+  }, [listen]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -174,7 +186,6 @@ export default function ProfilePage() {
       setRandHex1((Math.floor(Math.random() * 9000) + 1000).toString());
       setRandHex2(Math.floor(Math.random() * 9).toString());
     }, 0);
-    return () => clearTimeout(timer);
     
     Promise.all([getMyStats(), getSession()])
       .then(([s, sess]) => { 
@@ -192,6 +203,8 @@ export default function ProfilePage() {
     getMySubmissions({ limit: 20 })
       .then(d => setSubmissions(d.submissions))
       .catch(() => {}); // graceful
+
+    return () => clearTimeout(timer);
   }, [router]);
 
   useEffect(() => {

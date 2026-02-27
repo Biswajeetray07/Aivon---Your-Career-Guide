@@ -51,6 +51,9 @@ model User {
   onboardingCompleted Boolean      @default(false)
   goals               String[]
   submissions         Submission[]
+  arenaAsPlayer1      ArenaMatch[] @relation("ArenaPlayer1")
+  arenaAsPlayer2      ArenaMatch[] @relation("ArenaPlayer2")
+  chatThreads         ChatThread[]
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
 
@@ -59,28 +62,29 @@ model User {
 }
 
 model Problem {
-  id          String            @id @default(cuid())
-  title       String            @unique
-  slug        String            @unique
-  difficulty  Difficulty
-  description String            @db.Text
-  starterCode Json // { javascript: "...", python: "...", java: "..." }
-  entryPoint  String
-  problemType String            @default("array") // array | string | binary_tree | linked_list | matrix | graph
-  judgeMode   String            @default("exact") // exact | unordered | float | multiline | spj
-  spjCode     String?           @db.Text // Python checker code for SPJ judge mode
-  hasOracle   Boolean           @default(false) // Phase D: Feature flag for Universal Differential Oracle testing
-  judgeMeta   ProblemJudgeMeta?
-  tags        String[]
-  examples    Json? // [{ input: "...", output: "...", explanation: "..." }]
-  constraints String?           @db.Text
-  isActive    Boolean           @default(true)
+  id           String            @id @default(cuid())
+  title        String            @unique
+  slug         String            @unique
+  difficulty   Difficulty
+  description  String            @db.Text
+  starterCode  Json // { javascript: "...", python: "...", java: "..." }
+  entryPoint   String
+  problemType  String            @default("array") // array | string | binary_tree | linked_list | matrix | graph
+  judgeMode    String            @default("exact") // exact | unordered | float | multiline | spj
+  spjCode      String?           @db.Text // Python checker code for SPJ judge mode
+  hasOracle    Boolean           @default(false) // Phase D: Feature flag for Universal Differential Oracle testing
+  judgeMeta    ProblemJudgeMeta?
+  tags         String[]
+  examples     Json? // [{ input: "...", output: "...", explanation: "..." }]
+  constraints  String?           @db.Text
+  isActive     Boolean           @default(true)
   // Private AI context — never exposed via API, used only for AI hints/explanation
-  aiContext   Json? // { completion: "...", prompt: "...", query: "...", response: "..." }
-  testCases   TestCase[]
-  submissions Submission[]
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  aiContext    Json? // { completion: "...", prompt: "...", query: "...", response: "..." }
+  testCases    TestCase[]
+  submissions  Submission[]
+  arenaMatches ArenaMatch[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
   @@index([difficulty])
   @@index([isActive])
@@ -132,4 +136,54 @@ model Submission {
   @@index([userId, problemId])
   @@index([status])
   @@map("submissions")
+}
+
+model ArenaMatch {
+  id          String    @id @default(cuid())
+  status      String    @default("WAITING") // WAITING, ACTIVE, COMPLETED
+  problemId   String
+  problem     Problem   @relation(fields: [problemId], references: [id])
+  player1Id   String
+  player2Id   String
+  player1     User      @relation("ArenaPlayer1", fields: [player1Id], references: [id])
+  player2     User      @relation("ArenaPlayer2", fields: [player2Id], references: [id])
+  winnerId    String?
+  p1Progress  Int       @default(0) // test cases passed
+  p2Progress  Int       @default(0)
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([status])
+  @@index([player1Id])
+  @@index([player2Id])
+  @@map("arena_matches")
+}
+
+model ChatThread {
+  id                String        @id @default(cuid())
+  title             String?
+  isAutoRetitled    Boolean       @default(false)
+  lastAutoUpdatedAt DateTime?
+  problemId         String? // New field for separation
+  userId            String
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages          ChatMessage[]
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([userId, problemId])
+  @@map("chat_threads")
+}
+
+model ChatMessage {
+  id        String     @id @default(cuid())
+  role      String // user | assistant
+  content   String     @db.Text
+  threadId  String
+  thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+
+  @@index([threadId])
+  @@map("chat_messages")
 }

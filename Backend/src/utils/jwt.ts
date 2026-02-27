@@ -1,7 +1,9 @@
 import jwt from "jsonwebtoken";
 
-const SECRET = process.env.JWT_SECRET ?? "aivon-dsa-secret";
-
+const SECRET = process.env.JWT_SECRET as string;
+if (!SECRET) {
+  throw new Error("🚨 FATAL SECURITY ERROR: JWT_SECRET environment variable is missing! Refusing to start with insecure tokens.");
+}
 export interface JwtPayload {
   userId: string;
   email: string;

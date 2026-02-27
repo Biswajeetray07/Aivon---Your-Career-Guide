@@ -1,0 +1,50 @@
+name: DevSecOps Pipeline
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  security-audit:
+    name: Continuous Security & Vulnerability Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "lts/*"
+          cache: "npm"
+          cache-dependency-path: Backend/package-lock.json
+
+      - name: Install Backend Dependencies
+        working-directory: ./Backend
+        run: npm ci
+
+      - name: Detect Exposed API Keys & Secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Dependency Vulnerability Audit
+        working-directory: ./Backend
+        run: npm audit --audit-level=high
+
+      # The actual Jest hit tests: Normally run against a staging URL.
+      # We mock missing env vars strictly to ensure the app boots safely anyway.
+      - name: Run Dynamic Security Tests (Jest API Fuzzing)
+        working-directory: ./Backend
+        env:
+          JWT_SECRET: "ci-dummy-secret-required-to-boot"
+          TEST_API_URL: "http://localhost:3002"
+        run: |
+          # Start server in background for testing
+          npm run dev &
+          sleep 5
+          # Execute the security suite
+          npm test -- --config jest.config.security.js

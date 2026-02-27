@@ -1,18 +1,26 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { listProblems, type Problem } from "@/lib/api";
+import { listProblems, type Problem, getMyStats } from "@/lib/api";
 import { GlassCard } from "@/components/ui/glass-card";
-import { StatusDot } from "@/components/ui/badge";
 import { Lock, FileText, ChevronRight, Activity, Zap, CheckCircle2, Copy, PlaySquare, Terminal, Search, Filter, ShieldAlert, Cpu, Network, X } from "lucide-react";
+import { useLiveSocket } from "@/hooks/useLiveSocket";
+import { useSession } from "next-auth/react";
 
 const DIFFICULTIES = ["", "EASY", "MEDIUM", "HARD"];
 const TAGS = ["Array", "String", "Tree", "Graph", "DP", "Hash Table", "Binary Search", "Stack", "Sorting"];
 
 export default function ProblemsPage() {
   const [mounted, setMounted] = useState(false);
+  const [hexTime, setHexTime] = useState("");
+  const [randHex, setRandHex] = useState("");
+
   useEffect(() => {
-    const timer = setTimeout(() => setMounted(true), 0);
+    const timer = setTimeout(() => {
+      setMounted(true);
+      setHexTime(Date.now().toString(16).toUpperCase());
+      setRandHex(Math.floor(Math.random() * 9).toString());
+    }, 0);
     return () => clearTimeout(timer);
   }, []);
 
@@ -26,6 +34,32 @@ export default function ProblemsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const { data: session } = useSession();
+  const [recentSolves, setRecentSolves] = useState(0);
+  const [userSolved, setUserSolved] = useState(0);
+  const [userRating, setUserRating] = useState((session?.user as any)?.rating || 1200);
+
+  // Real-time: listen for global solve events
+  const { listen } = useLiveSocket(["marketing_stats"]);
+
+  useEffect(() => {
+    const unlisten = listen("system_activity", (payload: any) => {
+      if (payload?.type === "submission_solved") {
+        setRecentSolves(prev => prev + 1);
+      }
+    });
+    
+    const unlistenRating = listen("user_stats_update", (payload: any) => {
+        if (payload.userId === (session?.user as any)?.id) {
+            setUserRating(payload.rating);
+        }
+    });
+    
+    return () => {
+        unlisten();
+        unlistenRating();
+    };
+  }, [listen, session]);
 
   // Active filter count
   const activeFiltersCount = (difficulty ? 1 : 0) + (tag ? 1 : 0);
@@ -60,6 +94,14 @@ export default function ProblemsPage() {
       .then((data) => { setProblems(data.problems); setTotal(data.total); })
       .catch(e => console.warn("Problem fetch failed:", e.message))
       .finally(() => setLoading(false));
+
+    getMyStats()
+      .then(res => {
+          setUserSolved(res.totalSolved || 0);
+          setUserRating(res.rating || (session?.user as any)?.rating || 1200);
+      })
+      .catch(() => setUserSolved(0));
+
     return () => clearTimeout(timer);
   }, [difficulty, tag, debouncedSearch, page, limit]);
 
@@ -170,7 +212,7 @@ export default function ProblemsPage() {
                 <div className="absolute w-10 h-10 border border-white/5 rounded-full animate-[spin_10s_linear_infinite_reverse]" />
                 
                 <div className="text-5xl font-vt323 text-[#FACC15] drop-shadow-[0_0_15px_rgba(250,204,21,0.4)] relative z-10 group-hover:text-white transition-colors duration-300">
-                  1200
+                  {userRating}
                 </div>
               </div>
               
@@ -201,8 +243,8 @@ export default function ProblemsPage() {
            <div className="flex flex-col sm:flex-row xl:flex-col items-stretch xl:justify-center pt-6 pb-2 px-4 relative z-10 w-full h-full xl:py-10">
               {[
                 { label: "IDENTIFIED", value: total.toLocaleString(), color: "text-[#00C2FF]" },
-                { label: "ENTRY_LVL", value: "~35%", color: "text-[#00E5B0]" },
-                { label: "X-RISK", value: "~30%", color: "text-[#FF5F56]" }
+                { label: "ENTRY_LVL", value: `~${Math.max(10, Math.floor((userSolved / Math.max(1, total)) * 100))}%`, color: "text-[#00E5B0]" },
+                { label: "X-RISK", value: `~${Math.max(5, 100 - Math.floor((userSolved / Math.max(1, total)) * 100))}%`, color: "text-[#FF5F56]" }
               ].map((stat, idx, arr) => (
                 <div key={idx} className="flex xl:flex-row items-center w-full h-full group/metric relative py-4 xl:py-2">
                   <div className="flex flex-col items-center sm:items-start flex-1 px-2 xl:px-8">

@@ -12,14 +12,14 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    setError("");
+    setError(null);
     try {
       await register(email, password, name);
       const res = await signIn("credentials", {
@@ -33,8 +33,25 @@ export default function RegisterPage() {
       } else {
         router.push("/onboarding");
       }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Registration failed");
+    } catch (err: any) {
+      let errorData = err.data || err.message || "Registration failed";
+      
+      // If errorData contains a stringified JSON (common from some backends)
+      if (typeof errorData?.error === 'string' && (errorData.error.startsWith('[') || errorData.error.startsWith('{'))) {
+        try {
+          errorData = JSON.parse(errorData.error);
+        } catch {
+          // ignore parsing error
+        }
+      } else if (typeof errorData === 'string' && (errorData.startsWith('[') || errorData.startsWith('{'))) {
+         try {
+          errorData = JSON.parse(errorData);
+        } catch {
+          // ignore
+        }
+      }
+      
+      setError(errorData);
     }
     setLoading(false);
   }
@@ -93,15 +110,44 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full">
             
-            <AnimatePresence>
+            <AnimatePresence mode="wait">
               {error && (
                 <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="bg-[#FF2A2A]/10 border border-[#FF2A2A]/40 text-[#FF2A2A] text-xs p-3 text-center rounded shadow-[0_0_15px_rgba(255,42,42,0.15)] flex items-center justify-center gap-2 mb-2"
+                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                  className="bg-[#FF2A2A]/5 border border-[#FF2A2A]/30 overflow-hidden relative group mb-2"
                 >
-                  {error}
+                  <div className="absolute top-0 left-0 w-[2px] h-full bg-[#FF2A2A]/60" />
+                  <div className="p-4 flex flex-col gap-2">
+                    <div className="flex items-center gap-2 text-[#FF2A2A] text-[10px] font-bold uppercase tracking-widest mb-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#FF2A2A] animate-pulse" />
+                      Validation Conflict Detected
+                    </div>
+                    
+                    {Array.isArray(error) ? (
+                      <ul className="flex flex-col gap-2.5">
+                        {error.map((err, idx) => (
+                          <li key={idx} className="flex gap-3 text-[11px] leading-relaxed text-[#FF2A2A]/90 font-geist-mono">
+                            <span className="opacity-40 select-none">[{String(idx + 1).padStart(2, '0')}]</span>
+                            <span className="flex-1">
+                              <span className="text-[#FF2A2A] font-bold mr-1">
+                                {err.path?.[0] ? `${err.path[0].toUpperCase()}:` : "ERROR:"}
+                              </span>
+                              {err.message}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-[11px] text-[#FF2A2A]/90 font-geist-mono pl-4 border-l border-[#FF2A2A]/20">
+                        {typeof error === 'string' ? error : JSON.stringify(error)}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Subtle noise pattern overlay */}
+                  <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
                 </motion.div>
               )}
             </AnimatePresence>

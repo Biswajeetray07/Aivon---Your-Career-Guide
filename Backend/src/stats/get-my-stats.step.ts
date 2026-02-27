@@ -16,6 +16,7 @@ export const config: ApiRouteConfig = {
       totalSolved: z.number(),
       totalSubmissions: z.number(),
       accuracy: z.number(),
+      streak: z.number(),
       byDifficulty: z.object({ EASY: z.number(), MEDIUM: z.number(), HARD: z.number() }),
       recentActivity: z.array(z.any()),
     }),
@@ -27,7 +28,7 @@ export const handler: any = async (req: any, { logger }: { logger: any }) => {
   try {
     const userId = req.headers["x-user-id"] as string;
 
-    const [totalSubmissions, acceptedSubmissions, recentSubmissions] = await Promise.all([
+    const [totalSubmissions, acceptedSubmissions, recentSubmissions, allSubmissionsDates] = await Promise.all([
       prisma.submission.count({ where: { userId } }),
       prisma.submission.findMany({
         where: { userId, status: "ACCEPTED" },
@@ -40,11 +41,33 @@ export const handler: any = async (req: any, { logger }: { logger: any }) => {
         take: 10,
         include: { problem: { select: { title: true, slug: true, difficulty: true } } },
       }),
+      prisma.submission.findMany({
+        where: { userId },
+        select: { createdAt: true },
+        orderBy: { createdAt: "desc" }
+      }),
     ]);
 
     const byDifficulty = { EASY: 0, MEDIUM: 0, HARD: 0 };
     for (const s of acceptedSubmissions) {
       byDifficulty[s.problem.difficulty as keyof typeof byDifficulty]++;
+    }
+
+    // --- Streak Calculation ---
+    const uniqueDatesArray = Array.from(new Set(allSubmissionsDates.map((s: any) => s.createdAt.toISOString().split("T")[0])));
+    let streak = 0;
+    const today = new Date();
+    const todayStr = today.toISOString().split("T")[0];
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split("T")[0];
+
+    if (uniqueDatesArray.includes(todayStr) || uniqueDatesArray.includes(yesterdayStr)) {
+      let indexDate = new Date(uniqueDatesArray.includes(todayStr) ? todayStr : yesterdayStr);
+      while (uniqueDatesArray.includes(indexDate.toISOString().split("T")[0])) {
+        streak++;
+        indexDate.setDate(indexDate.getDate() - 1);
+      }
     }
 
     logger.info("User stats fetched", { userId });
@@ -54,6 +77,7 @@ export const handler: any = async (req: any, { logger }: { logger: any }) => {
         totalSolved: acceptedSubmissions.length,
         totalSubmissions,
         accuracy: totalSubmissions ? Math.round((acceptedSubmissions.length / totalSubmissions) * 100) : 0,
+        streak,
         byDifficulty,
         recentActivity: recentSubmissions.map((s: any) => ({
           id: s.id, status: s.status, language: s.language, createdAt: s.createdAt.toISOString(), problem: s.problem,

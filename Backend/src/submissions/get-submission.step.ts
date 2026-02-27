@@ -20,7 +20,7 @@ export const config: ApiRouteConfig = {
 
 export const handler: any = async (req: any, { logger }: { logger: any }) => {
   try {
-    const submissionId = req.pathParams?.id as string;
+    const { id: submissionId } = (req.pathParams || req.params || {});
     const userId = req.headers["x-user-id"] as string;
 
     const submission = await prisma.submission.findFirst({

@@ -7,4 +7,20 @@ import bullmqPlugin from '@motiadev/plugin-bullmq/plugin'
 
 export default defineConfig({
   plugins: [observabilityPlugin, statesPlugin, endpointPlugin, logsPlugin, bullmqPlugin],
+  app: (app) => {
+    // Intercept headers to fix CORS mismatch between Motia's "*" and credentials:true
+    app.use((req: any, res: any, next: any) => {
+      const originalSetHeader = res.setHeader;
+      res.setHeader = function(name: string, value: any) {
+        if (name.toLowerCase() === 'access-control-allow-origin' && value === '*') {
+          const origin = req.headers.origin;
+          if (origin) {
+            return originalSetHeader.call(this, name, origin);
+          }
+        }
+        return originalSetHeader.call(this, name, value);
+      };
+      next();
+    });
+  }
 })

@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getSession, listProblems, type Problem } from "@/lib/api";
+import { listProblems, getMyStats, getMySubmissions, type Problem, type SubmissionHistoryItem } from "@/lib/api";
+import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { useTypewriter } from "@/hooks/use-typewriter";
+import { useLiveSocket } from "@/hooks/useLiveSocket";
 
 interface UserProfile {
   id: string;
@@ -19,10 +21,36 @@ interface UserProfile {
 }
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const { data: session, status } = useSession();
   const [problems, setProblems] = useState<Problem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<{ totalSolved: number; totalSubmissions: number; accuracy: number; streak: number; byDifficulty: { EASY: number; MEDIUM: number; HARD: number }; recentActivity: SubmissionHistoryItem[] } | null>(null);
+  const [submissions, setSubmissions] = useState<SubmissionHistoryItem[]>([]);
+  const [liveEvents, setLiveEvents] = useState<string[]>([]);
   const router = useRouter();
+
+  // Parse User immediately from Cached session
+  const user = session?.user as UserProfile | undefined;
+
+  // Real-time socket connection
+  const { listen } = useLiveSocket(user?.id ? [`user_${user.id}`] : []);
+
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      const [problemsRes, statsRes, subsRes] = await Promise.all([
+        listProblems({ limit: 12 }),
+        getMyStats(),
+        getMySubmissions({ limit: 56 }),
+      ]);
+      setProblems(problemsRes.problems || []);
+      setStats(statsRes);
+      setSubmissions(subsRes.submissions || []);
+    } catch (e) {
+      console.warn("Dashboard fetch failed", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const dynamicText = useTypewriter([
     "software engineers",
@@ -43,30 +71,47 @@ export default function DashboardPage() {
 
   const [activityDots, setActivityDots] = useState<{r1: number, r2: number}[]>([]);
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setActivityDots(Array.from({ length: 56 }).map(() => ({ r1: Math.random(), r2: Math.random() })));
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
+    // Build heatmap from real submission data
+    if (submissions.length > 0) {
+      const dots = Array.from({ length: 56 }).map((_, i) => {
+        const hasSub = i < submissions.length;
+        const isAccepted = hasSub && submissions[i]?.status === "ACCEPTED";
+        return {
+          r1: hasSub ? (isAccepted ? 0.9 : 0.7) : Math.random() * 0.4,
+          r2: isAccepted ? 0.8 : Math.random(),
+        };
+      });
+      setActivityDots(dots);
+    } else {
+      setActivityDots(Array.from({ length: 56 }).map(() => ({ r1: Math.random() * 0.3, r2: Math.random() })));
+    }
+  }, [submissions]);
 
   useEffect(() => {
-    Promise.all([
-      getSession(),
-      listProblems({ limit: 12 })
-    ])
-      .then(([sessionRes, problemsRes]) => {
-        if (!sessionRes?.user) {
-          router.push("/sign-in");
-        } else {
-          setUser(sessionRes.user);
-          setProblems(problemsRes.problems || []);
-        }
-      })
-      .catch(() => router.push("/sign-in"))
-      .finally(() => setLoading(false));
-  }, [router]);
+    if (status === "unauthenticated") {
+      router.push("/sign-in");
+      return;
+    }
+    if (status === "authenticated") {
+      fetchDashboardData();
+    }
+  }, [status, router, fetchDashboardData]);
 
-  if (loading || !user) {
+  // Real-time listener
+  useEffect(() => {
+    const unlisten = listen("stats_updated", (payload: any) => {
+      // Re-fetch all data on stats change
+      fetchDashboardData();
+      // Add to live events feed
+      const msg = payload?.status === "ACCEPTED" 
+        ? `✓ Problem solved — Rating updated`
+        : `✗ Submission processed`;
+      setLiveEvents(prev => [msg, ...prev].slice(0, 10));
+    });
+    return unlisten;
+  }, [listen, fetchDashboardData]);
+
+  if (status === "loading" || loading || !user) {
     return (
       <div className="min-h-screen bg-[#05070A] flex items-center justify-center">
         <div className="text-[#00E5B0] font-geist-mono animate-pulse flex items-center gap-2">
@@ -109,7 +154,7 @@ export default function DashboardPage() {
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#FACC15]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="flex flex-col items-center justify-center -space-y-0.5">
                   <span className="text-[9px] font-geist-mono text-[#FACC15]/60 uppercase tracking-[0.2em] z-10">Streak</span>
-                  <span className="text-[14px] font-bold font-geist-mono text-[#FACC15] z-10 tracking-widest">12 <span className="text-[12px]">DAYS</span></span>
+                  <span className="text-[14px] font-bold font-geist-mono text-[#FACC15] z-10 tracking-widest">{stats?.streak || 0} <span className="text-[12px]">DAYS</span></span>
                 </div>
               </div>
               <Link href="/profile" className="flex-1 relative overflow-hidden group bg-transparent border border-white/5 text-[#00E5B0] font-space-grotesk font-bold uppercase tracking-[0.1em] transition-all duration-300 rounded-lg flex flex-col justify-center hover:bg-[#00E5B0]/10 hover:border-white/5 hover:text-white hover:shadow-sm">
@@ -194,7 +239,7 @@ export default function DashboardPage() {
           {[
             { tag: "[PRIORITY]", title: "Resume Target", desc: "Two Sum (Array)", color: "#FF5F56", link: "/problems/two-sum" },
             { tag: "[PATH]", title: "Learning Node", desc: "Binary Search Tree", color: "#00E5B0", link: "/problems" },
-            { tag: "[ORACLE]", title: "Ask Aivon AI", desc: "Analyze weak spots", color: "#8A2BE2", link: "/dashboard" },
+            { tag: "[ORACLE]", title: "Ask Aivon AI", desc: "Analyze weak spots", color: "#8A2BE2", link: "/chat" },
             { tag: "[COMBAT]", title: "Enter Arena", desc: "Global Hierarchy", color: "#00C2FF", link: "/leaderboard" }
           ].map((action, i) => (
             <Link key={i} href={action.link} className="bg-[#05070A]/80 border border-white/10 rounded-xl p-5 hover:border-white/20 transition-all duration-300 hover:bg-[#0A0F14] hover:-translate-y-1 group relative overflow-hidden flex flex-col gap-2">
@@ -218,12 +263,12 @@ export default function DashboardPage() {
             <div className="col-span-1 lg:col-span-12">
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
                 {[
-                  { label: "RATING", value: user.rating || 1200, color: "text-[#00C2FF]" },
-                  { label: "SOLVED", value: "42", color: "text-white" },
-                  { label: "ACCURACY", value: "87%", color: "text-[#00E5B0]" },
-                  { label: "STREAK", value: "12", color: "text-[#FACC15]" },
-                  { label: "RANK", value: user.rank || "-", color: "text-[#FF5F56]" },
-                  { label: "AI CONF", value: "94%", color: "text-[#8A2BE2]" }
+                  { label: "RATING", value: user.rating || stats?.totalSolved ? (user.rating || 1200) : 1200, color: "text-[#00C2FF]" },
+                  { label: "SOLVED", value: stats?.totalSolved ?? "—", color: "text-white" },
+                  { label: "ACCURACY", value: stats ? `${stats.accuracy}%` : "—", color: "text-[#00E5B0]" },
+                  { label: "STREAK", value: stats?.streak ?? "—", color: "text-[#FACC15]" },
+                  { label: "RANK", value: user.rank || "—", color: "text-[#FF5F56]" },
+                  { label: "SUBMISSIONS", value: stats?.totalSubmissions ?? "—", color: "text-[#8A2BE2]" }
                 ].map((s, i) => (
                   <div key={i} className="bg-[#05070A]/80 border border-white/10 p-3 relative group overflow-hidden shadow-[0_0_20px_rgba(255,255,255,0.02)] flex flex-col justify-between hover:border-white/20 transition-colors">
                     {/* Structural Frame & Corners */}
@@ -276,9 +321,9 @@ export default function DashboardPage() {
                    <div className="relative z-10">
                      <div className="flex items-start justify-between mb-4">
                        <div className="flex flex-col gap-1">
-                         <h2 className="text-3xl font-black text-white uppercase tracking-tighter font-space-grotesk drop-shadow-md">
-                           Two Sum
-                         </h2>
+                          <h2 className="text-3xl font-black text-white uppercase tracking-tighter font-space-grotesk drop-shadow-md">
+                            {problems[0]?.title || "No Target"}
+                          </h2>
                        </div>
                        <div className="text-[10px] font-bold text-[#05070A] font-geist-mono tracking-widest bg-[#00E5B0] px-3 py-1 shadow-sm">
                          PRIORITY 1
@@ -288,14 +333,16 @@ export default function DashboardPage() {
                      <div className="bg-[#0A0F14]/80 border border-white/5 p-4 mb-6 relative overflow-hidden">
                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FFBD2E]" />
                        <p className="text-[12px] md:text-[13px] font-medium text-[var(--text-secondary)] leading-relaxed font-geist-mono pl-2">
-                         <span className="text-[#FFBD2E] mr-2">❯</span>
-                         Abandonment sequence detected. Weakness identified in <span className="text-white">Hash Maps</span>. Re-sync recommended to restore optimal algorithm flow.
-                       </p>
+                          <span className="text-[#FFBD2E] mr-2">❯</span>
+                          {stats && stats.accuracy < 50 
+                            ? <>Low accuracy detected (<span className="text-white">{stats.accuracy}%</span>). Re-sync recommended to improve algorithm flow.</>
+                            : <>Continue solving problems to build your proficiency. <span className="text-white">{stats?.totalSolved || 0}</span> problems solved so far.</>}
+                        </p>
                      </div>
                    </div>
                    
                    <div className="flex items-center mt-auto relative z-10 w-full">
-                     <Link href="/problems/two-sum" className="w-full relative overflow-hidden flex items-center justify-center gap-3 bg-[#060D10] border border-white/5 text-[#00E5B0] px-5 py-3 text-[12px] font-bold uppercase tracking-widest transition-all hover:bg-[#0A1418] hover:border-white/5 hover:text-white hover:shadow-sm group/btn">
+                      <Link href={`/problems/${problems[0]?.slug || "two-sum"}`} className="w-full relative overflow-hidden flex items-center justify-center gap-3 bg-[#060D10] border border-white/5 text-[#00E5B0] px-5 py-3 text-[12px] font-bold uppercase tracking-widest transition-all hover:bg-[#0A1418] hover:border-white/5 hover:text-white hover:shadow-sm group/btn">
                        {/* Gradient scanlight replicating View Profile button */}
                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#00E5B0]/15 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000 z-0" />
                        <span className="relative z-10 flex items-center justify-center w-4 h-4 mr-1">
@@ -381,52 +428,29 @@ export default function DashboardPage() {
                    <div className="absolute inset-0 bg-[linear-gradient(rgba(0,229,176,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,229,176,0.02)_1px,transparent_1px)] bg-[size:30px_30px] pointer-events-none" />
                    
                    <div className="relative z-10 flex flex-col gap-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
-                     {[
-                       { name: "Array", pct: 85, easy: 24, med: 10, hard: 2, color: "bg-[#00E5B0]" },
-                       { name: "String", pct: 72, easy: 18, med: 8, hard: 1, color: "bg-[#00E5B0]" },
-                       { name: "Hash Table", pct: 65, easy: 15, med: 12, hard: 3, color: "bg-[#00E5B0]" },
-                       { name: "Two Pointers", pct: 45, easy: 4, med: 2, hard: 0, color: "bg-[#00E5B0]" },
-                       { name: "Binary Search", pct: 30, easy: 6, med: 3, hard: 0, color: "bg-[#00E5B0]" },
-                       { name: "Stack", pct: 60, easy: 5, med: 3, hard: 0, color: "bg-[#00E5B0]" },
-                       { name: "Sorting", pct: 55, easy: 8, med: 4, hard: 1, color: "bg-[#00E5B0]" },
-                       { name: "Tree", pct: 40, easy: 10, med: 5, hard: 2, color: "bg-[#00E5B0]" },
-                       { name: "Graph", pct: 15, easy: 2, med: 1, hard: 1, color: "bg-[#00E5B0]" },
-                       { name: "DP", pct: 10, easy: 1, med: 2, hard: 3, color: "bg-[#00E5B0]" }
-                     ].map(cat => (
+                     {(() => {
+                       const matrixCategories = stats ? [
+                         { name: "Easy", pct: stats.byDifficulty.EASY > 0 ? Math.min(100, stats.byDifficulty.EASY * 10) : 0, total: stats.byDifficulty.EASY, color: "bg-[#00E5B0]" },
+                         { name: "Medium", pct: stats.byDifficulty.MEDIUM > 0 ? Math.min(100, stats.byDifficulty.MEDIUM * 15) : 0, total: stats.byDifficulty.MEDIUM, color: "bg-[#FACC15]" },
+                         { name: "Hard", pct: stats.byDifficulty.HARD > 0 ? Math.min(100, stats.byDifficulty.HARD * 20) : 0, total: stats.byDifficulty.HARD, color: "bg-[#FF5F56]" },
+                         { name: "Overall Accuracy", pct: stats.accuracy, total: stats.totalSubmissions, color: "bg-[#00C2FF]" },
+                       ] : [
+                         { name: "Easy", pct: 0, total: 0, color: "bg-[#00E5B0]" },
+                         { name: "Medium", pct: 0, total: 0, color: "bg-[#FACC15]" },
+                         { name: "Hard", pct: 0, total: 0, color: "bg-[#FF5F56]" },
+                         { name: "Overall Accuracy", pct: 0, total: 0, color: "bg-[#00C2FF]" },
+                       ];
+                       return matrixCategories;
+                     })().map(cat => (
                        <div key={cat.name} className="flex flex-col gap-2 bg-[#0A0F14]/40 border border-white/5 p-3 rounded-none hover:border-white/5 transition-colors group/row">
                          <div className="flex justify-between items-center relative">
                            <div className="flex items-center gap-3">
                              <span className="text-[12px] font-bold text-white font-geist-mono uppercase tracking-wider">{cat.name}</span>
                            </div>
-                           <div className="flex items-center gap-3 text-[10px] font-geist-mono relative">
-                             <span className={`font-bold ${cat.color.replace('bg-', 'text-')}`}>{cat.pct}%</span>
-                             
-                             {/* Info Hover Button */}
-                             <div className="relative flex items-center justify-center group/info cursor-help">
-                               <div className="w-4 h-4 rounded-full border border-white/20 flex items-center justify-center text-white/50 text-[10px] font-bold transition-colors group-hover/info:border-[#00E5B0] group-hover/info:text-[#00E5B0] bg-[#0A0F14]">
-                                 i
-                               </div>
-                               
-                               {/* Hacker Tooltip Dropdown */}
-                               <div className="absolute right-0 top-full mt-2 w-36 bg-[#000000] border border-white/10 rounded-md p-2 shadow-lg opacity-0 pointer-events-none group-hover/info:opacity-100 group-hover/info:pointer-events-auto transition-opacity z-50">
-                                 <div className="flex flex-col gap-1.5 text-[9px] uppercase tracking-widest font-bold">
-                                   <div className="flex justify-between items-center border-b border-white/5 pb-1 mb-1 text-[var(--text-muted)]">
-                                     <span>Stats</span><span>{cat.easy + cat.med + cat.hard} Total</span>
-                                   </div>
-                                   <div className="flex justify-between text-[#00E5B0]">
-                                     <span>Easy</span><span>{cat.easy}</span>
-                                   </div>
-                                   <div className="flex justify-between text-[#FACC15]">
-                                     <span>Medium</span><span>{cat.med}</span>
-                                   </div>
-                                   <div className="flex justify-between text-[#FF5F56]">
-                                     <span>Hard</span><span>{cat.hard}</span>
-                                   </div>
-                                 </div>
-                               </div>
-                             </div>
-                             
-                           </div>
+                            <div className="flex items-center gap-3 text-[10px] font-geist-mono relative">
+                              <span className={`font-bold ${cat.color.replace('bg-', 'text-')}`}>{cat.pct}%</span>
+                              <span className="text-white/30 font-bold">{cat.total} solved</span>
+                            </div>
                          </div>
                          <div className="h-1.5 w-full bg-[#111827] rounded-full overflow-hidden border border-white/5">
                            <div className={`h-full ${cat.color} shadow-[0_0_10px_currentColor]`} style={{ width: `${cat.pct}%` }} />
@@ -495,9 +519,19 @@ export default function DashboardPage() {
                 </span>
               </div>
               <div className="p-5 text-[var(--text-secondary)] text-[12px] font-geist-mono leading-[2] flex-1">
-                 <div className="flex gap-3 mb-2"><span className="text-[#27C93F] font-bold">❯</span> <span className="text-white opacity-90">Loading modules...</span></div>
-                 <div className="flex gap-3 mb-2"><span className="text-[#FB923C] font-bold">❯</span> <span className="text-white opacity-90">WARN: Compilations delayed.</span></div>
-                 <div className="flex gap-3 mb-2"><span className="text-[#00E5B0] font-bold">❯</span> <span>{systemLogText}</span></div>
+                 {liveEvents.length > 0 ? (
+                   liveEvents.map((evt, i) => (
+                     <div key={i} className="flex gap-3 mb-2">
+                       <span className={`font-bold ${evt.startsWith("✓") ? "text-[#27C93F]" : "text-[#FB923C]"}`}>❯</span>
+                       <span className="text-white opacity-90">{evt}</span>
+                     </div>
+                   ))
+                 ) : (
+                   <>
+                     <div className="flex gap-3 mb-2"><span className="text-[#27C93F] font-bold">❯</span> <span className="text-white opacity-90">Loading modules...</span></div>
+                     <div className="flex gap-3 mb-2"><span className="text-[#FB923C] font-bold">❯</span> <span className="text-white opacity-90">Awaiting live events...</span></div>
+                   </>
+                 )}
                  <div className="flex gap-3"><span className="text-[#00C2FF] font-bold">❯</span> <span className="inline-block w-[8px] h-[15px] bg-[#00C2FF] mt-[5px] animate-[blink_1s_step-end_infinite]" /></div>
               </div>
             </motion.div>

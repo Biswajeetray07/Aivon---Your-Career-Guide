@@ -1,7 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { io } from "socket.io-client";
-
-const SOCKET_URL = "http://localhost:3003";
+import { useEffect, useState } from "react";
+import { useLiveSocket } from "./useLiveSocket";
 
 export type JudgeEvent =
   | { status: "QUEUED" | "PENDING" }
@@ -13,41 +11,24 @@ export function useJudgeSocket(
   submissionId: string | null,
   onUpdate?: (event: JudgeEvent) => void,
 ) {
-  const [connected, setConnected] = useState(false);
+  const { connected, listen } = useLiveSocket(submissionId ? [submissionId] : []);
   const [lastEvent, setLastEvent] = useState<JudgeEvent | null>(null);
-  const onUpdateRef = useRef(onUpdate);
-
-  // Keep ref in sync without causing the socket effect to re-run
-  useEffect(() => {
-    onUpdateRef.current = onUpdate;
-  }, [onUpdate]);
 
   useEffect(() => {
     if (!submissionId) return;
 
-    const s = io(SOCKET_URL, { reconnectionAttempts: 5, reconnectionDelay: 1000 });
-
-    s.on("connect", () => {
-      console.log("[Socket] Connected");
-      setConnected(true);
-      s.emit("subscribe", submissionId);
-    });
-
-    s.on("disconnect", () => {
-      console.log("[Socket] Disconnected");
-      setConnected(false);
-    });
-
-    s.on("judge-update", (data: JudgeEvent) => {
-      console.log("[Socket] Update:", data);
+    // The legacy socket logic wrapped the full event payload inside a "judge-update" socket.io event.
+    // The new pub-sub backend routes it to the `submissionId` topic explicitly under the "judge-update" event name.
+    const unlisten = listen("judge-update", (data: JudgeEvent) => {
+      console.log("[useJudgeSocket] Update:", data);
       setLastEvent(data);
-      onUpdateRef.current?.(data);
+      if (onUpdate) onUpdate(data);
     });
 
     return () => {
-      s.disconnect();
+      unlisten();
     };
-  }, [submissionId]);  // socket only re-connects when submissionId changes
+  }, [submissionId, listen, onUpdate]);
 
   return { connected, lastEvent };
 }

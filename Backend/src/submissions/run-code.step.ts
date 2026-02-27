@@ -2,6 +2,7 @@ import type { ApiRouteConfig } from "motia";
 import { z } from "zod";
 import prisma from "../services/prisma";
 import { authMiddleware } from "../middlewares/auth.middleware";
+import { rateLimitMiddleware } from "../middlewares/rateLimit.middleware";
 import { wrapCode, formatStdin, detectProblemTypeFromInput } from "../utils/code-runner";
 import { runCode, runSpjChecker } from "../utils/judge0";
 import { runSingleTest } from "../utils/judge-core/runSingleTest";
@@ -12,7 +13,7 @@ import type { JudgeMode } from "../utils/judge-core/outputComparator";
 const bodySchema = z.object({
   problemId: z.string(),
   language: z.string(),
-  code: z.string().min(1),
+  code: z.string().min(1).max(50000, "String must contain at most 50000 character(s)"), 
 });
 
 export const config: ApiRouteConfig = {
@@ -23,13 +24,12 @@ export const config: ApiRouteConfig = {
   method: "POST",
   emits: [],
   flows: ["submission-flow"],
-  middleware: [authMiddleware()],
+  middleware: [authMiddleware(), rateLimitMiddleware(60000, 15, "USER_ID")], // 15 executions per minute per user
   bodySchema,
   responseSchema: {
     200: z.object({
       status: z.string(),
       runtime: z.number().nullable(),
-      memory: z.number().nullable(),
       testResults: z.array(z.object({
         input: z.string(),
         expected: z.string(),
@@ -52,9 +52,12 @@ export const config: ApiRouteConfig = {
     400: z.object({ error: z.string() }),
     404: z.object({ error: z.string() }),
     401: z.object({ error: z.string() }),
+    429: z.object({ error: z.string() }),
   },
   includeFiles: [
     "../services/prisma.ts",
+    "../middlewares/auth.middleware.ts",
+    "../middlewares/rateLimit.middleware.ts",
     "../utils/code-runner.ts",
     "../utils/judge0.ts",
     "../utils/templates.ts",

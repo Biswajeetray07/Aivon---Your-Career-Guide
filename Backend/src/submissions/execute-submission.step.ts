@@ -7,6 +7,7 @@ import { runSingleTest } from "../utils/judge-core/runSingleTest";
 import { aggregateResults } from "../utils/judge-core/aggregateResults";
 import { safeJudge } from "../utils/judge-core/safeJudge";
 import type { JudgeMode } from "../utils/judge-core/outputComparator";
+import { analyzeError } from "../utils/error-intel/pipeline";
 
 export const config: EventConfig = {
   type: "event",
@@ -22,6 +23,33 @@ export const config: EventConfig = {
     "../utils/judge0.ts",
     "../utils/templates.ts",
     "../middlewares/auth.middleware.ts",
+    "../utils/judge-core/verdictClassifier.ts",
+    "../utils/judge-core/errorSanitizer.ts",
+    "../utils/judge-core/runSingleTest.ts",
+    "../utils/judge-core/aggregateResults.ts",
+    "../utils/judge-core/safeJudge.ts",
+    "../utils/judge-core/outputComparator.ts",
+    "../utils/error-intel/pipeline.ts",
+    "../utils/error-intel/patterns/index.ts",
+    "../utils/error-intel/patterns/types.ts",
+    "../utils/error-intel/patterns/common.ts",
+    "../utils/error-intel/patterns/python.ts",
+    "../utils/error-intel/patterns/java.ts",
+    "../utils/error-intel/patterns/cpp.ts",
+    "../utils/error-intel/wa/index.ts",
+    "../utils/error-intel/wa/types.ts",
+    "../utils/error-intel/wa/normalizer.ts",
+    "../utils/error-intel/wa/diff-engine.ts",
+    "../utils/error-intel/wa/ranker.ts",
+    "../utils/error-intel/wa/hint-builder.ts",
+    "../utils/error-intel/wa/detectors/index.ts",
+    "../utils/error-intel/wa/detectors/offByOne.ts",
+    "../utils/error-intel/wa/detectors/ordering.ts",
+    "../utils/error-intel/wa/detectors/whitespace.ts",
+    "../utils/error-intel/wa/detectors/precision.ts",
+    "../utils/error-intel/wa/detectors/overflow.ts",
+    "../utils/error-intel/wa/detectors/edgeCase.ts",
+    "../utils/error-intel/wa/detectors/partialLogic.ts",
   ],
 };
 
@@ -93,7 +121,11 @@ export const handler: any = async (
       await fetch("http://localhost:3003/emit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ submissionId, event }),
+        body: JSON.stringify({ 
+           topic: submissionId, 
+           event: "judge-update", 
+           payload: event 
+        }),
       });
     } catch (err) {
       logger.warn("Failed to push real-time update", { err: String(err) });
@@ -139,6 +171,7 @@ export const handler: any = async (
       stderr: string | null; compileOutput: string | null;
       passed: boolean; runtime: number | null; verdict: string;
       errorDetails?: { verdict: string; errorType: string; line: number | null; message: string } | null;
+      errorIntel?: ReturnType<typeof analyzeError>;
     };
     const testResults: TestResult[] = [];
 
@@ -201,7 +234,20 @@ export const handler: any = async (
             line: singleResult.errorLine,
             message: singleResult.errorMessage || "",
           } : null,
-          verdict: singleResult.verdict
+          verdict: singleResult.verdict,
+          errorIntel: analyzeError(
+             submission.language, 
+             result.status.id, 
+             singleResult.rawError || singleResult.errorMessage || null, 
+             result.compile_output || null, 
+             result.status.id === 5, 
+             result.status.id === 12, 
+             result.status.id !== 3 ? 1 : 0, 
+             passed,
+             tc.expected,
+             singleResult.actualOutput,
+             tc.input
+          )
         });
 
         // Hard errors (CE / TLE / MLE / RE / WA) — stop immediately in SUBMIT mode

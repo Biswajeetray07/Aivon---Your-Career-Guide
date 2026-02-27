@@ -2,8 +2,8 @@ import axios from "axios";
 
 export type AiTaskType = "error_fix" | "complexity" | "optimize" | "dry_run" | "hint" | "concept" | "chat" | "improve";
 
-const OLLAMA_URL = process.env.OLLAMA_API_URL || "http://localhost:11434/api/generate";
-const OLLAMA_CHAT_URL = process.env.OLLAMA_CHAT_API_URL || "http://localhost:11434/api/chat";
+const OLLAMA_URL = process.env.OLLAMA_API_URL || "http://127.0.0.1:11434/api/generate";
+const OLLAMA_CHAT_URL = process.env.OLLAMA_CHAT_API_URL || "http://127.0.0.1:11434/api/chat";
 
 export const MASTER_SYSTEM_PROMPT = `You are Aivon AI, an expert competitive programming mentor and senior software engineer.
 
@@ -140,7 +140,7 @@ interface DualStageOptions {
 async function runCoderBrain(system: string, prompt: string): Promise<string> {
   const fullPrompt = `${system}\n\n${prompt}`;
   try {
-    const res = await axios.post("http://localhost:11434/api/generate", {
+    const res = await axios.post("http://127.0.0.1:11434/api/generate", {
       model: "qwen2.5-coder:7b",
       prompt: fullPrompt,
       stream: false,
@@ -163,7 +163,7 @@ async function runCoderBrain(system: string, prompt: string): Promise<string> {
 async function runTeacherBrain(system: string, prompt: string): Promise<string> {
   const fullPrompt = `${system}\n\n${prompt}`;
   try {
-    const res = await axios.post("http://localhost:11434/api/generate", {
+    const res = await axios.post("http://127.0.0.1:11434/api/generate", {
       model: "qwen3:8b",
       prompt: fullPrompt,
       stream: false,

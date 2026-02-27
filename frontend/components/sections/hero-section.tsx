@@ -4,6 +4,8 @@ import { useTypewriter } from "@/hooks/use-typewriter";
 import Link from "next/link";
 import { ArrowRight, Lock } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { useLiveSocket } from "@/hooks/useLiveSocket";
 
 export function HeroSection() {
   const { data: session, status } = useSession();
@@ -13,6 +15,18 @@ export function HeroSection() {
     "systems thinkers",
     "AI-powered minds"
   ], 80, 40, 2000);
+
+  const [globalExecutions, setGlobalExecutions] = useState(1337);
+  const { listen } = useLiveSocket(["marketing_stats"]);
+
+  useEffect(() => {
+    const unlisten = listen("system_activity", (payload) => {
+      if (payload?.type === "submission_solved") {
+        setGlobalExecutions(prev => prev + 1);
+      }
+    });
+    return unlisten;
+  }, [listen]);
 
   return (
     <section className="relative pt-32 sm:pt-40 pb-20 lg:pt-48 lg:pb-32 container mx-auto px-6 md:px-12 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
@@ -119,6 +133,13 @@ export function HeroSection() {
                 <span className="text-[#00C2FF] font-bold text-lg leading-none">❯</span>
                 <span className="text-[var(--text-muted)]">compiler:</span>
                 <span className="text-[#00E5B0]">ready_for_execution</span>
+              </div>
+              <div className="flex gap-4 items-center">
+                <span className="text-[#00C2FF] font-bold text-lg leading-none">❯</span>
+                <span className="text-[var(--text-muted)]">global_resolves:</span>
+                <span className="text-[#00C2FF] drop-shadow-[0_0_5px_#00C2FF] transition-all" key={globalExecutions}>
+                  {globalExecutions}
+                </span>
                 <span className="inline-block w-[8px] h-[15px] bg-[#00E5B0] ml-2 animate-[blink_1s_step-end_infinite] shadow-[0_0_8px_#00E5B0]" />
               </div>
             </div>

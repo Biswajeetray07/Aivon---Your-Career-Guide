@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { getLeaderboard } from "@/lib/api";
 import { Shield, Sparkles } from "lucide-react";
+import { useLiveSocket } from "@/hooks/useLiveSocket";
 
 type LeaderboardEntry = { rank: number; userId: string; name: string | null; email: string; rating: number; solved: number };
 
@@ -9,9 +10,36 @@ export default function LeaderboardPage() {
   const [data, setData] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const { listen } = useLiveSocket(["leaderboard"]);
+
   useEffect(() => {
     getLeaderboard().then((d) => setData(d.leaderboard)).catch(e => console.warn("Leaderboard fetch failed:", e.message)).finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    const unlisten = listen("leaderboard_update", (payload: any) => {
+      setData((prev) => {
+        const idx = prev.findIndex(p => p.userId === payload.userId);
+        let newData = [...prev];
+        if (idx !== -1) {
+          newData[idx] = { ...newData[idx], rating: payload.newRating, solved: (newData[idx].solved || 0) + 1 };
+        } else {
+          newData.push({
+            rank: 999,
+            userId: payload.userId,
+            name: payload.name,
+            email: "N/A", 
+            rating: payload.newRating,
+            solved: 1
+          });
+        }
+        newData.sort((a, b) => b.rating - a.rating);
+        newData.forEach((entry, i) => { entry.rank = i + 1; });
+        return newData;
+      });
+    });
+    return unlisten;
+  }, [listen]);
 
   const getRankColor = (rank: number) => {
     switch (rank) {
