@@ -18,16 +18,8 @@
   ],
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
-    "@motiadev/adapter-bullmq-events": "^0.17.14-beta.196",
     "@motiadev/core": "^0.17.14-beta.196",
-    "@motiadev/plugin-bullmq": "^0.17.14-beta.196",
-    "@motiadev/plugin-cron": "^0.17.14-beta.196",
     "@motiadev/plugin-endpoint": "^0.17.14-beta.196",
-    "@motiadev/plugin-logs": "^0.17.14-beta.196",
-    "@motiadev/plugin-observability": "^0.17.14-beta.196",
-    "@motiadev/plugin-states": "^0.17.14-beta.196",
-    "@motiadev/plugin-streams": "^0.17.14-beta.196",
-    "@motiadev/plugin-ws": "^0.17.14-beta.196",
     "@prisma/adapter-pg": "^7.4.1",
     "@prisma/client": "^7.4.1",
     "@types/bcryptjs": "^2.4.6",
@@ -48,7 +40,6 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@motiadev/workbench": "^0.17.14-beta.196",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.3.0",
     "@types/pg": "^8.16.0",
