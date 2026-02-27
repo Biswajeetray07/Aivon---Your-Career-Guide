@@ -33,7 +33,7 @@ export const handler: any = async (req: any, { logger }: { logger: any }) => {
     });
     if (!problem) return { status: 404, body: { error: "Problem not found" } };
 
-    const systemInstruction = `You are an expert DSA teacher. Explain problem-solving approaches clearly and concisely.
+    const systemInstruction = `You are an expert DSA teacher. Explain problem-solving approaches clearly and concisely. Do not overuse emojis or decorative icons. Be human, calm, and technical.
 Respond ONLY with a JSON object (no markdown, no extra text) with keys: "explanation" (overview), "approach" (algorithm steps), "keyInsights" (array of 3-5 key points).
 Do not provide complete code solutions.`;
 

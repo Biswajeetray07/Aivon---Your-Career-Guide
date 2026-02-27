@@ -204,8 +204,8 @@ export const explainError = (
 export const getAlternativeApproach = (problemId: string, language: string, code: string) =>
   apiPost<ImproveExplanation>("/api/ai/improve", { problemId, language, code });
 
-export const chatWithAI = (problemId: string, messages: {role: string, content: string}[], code?: string, language?: string, signal?: AbortSignal, threadId?: string) =>
-  apiPost<{ reply: string; threadId: string }>("/api/ai/chat", { problemId, userCode: code, language, messages, threadId }, signal, 120000);
+export const chatWithAI = (problemId: string, messages: {role: string, content: string}[], code?: string, language?: string, signal?: AbortSignal, threadId?: string, editorContext?: { lastRun?: { status: string; stderr?: string; stdout?: string; failingTest?: string } }) =>
+  apiPost<{ reply: string; threadId: string }>("/api/ai/chat", { problemId, userCode: code, language, messages, threadId, editorContext }, signal, 120000);
 
 // ─── Chat History ─────────────────────────────────────────────────────────────
 export const listChatThreads = (problemId?: string) => {

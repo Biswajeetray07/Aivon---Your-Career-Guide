@@ -42,7 +42,8 @@ export const handler: any = async (req: any, { logger }: { logger: any }) => {
 
     const systemInstruction = `You are an expert DSA tutor. Your goal is to give a helpful hint that guides the student
 toward solving the problem themselves — do NOT give away the full solution.
-Be encouraging, concise, and pedagogically effective. Focus on the key insight or approach.`;
+Be encouraging, concise, and pedagogically effective. Focus on the key insight or approach.
+Do not overuse emojis or decorative icons. Be human, calm, and technical.`;
 
     const prompt = `Problem: ${problem.title} (${problem.difficulty})
 Tags: ${problem.tags.join(", ")}

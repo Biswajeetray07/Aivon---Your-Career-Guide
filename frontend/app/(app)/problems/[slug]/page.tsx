@@ -19,6 +19,7 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { StatusDot } from "@/components/ui/badge";
 import { HackerBackground } from "@/components/ui/hacker-background";
 import { Play, UploadCloud, Terminal as TerminalIcon, Sparkles, BookOpen, SearchCode, Bug } from "lucide-react";
+import { useEditorContext } from "@/stores/useEditorContext";
 
 const Editor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 
@@ -139,6 +140,9 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
   const chatEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Editor context store (for AI awareness)
+  const editorCtx = useEditorContext();
+
   // Auto-scroll chat to bottom
   useEffect(() => {
     if (descTab === "ai" && chatEndRef.current) {
@@ -194,6 +198,7 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
   useEffect(() => {
     getProblem(slug).then((p) => {
       setProblem(p);
+      editorCtx.setProblem(p.id, p.title, p.description || '');
     });
   }, [slug]);
 
@@ -201,6 +206,7 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
     if (!problem) return;
     const sc = problem.starterCode as Record<string, string>;
     setCode(sc?.[language] || `// Write your ${language} solution here\n`);
+    editorCtx.setCode(sc?.[language] || '', language);
     setResult(null);
   }, [language, problem]);
 
@@ -236,6 +242,15 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
     try {
       const runRes = await runCodeApi(problem.id, language, code);
       setResult(runRes);
+      // Update editor context with last run info
+      const runTestResults = runRes?.testResults;
+      const firstFail = runTestResults?.find((t: any) => !t.passed);
+      editorCtx.setLastRun({
+        status: runRes?.status || 'UNKNOWN',
+        stderr: firstFail?.stderr || undefined,
+        stdout: firstFail?.stdout || undefined,
+        failingTest: firstFail ? `Input: ${firstFail.input} | Expected: ${firstFail.expected} | Got: ${firstFail.actual}` : undefined,
+      });
     } catch {
       setResult({ status: "REQUEST_ERROR", runtime: null, memory: null, testResults: [], passedCases: 0, totalCases: 0 } as any);
     } finally {
@@ -350,7 +365,7 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
     abortControllerRef.current = new AbortController();
 
     try {
-      const data = await chatWithAI(problem.id, newMessages, code, language, abortControllerRef.current.signal);
+      const data = await chatWithAI(problem.id, newMessages, code, language, abortControllerRef.current.signal, undefined, { lastRun: editorCtx.lastRun || undefined });
       if (data && data.reply) {
         setChatHistory([...newMessages, { role: "assistant" as const, content: data.reply }]);
       } else {
@@ -381,7 +396,7 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
     abortControllerRef.current = new AbortController();
 
     try {
-      const data = await chatWithAI(problem.id, newMessages, code, language, abortControllerRef.current.signal);
+      const data = await chatWithAI(problem.id, newMessages, code, language, abortControllerRef.current.signal, undefined, { lastRun: editorCtx.lastRun || undefined });
       if (data && data.reply) {
         setChatHistory([...newMessages, { role: "assistant" as const, content: data.reply }]);
       } else {
@@ -674,7 +689,7 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
               height="100%"
               language={language === "cpp" ? "cpp" : language}
               value={code}
-              onChange={(v) => setCode(v || "")}
+              onChange={(v) => { setCode(v || ""); editorCtx.setCode(v || "", language); }}
               theme="vs-dark"
               options={{
                 fontSize: 14,

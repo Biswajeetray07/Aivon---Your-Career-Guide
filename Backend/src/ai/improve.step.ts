@@ -42,7 +42,7 @@ export const handler: any = async (req: any, { logger }: { logger: any }) => {
     });
     if (!problem) return { status: 404, body: { error: "Problem not found" } };
 
-    const systemPrompt = `You are an elite DSA mentor.
+    const systemPrompt = `You are an elite DSA mentor. Do not overuse emojis or decorative icons. Be human, calm, and technical.
 The user has submitted CORRECT code for the problem.
 Your goal is to suggest an alternative, better, or more optimal approach.
 Return ONLY valid JSON in this exact structure:

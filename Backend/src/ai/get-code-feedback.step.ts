@@ -43,7 +43,7 @@ export const handler: any = async (req: any, { logger }: { logger: any }) => {
     });
     if (!problem) return { status: 404, body: { error: "Problem not found" } };
 
-    const systemPrompt = `You are Aivon Performance Analyzer, a senior competitive programming expert.
+    const systemPrompt = `You are Aivon Performance Analyzer, a senior competitive programming expert. Do not overuse emojis or decorative icons. Be precise and technical.
 
 Your job is to evaluate the algorithmic efficiency of user code with high precision.
 

@@ -14,9 +14,17 @@ const messageSchema = z.object({
 const bodySchema = z.object({
   threadId: z.string().optional(),
   problemId: z.string().nullable().optional().default("general_chat"),
-  userCode: z.string().max(50000).optional(), // Protect against unbounded memory
+  userCode: z.string().max(50000).optional(),
   language: z.string().optional(),
-  messages: z.array(z.any()) // Use any for messages to avoid validation errors with frontend-only fields
+  messages: z.array(z.any()),
+  editorContext: z.object({
+    lastRun: z.object({
+      status: z.string(),
+      stderr: z.string().optional(),
+      stdout: z.string().optional(),
+      failingTest: z.string().optional(),
+    }).optional(),
+  }).optional(),
 });
 
 export const config: ApiRouteConfig = {
@@ -46,11 +54,22 @@ function classifyChatMode(msg: string): string {
   if (/^(hi|hello|hey|yo|hola|greetings)\b/i.test(lowercaseMsg)) return "greeting";
   if (/thanks?|thank you/i.test(lowercaseMsg)) return "gratitude";
   if (/full code|solution|give answer|code for this|write code/i.test(lowercaseMsg)) return "full_solution";
-  if (/error|bug|fix|failing|tle|runtime/i.test(lowercaseMsg)) return "debug";
-  if (/hint|guide|step|explain|intuition|logic|math/i.test(lowercaseMsg)) return "hint";
+  if (/error|bug|fix|failing|tle|runtime|crash/i.test(lowercaseMsg)) return "debug";
+  if (/explain|what does|how does|why does|meaning|concept/i.test(lowercaseMsg)) return "explain";
+  if (/hint|guide|step|intuition|logic|math|approach/i.test(lowercaseMsg)) return "hint";
 
   return "chat";
 }
+
+// Task 15: Universal AI style guardrail
+const AI_STYLE_GUARDRAIL = `
+IMPORTANT STYLE RULES:
+- Do NOT overuse emojis or decorative icons. Use them sparingly, if at all.
+- Be human, calm, technical when needed, conversational by default.
+- Do NOT use excessive formatting or bullet points for simple answers.
+- Prefer clear prose over heavy markdown structure for short replies.
+- When using code blocks, always specify the language.
+`;
 
 function buildSystemPrompt(mode: string): string {
   switch (mode) {
@@ -62,7 +81,7 @@ You are Aivon AI, a friendly, natural AI assistant.
 Speak conversationally like a human.
 Do NOT use rigid sections unless explicitly asked.
 Keep responses fluid and context-aware.
-`;
+${AI_STYLE_GUARDRAIL}`;
 
     case "problem_help":
     case "hint":
@@ -71,14 +90,14 @@ You are a coding mentor for an algorithmic problem.
 
 When the user asks for guidance, structure your response using:
 
-### 🧠 Insight
-### 🔧 Guidance
-### 💡 Next Step
+### Insight
+### Guidance
+### Next Step
 
 Do not reveal the full solution unless explicitly asked.
 Apply bold text for emphasis.
 Only respond using cleanly formatted Markdown.
-`;
+${AI_STYLE_GUARDRAIL}`;
 
     case "full_solution":
     case "solution":
@@ -89,7 +108,7 @@ CRITICAL MANDATE: You MUST REFUSE to provide the full copy-paste solution.
 Aivon is an educational platform. Instead, provide a very strong hint, explain the optimal algorithm, or provide pseudo-code.
 Do not write out the exact implementation.
 Only respond using cleanly formatted Markdown.
-`;
+${AI_STYLE_GUARDRAIL}`;
 
     case "debug":
       return `
@@ -98,16 +117,25 @@ Identify the root cause first, then fix.
 Be precise and structured.
 Apply bold text for emphasis.
 Only respond using cleanly formatted Markdown.
-`;
+${AI_STYLE_GUARDRAIL}`;
+
+    case "explain":
+      return `
+You are Aivon AI, an expert at explaining code concepts.
+Explain clearly and concisely. Use analogies when helpful.
+Avoid unnecessary complexity.
+Only respond using cleanly formatted Markdown.
+${AI_STYLE_GUARDRAIL}`;
 
     default:
-      return `You are Aivon AI, a helpful coding mentor.`;
+      return `You are Aivon AI, a helpful coding mentor.
+${AI_STYLE_GUARDRAIL}`;
   }
 }
 
 export const handler: any = async (req: any, { logger }: { logger: any }) => {
   try {
-    const { threadId, problemId, userCode, language, messages } = bodySchema.parse(req.body);
+    const { threadId, problemId, userCode, language, messages, editorContext } = bodySchema.parse(req.body);
 
     let problem: any = null;
     if (problemId && problemId !== "general_chat") {
@@ -165,8 +193,10 @@ export const handler: any = async (req: any, { logger }: { logger: any }) => {
         };
         contextObj.code = {
           latest_code: userCode || "None provided",
-          last_error: "",
-          language: language || "unknown"
+          last_error: editorContext?.lastRun?.stderr || "",
+          language: language || "unknown",
+          last_run_status: editorContext?.lastRun?.status || "",
+          failing_test: editorContext?.lastRun?.failingTest || "",
         };
       } else if (problem) {
         contextObj.problem = { title: problem.title };
