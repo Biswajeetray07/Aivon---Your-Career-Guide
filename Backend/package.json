@@ -4,8 +4,8 @@
   "type": "module",
   "scripts": {
     "postinstall": "motia install && node scripts/patch-motia-redis.js",
-    "dev": "concurrently \"motia dev --port 3000\" \"npx tsx src/services/socket-server.ts\"",
-    "start": "motia start -p ${PORT:-3000}",
+    "dev": "concurrently \"motia dev --port ${PORT:-3001}\" \"npx tsx src/services/socket-server.ts\"",
+    "start": "motia start -p ${PORT:-3001}",
     "generate-types": "motia generate-types",
     "build": "npx prisma generate && motia build",
     "clean": "rm -rf dist node_modules python_modules .motia .mermaid",
