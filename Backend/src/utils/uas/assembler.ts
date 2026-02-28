@@ -1,108 +1,79 @@
 /**
- * UAS Assembler — Builds the final executable code file
+ * UAS Assembler — Builds the final executable code file (Python + JavaScript)
  *
  * Dynamically assembles:
- *   [auto imports]
- *   [helper classes]
- *   [adapter functions]
- *   [normalizer functions]
- *   [user code]
- *   [test harness with per-arg type conversion]
- *
- * This replaces the old static template file system for problems with inputSpec.
+ *   [auto imports] → [helper classes] → [adapters] → [normalizers] → [user code] → [harness]
  */
 
 import type { ProblemSpec, DSAType } from "./types";
 import { resolveAdapters } from "./resolver";
-import type { AdapterBundle } from "./types";
 import {
   PYTHON_AUTO_IMPORTS,
   PYTHON_HELPERS,
   PYTHON_ADAPTERS,
   PYTHON_NORMALIZERS,
 } from "./helpers/python";
+import {
+  JS_AUTO_IMPORTS,
+  JS_HELPERS,
+  JS_ADAPTERS,
+  JS_NORMALIZERS,
+} from "./helpers/javascript";
 
-// Python conversion call per DSA type — used directly in harness generation
-// This avoids the old bug where builder.replace(name, ...) would corrupt
-// adapter function names when variable names were substrings (e.g., "l" in "linked_list")
-const HARNESS_CONVERSION: Record<DSAType, (expr: string) => string> = {
-  array:              (v) => v,
-  string:             (v) => v,
-  number:             (v) => v,
-  boolean:            (v) => `bool(${v})`,
-  matrix:             (v) => v,
-  linked_list:        (v) => `__uas_build_linked_list(${v})`,
+// ── Conversion maps (per-language, per-type) ────────────────────────────────
+
+const CONV_PY: Record<DSAType, (v: string) => string> = {
+  array: (v) => v, string: (v) => v, number: (v) => v,
+  boolean: (v) => `bool(${v})`, matrix: (v) => v,
+  linked_list: (v) => `__uas_build_linked_list(${v})`,
   doubly_linked_list: (v) => `__uas_build_doubly_linked_list(${v})`,
-  binary_tree:        (v) => `__uas_build_tree(${v})`,
-  bst:                (v) => `__uas_build_tree(${v})`,
-  nary_tree:          (v) => `__uas_build_nary_tree(${v})`,
-  graph_adj_list:     (v) => `__uas_build_graph_adj(${v})`,
-  graph_edge_list:    (v) => `__uas_build_graph_edges(${v})`,
-  graph_weighted:     (v) => `__uas_build_graph_weighted(${v})`,
-  intervals:          (v) => v,
-  heap:               (v) => `list(${v})`,
-  any:                (v) => v,
+  binary_tree: (v) => `__uas_build_tree(${v})`,
+  bst: (v) => `__uas_build_tree(${v})`,
+  nary_tree: (v) => `__uas_build_nary_tree(${v})`,
+  graph_adj_list: (v) => `__uas_build_graph_adj(${v})`,
+  graph_edge_list: (v) => `__uas_build_graph_edges(${v})`,
+  graph_weighted: (v) => `__uas_build_graph_weighted(${v})`,
+  intervals: (v) => v, heap: (v) => `list(${v})`, any: (v) => v,
 };
 
-/**
- * Assemble a complete, executable Python file for a problem.
- *
- * @param userCode    The Solution class code from the user
- * @param spec        The full ProblemSpec (inputSpec, outputSpec, functionName)
- * @param language    Currently only "python" is supported via UAS
- * @returns           A fully assembled Python file ready for Judge0
- */
-export function assembleCode(
-  userCode: string,
-  spec: ProblemSpec,
-  language: string
-): string {
-  if (language !== "python" && language !== "python3") {
-    return userCode;
-  }
+const CONV_JS: Record<DSAType, (v: string) => string> = {
+  array: (v) => v, string: (v) => v, number: (v) => v,
+  boolean: (v) => `Boolean(${v})`, matrix: (v) => v,
+  linked_list: (v) => `__uas_build_linked_list(${v})`,
+  doubly_linked_list: (v) => `__uas_build_doubly_linked_list(${v})`,
+  binary_tree: (v) => `__uas_build_tree(${v})`,
+  bst: (v) => `__uas_build_tree(${v})`,
+  nary_tree: (v) => `__uas_build_nary_tree(${v})`,
+  graph_adj_list: (v) => `__uas_build_graph_adj(${v})`,
+  graph_edge_list: (v) => `__uas_build_graph_edges(${v})`,
+  graph_weighted: (v) => `__uas_build_graph_weighted(${v})`,
+  intervals: (v) => v, heap: (v) => `[...${v}]`, any: (v) => v,
+};
 
+// ── Public API ──────────────────────────────────────────────────────────────
+
+export function assembleCode(userCode: string, spec: ProblemSpec, language: string): string {
+  const lang = language.toLowerCase();
+  if (lang === "python" || lang === "python3") return assemblePython(userCode, spec);
+  if (lang === "javascript" || lang === "typescript") return assembleJS(userCode, spec);
+  return userCode;
+}
+
+// ── Python Assembler ────────────────────────────────────────────────────────
+
+function assemblePython(userCode: string, spec: ProblemSpec): string {
   const bundle = resolveAdapters(spec);
-
-  const imports = PYTHON_AUTO_IMPORTS;
-
   const helpers = bundle.requiredHelpers
     .map((h: string) => PYTHON_HELPERS[h as keyof typeof PYTHON_HELPERS])
     .join("\n");
 
-  const adapters = PYTHON_ADAPTERS;
-  const normalizers = PYTHON_NORMALIZERS;
-
-  const cleanUserCode = userCode.trim();
-
-  const harness = buildHarness(spec, bundle);
-
-  return [
-    imports,
-    helpers,
-    adapters,
-    normalizers,
-    cleanUserCode,
-    harness,
-  ].join("\n");
-}
-
-// ─── Private: Harness Generator ───────────────────────────────────────────────
-
-function buildHarness(spec: ProblemSpec, bundle: ReturnType<typeof resolveAdapters>): string {
-  const { argNames, outputNormalizer } = bundle;
-  const fnName = spec.functionName;
-
-  // Build per-argument conversion lines using HARNESS_CONVERSION directly
-  // with lines[idx] as the expression — no string replacement needed
   const argLines = spec.inputSpec.map((field, idx) => {
-    const converterFn = HARNESS_CONVERSION[field.type] ?? ((v: string) => v);
-    const expr = converterFn(`lines[${idx}]`);
-    return `        ${field.name} = ${expr}`;
+    const conv = CONV_PY[field.type] ?? ((v: string) => v);
+    return `        ${field.name} = ${conv(`lines[${idx}]`)}`;
   });
+  const callArgs = bundle.argNames.join(", ");
 
-  const callArgs = argNames.join(", ");
-
-  return `
+  const harness = `
 if __name__ == '__main__':
     __raw = sys.stdin.read().strip()
     __raw_lines = [l.strip() for l in __raw.splitlines() if l.strip()]
@@ -115,10 +86,58 @@ if __name__ == '__main__':
     try:
 ${argLines.join("\n")}
         __obj = Solution()
-        result = __obj.${fnName}(${callArgs})
-        print(${outputNormalizer})
+        result = __obj.${spec.functionName}(${callArgs})
+        print(${bundle.outputNormalizer})
     except Exception:
         sys.stderr.write(traceback.format_exc())
         sys.exit(1)
 `;
+
+  return [PYTHON_AUTO_IMPORTS, helpers, PYTHON_ADAPTERS, PYTHON_NORMALIZERS, userCode.trim(), harness].join("\n");
+}
+
+// ── JavaScript Assembler ────────────────────────────────────────────────────
+
+function assembleJS(userCode: string, spec: ProblemSpec): string {
+  const bundle = resolveAdapters(spec);
+  const helpers = bundle.requiredHelpers
+    .map((h: string) => JS_HELPERS[h as keyof typeof JS_HELPERS] || "")
+    .join("\n");
+
+  const argLines = spec.inputSpec.map((field, idx) => {
+    const conv = CONV_JS[field.type] ?? ((v: string) => v);
+    return `  const ${field.name} = ${conv(`args[${idx}]`)};`;
+  });
+  const callArgs = bundle.argNames.join(", ");
+
+  // JS output normalizer — determine from outputSpec type
+  const outputExpr = getJSOutputNormalizer(spec.outputSpec.type);
+
+  const harness = `
+(function __main() {
+  const __lines = require('fs').readFileSync(0, 'utf-8').trim().split('\\n').filter(Boolean);
+  const args = __lines.map(line => { try { return JSON.parse(line); } catch(e) { return line; } });
+  try {
+${argLines.join("\n")}
+    const __obj = new Solution();
+    const result = __obj.${spec.functionName}(${callArgs});
+    process.stdout.write(${outputExpr} + '\\n');
+  } catch(e) {
+    process.stderr.write((e && e.stack ? e.stack : String(e)) + '\\n');
+    process.exit(1);
+  }
+})();
+`;
+
+  return [JS_AUTO_IMPORTS, helpers, JS_ADAPTERS, JS_NORMALIZERS, userCode.trim(), harness].join("\n");
+}
+
+function getJSOutputNormalizer(type: DSAType): string {
+  switch (type) {
+    case "linked_list": return "__uas_format(result)";
+    case "binary_tree":
+    case "bst": return "__uas_format(result)";
+    case "nary_tree": return "__uas_format(result)";
+    default: return "__uas_format(result)";
+  }
 }

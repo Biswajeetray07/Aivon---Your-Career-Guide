@@ -1,18 +1,6 @@
-/**
- * code-runner.ts — Problem-Aware LeetCode-style Judge Templates
- *
- * Templates are injected inline: user code replaces ###USERCODE###,
- * and the entry point function name replaces ###ENTRYPOINT###.
- *
- * stdin protocol: one JSON-encoded argument per line.
- * e.g.  [2,7,11,15]\n9\n
- *
- * Supported problem types:
- *   array | string | matrix | binary_tree | linked_list | graph
- */
-
 import { getTemplate, normLang } from "./templates";
 import { assembleCode } from "./uas/assembler";
+import { validateSignature } from "./uas/signature-validator";
 import type { ProblemSpec, InputField, OutputSpec } from "./uas/types";
 
 // ── Template injection ───────────────────────────────────────────────────────
@@ -35,12 +23,25 @@ export function wrapCode(
     return userCode;
   }
 
-  // ── UAS Path: per-argument type spec is available ─────────────────────────
-  if (inputSpec && inputSpec.length > 0 && (lang === "python")) {
+  // ── Signature Validation (pre-execution guard) ────────────────────────────
+  if (inputSpec && inputSpec.length > 0) {
+    const validation = validateSignature(userCode, ep, inputSpec, lang);
+    if (!validation.valid) {
+      // Return code that will immediately print the error
+      if (lang === "python") {
+        return `import sys\nsys.stderr.write(${JSON.stringify(validation.error)})\nsys.exit(1)`;
+      } else {
+        return `process.stderr.write(${JSON.stringify(validation.error)}); process.exit(1);`;
+      }
+    }
+  }
+
+  // ── UAS Path: per-argument type spec is available (Python + JS) ───────────
+  if (inputSpec && inputSpec.length > 0) {
     const safeOutputSpec: OutputSpec = outputSpec ?? { type: "any" };
     const spec: ProblemSpec = {
       problemId: "runtime",
-      language: "python",
+      language: lang,
       functionName: ep,
       inputSpec,
       outputSpec: safeOutputSpec,
@@ -55,6 +56,7 @@ export function wrapCode(
     .replace("###USERCODE###", userCode)
     .replace(/###ENTRYPOINT###/g, ep);
 }
+
 
 // ── Auto problem type detection from input ────────────────────────────────────
 
