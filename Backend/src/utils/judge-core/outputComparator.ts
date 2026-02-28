@@ -49,18 +49,26 @@ function compareExact(actual: string, expected: string): boolean {
   try {
     const pa = JSON.parse(a);
     const pe = JSON.parse(e);
-    if (JSON.stringify(pa) === JSON.stringify(pe)) return true;
-    if (typeof pa === "number" && typeof pe === "number") return Math.abs(pa - pe) < 1e-5;
-    if (typeof pa === "boolean" && typeof pe === "boolean") return pa === pe;
-    
-    if (Array.isArray(pa) && Array.isArray(pe) && pa.length === pe.length) {
-      if (pa.every((v, i) => typeof v === "number" && typeof pe[i] === "number")) {
-        return pa.every((v, i) => Math.abs(v - pe[i]) < 1e-5);
-      }
-    }
+    if (deepCompare(pa, pe)) return true;
   } catch { /* not JSON */ }
   
   return a.replace(/\s+/g, "") === e.replace(/\s+/g, "");
+}
+
+function deepCompare(a: any, b: any, eps = 1e-4): boolean {
+  if (a === b) return true;
+  if (typeof a === "number" && typeof b === "number") return Math.abs(a - b) <= eps;
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    return a.every((v, i) => deepCompare(v, b[i], eps));
+  }
+  if (typeof a === "object" && a !== null && typeof b === "object" && b !== null) {
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+    if (keysA.length !== keysB.length) return false;
+    return keysA.every(k => deepCompare(a[k], b[k], eps));
+  }
+  return false;
 }
 
 function compareUnordered(actual: string, expected: string): boolean {
@@ -82,10 +90,10 @@ function compareUnordered(actual: string, expected: string): boolean {
   return JSON.stringify(al) === JSON.stringify(el);
 }
 
-function compareFloat(actual: string, expected: string, eps = 1e-5): boolean {
+function compareFloat(actual: string, expected: string, eps = 1e-4): boolean {
   const an = Number(actual.trim());
   const en = Number(expected.trim());
-  if (Number.isFinite(an) && Number.isFinite(en)) return Math.abs(an - en) < eps;
+  if (Number.isFinite(an) && Number.isFinite(en)) return Math.abs(an - en) <= eps;
   return compareExact(actual, expected);
 }
 

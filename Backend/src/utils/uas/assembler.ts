@@ -12,7 +12,7 @@
  * This replaces the old static template file system for problems with inputSpec.
  */
 
-import type { ProblemSpec } from "./types";
+import type { ProblemSpec, DSAType } from "./types";
 import { resolveAdapters } from "./resolver";
 import type { AdapterBundle } from "./types";
 import {
@@ -21,6 +21,28 @@ import {
   PYTHON_ADAPTERS,
   PYTHON_NORMALIZERS,
 } from "./helpers/python";
+
+// Python conversion call per DSA type — used directly in harness generation
+// This avoids the old bug where builder.replace(name, ...) would corrupt
+// adapter function names when variable names were substrings (e.g., "l" in "linked_list")
+const HARNESS_CONVERSION: Record<DSAType, (expr: string) => string> = {
+  array:              (v) => v,
+  string:             (v) => v,
+  number:             (v) => v,
+  boolean:            (v) => `bool(${v})`,
+  matrix:             (v) => v,
+  linked_list:        (v) => `__uas_build_linked_list(${v})`,
+  doubly_linked_list: (v) => `__uas_build_doubly_linked_list(${v})`,
+  binary_tree:        (v) => `__uas_build_tree(${v})`,
+  bst:                (v) => `__uas_build_tree(${v})`,
+  nary_tree:          (v) => `__uas_build_nary_tree(${v})`,
+  graph_adj_list:     (v) => `__uas_build_graph_adj(${v})`,
+  graph_edge_list:    (v) => `__uas_build_graph_edges(${v})`,
+  graph_weighted:     (v) => `__uas_build_graph_weighted(${v})`,
+  intervals:          (v) => v,
+  heap:               (v) => `list(${v})`,
+  any:                (v) => v,
+};
 
 /**
  * Assemble a complete, executable Python file for a problem.
@@ -36,50 +58,24 @@ export function assembleCode(
   language: string
 ): string {
   if (language !== "python" && language !== "python3") {
-    // Non-Python falls back to the legacy template system
     return userCode;
   }
 
   const bundle = resolveAdapters(spec);
 
-  // ── 1. Auto imports ─────────────────────────────────────────────────────────
   const imports = PYTHON_AUTO_IMPORTS;
 
-  // ── 2. Helper classes ────────────────────────────────────────────────────────
   const helpers = bundle.requiredHelpers
     .map((h: string) => PYTHON_HELPERS[h as keyof typeof PYTHON_HELPERS])
     .join("\n");
 
-  // ── 3. Adapter + normalizer utility functions ────────────────────────────────
-  // Only inject adapters that are actually needed
-  const needsListAdapter   = bundle.requiredHelpers.includes("ListNode") || 
-                             bundle.requiredHelpers.includes("DoublyListNode");
-  const needsTreeAdapter   = bundle.requiredHelpers.includes("TreeNode");
-  const needsNaryAdapter   = bundle.requiredHelpers.includes("NaryNode");
-  const needsGraphAdapter  = bundle.argTypes.some((t: string) => 
-    t === "graph_adj_list" || t === "graph_edge_list" || t === "graph_weighted"
-  );
-
-  // We inject ALL adapters as a single block (cheap, < 1KB)
-  // This avoids complex conditional injection
   const adapters = PYTHON_ADAPTERS;
   const normalizers = PYTHON_NORMALIZERS;
 
-  // ── 4. User code ─────────────────────────────────────────────────────────────
   const cleanUserCode = userCode.trim();
-
-  // ── 5. Test harness ────────────────────────────────────────────────────────
-  // Generates:
-  //   raw = sys.stdin.read()
-  //   lines = [json.loads(l) for l in raw.splitlines() if l.strip()]
-  //   l1 = __uas_build_linked_list(lines[0])
-  //   target = lines[1]
-  //   result = Solution().addTwoNumbers(l1, target)
-  //   print(__uas_format(result, "linked_list"))
 
   const harness = buildHarness(spec, bundle);
 
-  // ── Assemble final file ───────────────────────────────────────────────────
   return [
     imports,
     helpers,
@@ -93,21 +89,15 @@ export function assembleCode(
 // ─── Private: Harness Generator ───────────────────────────────────────────────
 
 function buildHarness(spec: ProblemSpec, bundle: ReturnType<typeof resolveAdapters>): string {
-  const { inputBuilders, argNames, outputNormalizer } = bundle;
+  const { argNames, outputNormalizer } = bundle;
   const fnName = spec.functionName;
 
-  // Build the per-line decode + convert section
-  const argLines = argNames.map((name: string, idx: number) => {
-    const builder = inputBuilders[idx];
-    // builder is either the raw name (pass-through) or a call expression
-    const isPassThrough = builder === name;
-    if (isPassThrough) {
-      return `    ${name} = lines[${idx}]`;
-    }
-    // builder contains the conversion call, e.g. __uas_build_linked_list(lines[0])
-    // We need to substitute the variable name with lines[idx]
-    const call = builder.replace(name, `lines[${idx}]`);
-    return `    ${name} = ${call}`;
+  // Build per-argument conversion lines using HARNESS_CONVERSION directly
+  // with lines[idx] as the expression — no string replacement needed
+  const argLines = spec.inputSpec.map((field, idx) => {
+    const converterFn = HARNESS_CONVERSION[field.type] ?? ((v: string) => v);
+    const expr = converterFn(`lines[${idx}]`);
+    return `        ${field.name} = ${expr}`;
   });
 
   const callArgs = argNames.join(", ");
