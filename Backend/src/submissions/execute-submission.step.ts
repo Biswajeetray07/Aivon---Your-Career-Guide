@@ -112,6 +112,14 @@ export const handler: any = async (
     return;
   }
 
+  // Fetch UAS inputSpec/outputSpec — now available in Prisma types after prisma generate
+  const uasProblemSpec: any = await prisma.problem.findUnique({
+    where: { id: submission?.problem.id ?? "" },
+    select: { inputSpec: true, outputSpec: true }
+  }).catch(() => null);
+  const uasInputSpec: any = uasProblemSpec?.inputSpec ?? null;
+  const uasOutputSpec: any = uasProblemSpec?.outputSpec ?? null;
+
   const judgeMode = ((submission.problem as any).judgeMode ?? "exact") as JudgeMode;
   const spjCode = (submission.problem as any).spjCode as string | null;
 
@@ -164,8 +172,12 @@ export const handler: any = async (
       submission.code,
       submission.language,
       submission.problem.entryPoint,
-      effectiveProblemType
+      effectiveProblemType,
+      uasInputSpec,
+      uasOutputSpec,
     );
+
+    logger.info("Code wrapped", { submissionId, uasEnabled: !!(uasInputSpec && uasInputSpec.length > 0) });
 
     type TestResult = {
       input: string; expected: string; actual: string | null; stdout?: string | null;
@@ -405,7 +417,7 @@ export const handler: any = async (
         status: mapToPrismaStatus(overallStatus),
         runtime: totalRuntime > 0 ? totalRuntime : null,
         memory: maxMemory > 0 ? maxMemory : null,
-        details: finalDetails,
+        details: JSON.parse(JSON.stringify(finalDetails)),
       },
       include: {
         problem: { select: { id: true, title: true, slug: true } },

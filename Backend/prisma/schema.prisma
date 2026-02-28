@@ -68,7 +68,7 @@ model Problem {
   description  String            @db.Text
   starterCode  Json // { javascript: "...", python: "...", java: "..." }
   entryPoint   String
-  problemType  String            @default("array") // array | string | binary_tree | linked_list | matrix | graph
+  problemType  String            @default("array") // Legacy: array | string | binary_tree | linked_list | matrix | graph
   judgeMode    String            @default("exact") // exact | unordered | float | multiline | spj
   spjCode      String?           @db.Text // Python checker code for SPJ judge mode
   hasOracle    Boolean           @default(false) // Phase D: Feature flag for Universal Differential Oracle testing
@@ -77,6 +77,9 @@ model Problem {
   examples     Json? // [{ input: "...", output: "...", explanation: "..." }]
   constraints  String?           @db.Text
   isActive     Boolean           @default(true)
+  // UAS — Universal Adapter System (per-argument type spec)
+  inputSpec    Json? // InputField[]: [{name:"l1",type:"linked_list"},{name:"target",type:"number"}]
+  outputSpec   Json? // OutputSpec: {type:"linked_list"} or {type:"array"}
   // Private AI context — never exposed via API, used only for AI hints/explanation
   aiContext    Json? // { completion: "...", prompt: "...", query: "...", response: "..." }
   testCases    TestCase[]

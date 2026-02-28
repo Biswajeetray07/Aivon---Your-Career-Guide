@@ -12,6 +12,8 @@
  */
 
 import { getTemplate, normLang } from "./templates";
+import { assembleCode } from "./uas/assembler";
+import type { ProblemSpec, InputField, OutputSpec } from "./uas/types";
 
 // ── Template injection ───────────────────────────────────────────────────────
 
@@ -19,7 +21,9 @@ export function wrapCode(
   userCode: string,
   language: string,
   entryPoint: string,
-  problemType: string = "array"
+  problemType: string = "array",
+  inputSpec?: InputField[] | null,
+  outputSpec?: OutputSpec | null,
 ): string {
   let ep = entryPoint.trim();
   if (ep.startsWith("Solution().")) ep = ep.replace("Solution().", "");
@@ -31,6 +35,20 @@ export function wrapCode(
     return userCode;
   }
 
+  // ── UAS Path: per-argument type spec is available ─────────────────────────
+  if (inputSpec && inputSpec.length > 0 && (lang === "python")) {
+    const safeOutputSpec: OutputSpec = outputSpec ?? { type: "any" };
+    const spec: ProblemSpec = {
+      problemId: "runtime",
+      language: "python",
+      functionName: ep,
+      inputSpec,
+      outputSpec: safeOutputSpec,
+    };
+    return assembleCode(userCode, spec, lang);
+  }
+
+  // ── Legacy Path: use static template files ────────────────────────────────
   const template = getTemplate(lang, problemType);
 
   return template

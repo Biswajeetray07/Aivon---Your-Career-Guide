@@ -83,6 +83,7 @@ export const handler: any = async (req: any, { logger }: any) => {
 
     logger.info("Run code request", { problemId, language });
 
+    // Fetch the problem including UAS adapter fields
     const problem = await prisma.problem.findFirst({
       where: { id: problemId },
       select: {
@@ -91,6 +92,8 @@ export const handler: any = async (req: any, { logger }: any) => {
         problemType: true,
         judgeMode: true,
         spjCode: true,
+        inputSpec: true,
+        outputSpec: true,
         testCases: {
           where: { isHidden: false },
           orderBy: { order: "asc" },
@@ -100,18 +103,32 @@ export const handler: any = async (req: any, { logger }: any) => {
       },
     });
 
+    const inputSpec = (problem as any)?.inputSpec ?? null;
+    const outputSpec = (problem as any)?.outputSpec ?? null;
+
     if (!problem) return { status: 404, body: { error: "Problem not found" } };
-    if (problem.testCases.length === 0) return { status: 400, body: { error: "No visible test cases" } };
+    if (!problem.testCases || problem.testCases.length === 0) return { status: 400, body: { error: "No visible test cases" } };
 
     const judgeMode = (problem.judgeMode ?? "exact") as JudgeMode;
 
-    const baseProblemType = (problem as any).problemType ?? "array";
+    const baseProblemType = problem.problemType ?? "array";
     const effectiveProblemType = problem.testCases.length > 0
       ? detectProblemTypeFromInput(problem.testCases[0].input, baseProblemType)
       : baseProblemType;
 
-    logger.info("Wrapping code", { effectiveProblemType, entryPoint: problem.entryPoint });
-    const wrappedCode = wrapCode(code, language, problem.entryPoint, effectiveProblemType);
+    logger.info("Wrapping code", { 
+      effectiveProblemType, 
+      entryPoint: problem.entryPoint,
+      uasEnabled: !!(inputSpec && (inputSpec as any[]).length > 0)
+    });
+    const wrappedCode = wrapCode(
+      code,
+      language,
+      problem.entryPoint,
+      effectiveProblemType,
+      inputSpec as any[] | null,
+      outputSpec as any,
+    );
 
     type TestResult = {
       input: string; expected: string; actual: string | null; stdout?: string | null;
