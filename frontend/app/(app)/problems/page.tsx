@@ -108,35 +108,20 @@ export default function ProblemsPage() {
   const [userSolved, setUserSolved] = useState(0);
   const [userRating, setUserRating] = useState((session?.user as any)?.rating || 1200);
 
-  // ── SWR Infinite Scroll Hook ────────────────────────────────────────────────
+  const [page, setPage] = useState(1);
+
+  // ── SWR Data Hook ──────────────────────────────────────────────────────────
   const filters: ProblemsFilters = {
+    page,
     difficulty: difficulty || undefined,
     tags: tag || undefined,
     search: debouncedSearch || undefined,
     limit,
   };
 
-  const { items: problems, total, isLoading, isLoadingMore, isError, hasMore, loadMore, reset } = useProblems(filters);
+  const { items: problems, total, isLoading, isError, hasMore, mutate } = useProblems(filters);
 
-  // ── IntersectionObserver Sentinel ───────────────────────────────────────────
-  const sentinelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          loadMore();
-        }
-      },
-      { rootMargin: "300px", threshold: 0 }
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [loadMore]);
+  // Removed IntersectionObserver — User requested reverting to paginated UI
 
   // Real-time: listen for global solve events
   const { listen } = useLiveSocket(["marketing_stats"]);
@@ -169,20 +154,13 @@ export default function ProblemsPage() {
     setSearch("");
     setDebouncedSearch("");
     setIsFilterOpen(false);
-    reset();
-  }, [reset]);
+    setPage(1);
+    mutate();
+  }, [mutate]);
 
-  // Debounce search input
+  // Reset to page 1 when filters change
   useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearch(search);
-    }, 500);
-    return () => clearTimeout(handler);
-  }, [search]);
-
-  // Reset infinite scroll when filters change
-  useEffect(() => {
-    reset();
+    setPage(1);
   }, [difficulty, tag, debouncedSearch, limit]);
 
   // Fetch user stats once
@@ -573,28 +551,28 @@ export default function ProblemsPage() {
                 <ProblemCard key={problem.id} problem={problem} index={i} />
                ))}
 
-             {/* ── IntersectionObserver Sentinel ── */}
-             {hasMore && !isLoading && (
-               <div ref={sentinelRef} className="w-full py-8 flex justify-center">
-                 {isLoadingMore ? (
-                   <div className="flex items-center gap-3">
-                     <Loader2 className="w-5 h-5 text-[#00C2FF] animate-spin" />
-                     <span className="text-[#00C2FF] font-geist-mono text-[11px] uppercase tracking-[0.2em] animate-pulse">
-                       Loading next data block...
-                     </span>
-                   </div>
-                 ) : (
-                   <div className="h-1" /> 
-                 )}
-               </div>
-             )}
-
-             {/* ── End of Data Indicator ── */}
-             {!hasMore && problems.length > 0 && (
-               <div className="w-full py-6 flex justify-center">
-                 <span className="text-white/20 font-geist-mono text-[10px] uppercase tracking-[0.2em] border border-white/5 px-4 py-2 rounded-full">
-                   [ END_OF_DATA_STREAM ]
+             {/* ── Classic Pagination Controls ── */}
+             {problems.length > 0 && (
+               <div className="flex justify-center items-center gap-6 mt-8 mb-4 relative z-10">
+                 <button
+                   onClick={() => setPage((p) => Math.max(1, p - 1))}
+                   disabled={page === 1}
+                   className="px-6 py-2.5 rounded-lg border border-white/10 bg-[#05070A]/80 text-[#00C2FF] font-geist-mono text-[11px] uppercase tracking-[0.2em] font-bold hover:bg-[#00C2FF]/10 hover:border-[#00C2FF]/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
+                 >
+                   [ PREV_BLOCK ]
+                 </button>
+                 
+                 <span className="text-white/40 font-geist-mono text-[10px] tracking-[0.2em]">
+                   BLOCK {page}
                  </span>
+
+                 <button
+                   onClick={() => setPage((p) => p + 1)}
+                   disabled={!hasMore}
+                   className="px-6 py-2.5 rounded-lg border border-white/10 bg-[#05070A]/80 text-[#00E5B0] font-geist-mono text-[11px] uppercase tracking-[0.2em] font-bold hover:bg-[#00E5B0]/10 hover:border-[#00E5B0]/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
+                 >
+                   [ NEXT_BLOCK ]
+                 </button>
                </div>
              )}
 
@@ -602,7 +580,7 @@ export default function ProblemsPage() {
              {isError && (
                <div className="w-full py-6 flex justify-center">
                  <button 
-                   onClick={() => reset()}
+                   onClick={() => mutate()}
                    className="text-[#FF5F56] font-geist-mono text-[11px] uppercase tracking-[0.2em] border border-[#FF5F56]/30 px-6 py-3 rounded-xl hover:bg-[#FF5F56]/10 transition-all"
                  >
                    [ RETRY_DATA_FETCH ]
