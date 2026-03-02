@@ -48,10 +48,14 @@ function attachSocketIo(app: Express) {
     }
 
     // 🚀 Slim Payload before broadcasting (Optimization 9)
+    // We ONLY slim down intermediate RUNNING/PENDING events. 
+    // The UI TestExplorer strictly requires the full `details` block on DONE to render the execution terminal.
     let slimmedPayload = targetPayload;
+    
     if (targetPayload && typeof targetPayload === 'object' && targetPayload.submission) {
-       // Slim down massive test results array if it exists inside submission events
        const sub = targetPayload.submission;
+       const isFinalState = targetPayload.status === 'DONE' || sub.status === 'ERROR' || sub.status === 'ACCEPTED' || sub.status === 'WRONG_ANSWER' || sub.status === 'RUNTIME_ERROR' || sub.status === 'TIME_LIMIT_EXCEEDED' || sub.status === 'COMPILATION_ERROR';
+
        slimmedPayload = {
          ...targetPayload,
          submission: {
@@ -59,12 +63,13 @@ function attachSocketIo(app: Express) {
            status: sub.status,
            runtime: sub.runtime,
            memory: sub.memory,
-           details: sub.details ? {
-              passedCases: sub.details.passedCases || sub.details.passedCount,
-              totalCases: sub.details.totalCases || sub.details.totalCount,
-              // Drop the full testResults array from the websocket stream to save bandwidth
-              hasDetails: true
-           } : null
+           details: (targetPayload.status === 'RUNNING' || !isFinalState) 
+             ? (sub.details ? {
+                passedCases: sub.details.passedCases || sub.details.passedCount,
+                totalCases: sub.details.totalCases || sub.details.totalCount,
+                hasDetails: true
+               } : null)
+             : sub.details
          }
        };
     }
