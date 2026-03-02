@@ -1,14 +1,15 @@
+import { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
 declare global {
   // eslint-disable-next-line no-var
   var _prisma: PrismaClient | undefined;
+  var _pool: Pool | undefined;
 }
 
 /**
  * Auto-repair DATABASE_URL if password contains unencoded '@'.
- * e.g. '...Bisu@@aws...' → '...Bisu%40@aws...'
- * Native Prisma engine is sensitive to unencoded '@' characters.
  */
 function fixDatabaseUrl(url: string | undefined): string | undefined {
   if (!url) return url;
@@ -32,17 +33,13 @@ function fixDatabaseUrl(url: string | undefined): string | undefined {
 }
 
 /**
- * Appends native PgBouncer connection tuning parameters to the URL.
- * Required to prevent connection drops in long-running Node.js processes.
+ * Appends pg native keepalive parameters to URL to prevent Supabase connection drops.
  */
 function applyConnectionPoolTuning(url: string | undefined): string | undefined {
   if (!url) return url;
   let tunedUrl = url;
-  if (!tunedUrl.includes("connection_limit=")) {
-    tunedUrl += tunedUrl.includes("?") ? "&connection_limit=10" : "?connection_limit=10";
-  }
-  if (!tunedUrl.includes("pool_timeout=")) {
-    tunedUrl += "&pool_timeout=15";
+  if (!tunedUrl.includes("keepalives_idle=")) {
+    tunedUrl += tunedUrl.includes("?") ? "&keepalives_idle=0" : "?keepalives_idle=0";
   }
   return tunedUrl;
 }
@@ -55,27 +52,47 @@ function getPrisma(): PrismaClient {
   const rawUrl = fixDatabaseUrl(process.env.DATABASE_URL);
   const tunedUrl = applyConnectionPoolTuning(rawUrl);
 
-  if (tunedUrl) process.env.DATABASE_URL = tunedUrl;
+  if (!global._pool) {
+    // We MUST use the adapter-pg for Motia edge-bundler compatibility.
+    // To prevent the "Connection terminated due to connection timeout" error
+    // with Supabase PgBouncer, we configure highly resilient pool settings.
+    global._pool = new Pool({
+      connectionString: tunedUrl,
+      ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+      max: 15, // Handle burst traffic
+      idleTimeoutMillis: 15000, // Close idle connections BEFORE Supabase does (~2 mins)
+      connectionTimeoutMillis: 20000, // Give more time for AWS ap-south-1 TLS handshakes
+      allowExitOnIdle: true, // Don't hang the Node event loop
+    });
 
-  // Use the native Rust Query Engine. It handles PgBouncer pooling gracefully.
+    global._pool.on("error", (err) => {
+      // Don't crash the server on idle client drops, just log
+      console.error("🔥 [Prisma Pool] Unexpected error on idle client:", err.message);
+    });
+
+    // Lazy One-time Connectivity Telemetry
+    if (process.env.NODE_ENV !== "test") {
+      console.log("🐘 [Prisma] Lazy verifying PgBouncer database connectivity via Edge Adapter...");
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Database connection check timed out (8s)")), 8000)
+      );
+
+      Promise.race([global._pool.query("SELECT 1"), timeoutPromise])
+        .then(() => console.log("🐘 [Prisma] Database connection verified successfully."))
+        .catch((err: any) => {
+          console.error("❌ [Prisma] Database connection check failed!");
+          console.error("Reason:", err.message);
+        });
+    }
+  }
+
+  const pool = global._pool;
+  const adapter = new PrismaPg(pool);
+
   prismaInstance = global._prisma ?? new PrismaClient({
+    adapter,
     log: ["error", "warn"],
   });
-
-  // Lazy One-time Connectivity Telemetry
-  if (!global._prisma && process.env.NODE_ENV !== "test") {
-    console.log("🐘 [Prisma] Lazy verifying native database connectivity via Supabase Pooler...");
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error("Database connection check timed out (8s)")), 8000)
-    );
-
-    Promise.race([prismaInstance.$queryRawUnsafe("SELECT 1"), timeoutPromise])
-      .then(() => console.log("🐘 [Prisma] Native database connection verified successfully."))
-      .catch((err: any) => {
-        console.error("❌ [Prisma] Database connection check failed!");
-        console.error("Reason:", err.message);
-      });
-  }
 
   if (process.env.NODE_ENV !== "production") {
     global._prisma = prismaInstance;

@@ -20,6 +20,7 @@
     "@google/generative-ai": "^0.21.0",
     "@motiadev/core": "^0.17.14-beta.196",
     "@motiadev/plugin-endpoint": "^0.17.14-beta.196",
+    "@prisma/adapter-pg": "^7.4.2",
     "@prisma/client": "^7.4.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
