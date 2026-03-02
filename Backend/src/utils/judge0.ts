@@ -110,6 +110,27 @@ export async function runCode(
         err.response?.status === 429;
       if (isRetriable) {
         await new Promise((r) => setTimeout(r, 2000));
+        // Optimization 10: Judge Warm Workers
+        const payload = {
+          language_id: languageId,
+          source_code: code,
+          stdin: stdin,
+          cpu_time_limit: 5.0, // Strict limit
+          memory_limit: 256000,
+          enable_per_process_and_thread_time_limit: true,
+          enable_per_process_and_thread_memory_limit: true,
+        };
+
+        try {
+          // wait=true is critical: it forces a synchronous response (wait up to limits)
+          // instead of async webhook callbacks, cutting out massive network latency roundtrips.
+          await axios.post(`https://${process.env.JUDGE0_API_HOST}/submissions?base64_encoded=false&wait=true`, payload, {
+            headers: apiHeaders,
+          });
+        } catch (warmupErr) {
+          // Log but don't rethrow. Warmup is best-effort.
+          console.warn("Judge0 warmup failed:", warmupErr);
+        }
         return fn();
       }
       throw err;

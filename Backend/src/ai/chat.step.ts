@@ -37,10 +37,6 @@ export const config: ApiRouteConfig = {
   middleware: [authMiddleware(), rateLimitMiddleware(60000, 30, "USER_ID")], // 30 AI chats per minute
   bodySchema,
   responseSchema: {
-    200: z.object({ 
-      reply: z.string(),
-      threadId: z.string()
-    }),
     400: z.object({ error: z.string() }),
     404: z.object({ error: z.string() }),
     429: z.object({ error: z.string() }),
@@ -133,7 +129,10 @@ ${AI_STYLE_GUARDRAIL}`;
   }
 }
 
-export const handler: any = async (req: any, { logger }: { logger: any }) => {
+export const handler: any = async (req: any, res: any, { logger }: { logger: any }) => {
+  let isStreamClosed = false;
+  req.on('close', () => { isStreamClosed = true; });
+
   try {
     const { threadId, problemId, userCode, language, messages, editorContext } = bodySchema.parse(req.body);
 
@@ -242,21 +241,46 @@ export const handler: any = async (req: any, { logger }: { logger: any }) => {
         ...(messages as ChatMessage[])
       ];
 
-      const rawResponse = await askOllamaChat({
+      // Optimization 7: Real SSE Token Streaming
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.flushHeaders?.();
+
+      const stream = await askOllamaChat({
         messages: fullMessages,
-        stream: false,
+        stream: true,
         modelOverride: mode === "debug" ? "qwen2.5-coder:7b" : "qwen3:8b"
       });
-      
-      let rawText = "";
-      if (rawResponse.data?.message?.content) {
-         rawText = rawResponse.data.message.content;
-      } else {
-         rawText = extractOllamaText(rawResponse.data);
+
+      let fullGeneratedText = "";
+      for await (const chunk of stream) {
+        if (isStreamClosed) {
+           logger.info("Client aborted AI stream", { threadId: activeThreadId });
+           break;
+        }
+        const text = extractOllamaText(chunk);
+        if (text) {
+          fullGeneratedText += text;
+          res.write(`data: ${JSON.stringify({ text })}\n\n`);
+        }
       }
-      
-      // Strip <think> block from qwen3 output
-      finalReply = rawText.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+
+      // Persist the full generated message to the database after stream completes
+      if (fullGeneratedText) {
+         await prisma.chatMessage.create({
+            data: {
+              role: "assistant",
+              content: fullGeneratedText,
+              threadId: activeThreadId as string
+            }
+         });
+      }
+
+      res.write(`data: ${JSON.stringify({ threadId: activeThreadId, done: true })}\n\n`);
+      res.end();
+      return; // Motia adapter handles raw res.end()
+
     }
 
     // Save user's latest message if it's not already in history (or just save the very last one)

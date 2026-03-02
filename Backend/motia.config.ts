@@ -1,6 +1,7 @@
 import { defineConfig, DefaultQueueEventAdapter, DefaultCronAdapter, MemoryStreamAdapterManager, MemoryStateAdapter } from '@motiadev/core'
 import endpointPlugin from '@motiadev/plugin-endpoint/plugin'
 import cors from 'cors'
+import compression from 'compression'
 import { Server as SocketServer } from 'socket.io'
 import type { Express } from 'express'
 
@@ -46,8 +47,30 @@ function attachSocketIo(app: Express) {
       return res.status(400).json({ error: 'Missing topic/submissionId' });
     }
 
-    io.to(targetTopic).emit(targetEvent, targetPayload);
-    res.json({ success: true, topic: targetTopic });
+    // 🚀 Slim Payload before broadcasting (Optimization 9)
+    let slimmedPayload = targetPayload;
+    if (targetPayload && typeof targetPayload === 'object' && targetPayload.submission) {
+       // Slim down massive test results array if it exists inside submission events
+       const sub = targetPayload.submission;
+       slimmedPayload = {
+         ...targetPayload,
+         submission: {
+           id: sub.id,
+           status: sub.status,
+           runtime: sub.runtime,
+           memory: sub.memory,
+           details: sub.details ? {
+              passedCases: sub.details.passedCases || sub.details.passedCount,
+              totalCases: sub.details.totalCases || sub.details.totalCount,
+              // Drop the full testResults array from the websocket stream to save bandwidth
+              hasDetails: true
+           } : null
+         }
+       };
+    }
+
+    io.to(targetTopic).emit(targetEvent, slimmedPayload);
+    res.json({ success: true, topic: targetTopic, slimmed: targetPayload !== slimmedPayload });
   });
 
   // Poll for the HTTP server to become available
@@ -136,6 +159,7 @@ export default defineConfig({
     state: new MemoryStateAdapter(),
   },
   app: (app) => {
+    app.use(compression({ level: 6 })); // Optimal CPU/size ratio for JSON
     app.use(corsMiddleware);
     attachSocketIo(app);
   }

@@ -137,6 +137,7 @@ model Submission {
   @@index([problemId])
   @@index([userId, problemId])
   @@index([status])
+  @@index([createdAt])
   @@map("submissions")
 }
 
@@ -158,6 +159,7 @@ model ArenaMatch {
   @@index([status])
   @@index([player1Id])
   @@index([player2Id])
+  @@index([startedAt], map: "arena_matches_started_at_idx")
   @@map("arena_matches")
 }
 
@@ -175,6 +177,7 @@ model ChatThread {
 
   @@index([userId])
   @@index([userId, problemId])
+  @@index([createdAt])
   @@map("chat_threads")
 }
 
@@ -187,5 +190,6 @@ model ChatMessage {
   createdAt DateTime   @default(now())
 
   @@index([threadId])
+  @@index([createdAt])
   @@map("chat_messages")
 }

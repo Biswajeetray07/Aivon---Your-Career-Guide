@@ -1,8 +1,10 @@
 "use client";
+import React from "react";
 
 import { Bot, User, Copy, RotateCcw, ThumbsUp, ThumbsDown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MarkdownContent } from "./MarkdownRenderers";
+import dynamic from "next/dynamic";
+const MarkdownContent = dynamic(() => import("./MarkdownRenderers").then(mod => mod.MarkdownContent), { ssr: false });
 import type { Message } from "./types";
 
 interface ChatMessageProps {
@@ -15,7 +17,7 @@ interface ChatMessageProps {
   onRegenerate: () => void;
 }
 
-export function ChatMessage({ msg, idx, isLast, copiedId, activeTool, onCopy, onRegenerate }: ChatMessageProps) {
+export const ChatMessage = React.memo(function ChatMessage({ msg, idx, isLast, copiedId, activeTool, onCopy, onRegenerate }: ChatMessageProps) {
   return (
     <div className={`flex gap-3 md:gap-5 relative z-20 ${msg.role === "user" ? "ml-auto flex-row-reverse" : "mr-auto"}`}>
       {/* Avatar */}
@@ -107,4 +109,13 @@ export function ChatMessage({ msg, idx, isLast, copiedId, activeTool, onCopy, on
       </div>
     </div>
   );
-}
+}, (prev, next) => {
+  return (
+    prev.msg.content === next.msg.content &&
+    prev.msg.isThinking === next.msg.isThinking &&
+    prev.msg.isStreaming === next.msg.isStreaming &&
+    prev.isLast === next.isLast &&
+    prev.copiedId === next.copiedId &&
+    prev.activeTool === next.activeTool
+  );
+});

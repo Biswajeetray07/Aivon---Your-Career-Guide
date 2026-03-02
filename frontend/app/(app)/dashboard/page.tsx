@@ -157,7 +157,7 @@ export default function DashboardPage() {
                   <span className="text-[14px] font-bold font-geist-mono text-[#FACC15] z-10 tracking-widest">{stats?.streak || 0} <span className="text-[12px]">DAYS</span></span>
                 </div>
               </div>
-              <Link href="/profile" className="flex-1 relative overflow-hidden group bg-transparent border border-white/5 text-[#00E5B0] font-space-grotesk font-bold uppercase tracking-[0.1em] transition-all duration-300 rounded-lg flex flex-col justify-center hover:bg-[#00E5B0]/10 hover:border-white/5 hover:text-white hover:shadow-sm">
+              <Link href="/profile" prefetch={true} className="flex-1 relative overflow-hidden group bg-transparent border border-white/5 text-[#00E5B0] font-space-grotesk font-bold uppercase tracking-[0.1em] transition-all duration-300 rounded-lg flex flex-col justify-center hover:bg-[#00E5B0]/10 hover:border-white/5 hover:text-white hover:shadow-sm">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#00E5B0]/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                 <div className="flex items-center gap-3 px-6 z-10">
                   <span className="w-1.5 h-1.5 bg-[#00E5B0] rounded-full group-hover:animate-ping" />
@@ -242,7 +242,7 @@ export default function DashboardPage() {
             { tag: "[ORACLE]", title: "Ask Aivon AI", desc: "Analyze weak spots", color: "#8A2BE2", link: "/chat" },
             { tag: "[COMBAT]", title: "Enter Arena", desc: "Enter the competitive battleground", color: "#00C2FF", link: "/arena" }
           ].map((action, i) => (
-            <Link key={i} href={action.link} className="bg-[#05070A]/80 border border-white/10 rounded-xl p-5 hover:border-white/20 transition-all duration-300 hover:bg-[#0A0F14] hover:-translate-y-1 group relative overflow-hidden flex flex-col gap-2">
+            <Link key={i} href={action.link} prefetch={true} className="bg-[#05070A]/80 border border-white/10 rounded-xl p-5 hover:border-white/20 transition-all duration-300 hover:bg-[#0A0F14] hover:-translate-y-1 group relative overflow-hidden flex flex-col gap-2">
               <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-current to-transparent opacity-10 rounded-bl-full pointer-events-none" style={{ color: action.color }} />
               <span className="text-[10px] font-geist-mono font-bold tracking-widest" style={{ color: action.color }}>{action.tag}</span>
               <span className="text-sm font-bold text-white uppercase tracking-wide">{action.title}</span>
