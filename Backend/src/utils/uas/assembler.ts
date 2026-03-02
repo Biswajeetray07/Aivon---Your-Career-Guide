@@ -84,6 +84,9 @@ if __name__ == '__main__':
         except Exception:
             lines.append(__line)
     try:
+        if len(lines) == 1 and isinstance(lines[0], dict):
+            __d = lines[0].get("args", lines[0]) if isinstance(lines[0].get("args"), dict) else lines[0]
+            lines = [__d.get(k) for k in [${spec.inputSpec.map(f => `"${f.name}"`).join(", ")}]]
 ${argLines.join("\n")}
         __obj = Solution()
         result = __obj.${spec.functionName}(${callArgs})
@@ -116,7 +119,11 @@ function assembleJS(userCode: string, spec: ProblemSpec): string {
   const harness = `
 (function __main() {
   const __lines = require('fs').readFileSync(0, 'utf-8').trim().split('\\n').filter(Boolean);
-  const args = __lines.map(line => { try { return JSON.parse(line); } catch(e) { return line; } });
+  let args = __lines.map(line => { try { return JSON.parse(line); } catch(e) { return line; } });
+  if (args.length === 1 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0])) {
+    const __d = (args[0].args && typeof args[0].args === 'object' && !Array.isArray(args[0].args)) ? args[0].args : args[0];
+    args = [${spec.inputSpec.map(f => `"${f.name}"`).join(", ")}].map(k => __d[k]);
+  }
   try {
 ${argLines.join("\n")}
     const __obj = new Solution();
