@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { listProblems, getMyStats, getMySubmissions, type Problem, type SubmissionHistoryItem } from "@/lib/api";
+import { listProblems, getMyStats, getMySubmissions, type ProblemCardDTO, type SubmissionHistoryItem } from "@/lib/api";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { useTypewriter } from "@/hooks/use-typewriter";
@@ -22,7 +22,7 @@ interface UserProfile {
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
-  const [problems, setProblems] = useState<Problem[]>([]);
+  const [problems, setProblems] = useState<ProblemCardDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<{ totalSolved: number; totalSubmissions: number; accuracy: number; streak: number; byDifficulty: { EASY: number; MEDIUM: number; HARD: number }; recentActivity: SubmissionHistoryItem[] } | null>(null);
   const [submissions, setSubmissions] = useState<SubmissionHistoryItem[]>([]);
@@ -42,7 +42,7 @@ export default function DashboardPage() {
         getMyStats(),
         getMySubmissions({ limit: 56 }),
       ]);
-      setProblems(problemsRes.problems || []);
+      setProblems(problemsRes.items || []);
       setStats(statsRes);
       setSubmissions(subsRes.submissions || []);
     } catch (e) {

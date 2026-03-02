@@ -1,14 +1,87 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback, memo } from "react";
 import Link from "next/link";
-import { listProblems, type Problem, getMyStats } from "@/lib/api";
-import { GlassCard } from "@/components/ui/glass-card";
-import { Lock, FileText, ChevronRight, Activity, Zap, CheckCircle2, Copy, PlaySquare, Terminal, Search, Filter, ShieldAlert, Cpu, Network, X } from "lucide-react";
+import { getMyStats, type ProblemCardDTO } from "@/lib/api";
+import { useProblems, type ProblemsFilters } from "@/hooks/useProblems";
+import { Lock, FileText, ChevronRight, Activity, Zap, CheckCircle2, Copy, PlaySquare, Terminal, Search, Filter, ShieldAlert, Cpu, Network, X, Loader2 } from "lucide-react";
 import { useLiveSocket } from "@/hooks/useLiveSocket";
 import { useSession } from "next-auth/react";
 
 const DIFFICULTIES = ["", "EASY", "MEDIUM", "HARD"];
 const TAGS = ["Array", "String", "Tree", "Graph", "DP", "Hash Table", "Binary Search", "Stack", "Sorting"];
+
+// ─── Memoized Problem Card ───────────────────────────────────────────────────
+// Prevents re-renders of the entire list when only one row changes.
+
+const ProblemCard = memo(function ProblemCard({ problem, index }: { problem: ProblemCardDTO; index: number }) {
+  const diffColors: Record<string, string> = { 
+    EASY: "text-[#00E5B0] border-white/5 bg-[#00E5B0]/10", 
+    MEDIUM: "text-[#FACC15] border-white/5 bg-[#FACC15]/10", 
+    HARD: "text-[#FF5F56] border-white/5 bg-[#FF5F56]/10" 
+  };
+  const diffClass = diffColors[problem.difficulty.toUpperCase()] || "text-white border-white/20 bg-white/5";
+  const paddedIndex = String(index + 1).padStart(4, '0');
+  
+  return (
+   <div className="relative group/row bg-[#0A0F14]/40 border-[0.5px] border-white/10 hover:border-white/5 hover:bg-[#0A0F14]/80 rounded-xl transition-all duration-500 overflow-hidden flex items-center justify-between p-1 hover:-translate-y-[2px] shadow-sm hover:shadow-hacker-glow">
+      
+      {/* Dynamic Hover Gradient Sweep */}
+      <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-[#00E5B0] to-transparent opacity-0 group-hover/row:opacity-100 transition-opacity duration-500 pointer-events-none" />
+      <div className="absolute inset-y-0 left-0 w-[1px] bg-gradient-to-b from-transparent via-[#00E5B0] to-transparent opacity-0 group-hover/row:opacity-100 transition-opacity duration-500 pointer-events-none" />
+      
+      <div className="flex items-center gap-4 sm:gap-6 px-6 py-5 w-full bg-gradient-to-br from-white/[0.02] to-transparent rounded-lg relative z-10">
+        
+        {/* 1. PID (Hex Padded Index) */}
+        <div className="w-14 sm:w-20 text-center shrink-0">
+          <span className="text-[11px] md:text-[13px] font-geist-mono text-white/30 tracking-[0.2em] font-bold group-hover/row:text-[#00E5B0]/80 transition-colors">0x{paddedIndex}</span>
+        </div>
+
+        {/* 2. Title & Status */}
+        <div className="flex-1 pl-2 truncate relative z-10 flex flex-col justify-center">
+           <Link href={`/problems/${problem.slug}`} prefetch={true} className="font-space-grotesk font-bold text-[18px] md:text-[20px] tracking-wide text-white/80 group-hover/row:text-white transition-all truncate block drop-shadow-sm group-hover/row:drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] capitalize">
+             {problem.title.replace(/-/g, " ")}
+           </Link>
+           <div className="flex items-center gap-3 mt-1.5 opacity-60 group-hover/row:opacity-100 transition-opacity">
+              <span className="text-[9px] font-geist-mono text-white/40 tracking-[0.2em] uppercase">Sys.Link: </span>
+              <span className="text-[9px] font-geist-mono text-[#00E5B0] bg-[#00E5B0]/10 px-2 py-0.5 rounded-sm border border-white/5 tracking-widest uppercase flex items-center gap-1.5">
+                <span className="w-1 h-1 rounded-full bg-[#00E5B0] shadow-[0_0_5px_#00E5B0]" /> ONLINE
+              </span>
+           </div>
+        </div>
+
+        {/* 3. Threat Level */}
+        <div className="w-24 md:w-32 text-left shrink-0 relative z-10 flex flex-col justify-center">
+           <span className={`text-[10px] font-bold font-geist-mono tracking-[0.2em] uppercase px-3 py-1 rounded-sm border flex items-center gap-2 ${diffClass}`}>
+              <span className="w-1 h-1 rounded-full bg-current shadow-[0_0_5px_currentColor]" />
+              {problem.difficulty}
+           </span>
+        </div>
+
+        {/* 4. Tags (Parameters) */}
+        <div className="hidden lg:flex flex-1 gap-2 flex-wrap relative z-10">
+           {(problem.tags || []).slice(0, 3).map((t) => (
+             <span key={t} className="text-[10px] font-geist-mono text-[#00C2FF]/70 bg-[#00C2FF]/10 px-3 py-1.5 rounded-md uppercase tracking-widest whitespace-nowrap border border-white/5 group-hover/row:border-white/5 transition-colors shadow-sm">
+               {t}
+             </span>
+           ))}
+        </div>
+
+        {/* 5. Action */}
+        <div className="w-28 sm:w-36 text-right shrink-0 flex justify-end relative z-10">
+          <Link href={`/problems/${problem.slug}`} prefetch={true}
+            className="relative flex items-center justify-center gap-2 overflow-hidden group/btn px-6 py-2.5 rounded-lg border border-white/10 bg-white/5 text-[9px] sm:text-[11px] font-geist-mono font-bold uppercase tracking-[0.1em] text-white/80 hover:text-white hover:border-white/5 hover:bg-[#00E5B0]/10 hover:shadow-sm transition-all duration-300">
+            <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-[#00E5B0] to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+            <Terminal className="w-3 h-3 group-hover/btn:-translate-x-1 group-hover/btn:text-[#00E5B0] text-white/50 transition-all" />
+            <span>ENGAGE</span>
+          </Link>
+        </div>
+
+      </div>
+   </div>
+  );
+});
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function ProblemsPage() {
   const [mounted, setMounted] = useState(false);
@@ -24,20 +97,46 @@ export default function ProblemsPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  const [problems, setProblems] = useState<Problem[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
   const [difficulty, setDifficulty] = useState("");
   const [tag, setTag] = useState("");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [limit, setLimit] = useState(20);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const { data: session } = useSession();
   const [recentSolves, setRecentSolves] = useState(0);
   const [userSolved, setUserSolved] = useState(0);
   const [userRating, setUserRating] = useState((session?.user as any)?.rating || 1200);
+
+  // ── SWR Infinite Scroll Hook ────────────────────────────────────────────────
+  const filters: ProblemsFilters = {
+    difficulty: difficulty || undefined,
+    tags: tag || undefined,
+    search: debouncedSearch || undefined,
+    limit,
+  };
+
+  const { items: problems, total, isLoading, isLoadingMore, isError, hasMore, loadMore, reset } = useProblems(filters);
+
+  // ── IntersectionObserver Sentinel ───────────────────────────────────────────
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          loadMore();
+        }
+      },
+      { rootMargin: "300px", threshold: 0 }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMore]);
 
   // Real-time: listen for global solve events
   const { listen } = useLiveSocket(["marketing_stats"]);
@@ -64,46 +163,37 @@ export default function ProblemsPage() {
   // Active filter count
   const activeFiltersCount = (difficulty ? 1 : 0) + (tag ? 1 : 0);
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setDifficulty("");
     setTag("");
     setSearch("");
     setDebouncedSearch("");
-    setPage(1);
     setIsFilterOpen(false);
-  };
+    reset();
+  }, [reset]);
 
   // Debounce search input
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(search);
-      setPage(1); // Reset to page 1 on new search
     }, 500);
     return () => clearTimeout(handler);
   }, [search]);
 
+  // Reset infinite scroll when filters change
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(true), 0);
-    listProblems({ 
-      difficulty: difficulty || undefined, 
-      tags: tag || undefined, 
-      search: debouncedSearch || undefined,
-      page, 
-      limit 
-    })
-      .then((data) => { setProblems(data.problems); setTotal(data.total); })
-      .catch(e => console.warn("Problem fetch failed:", e.message))
-      .finally(() => setLoading(false));
+    reset();
+  }, [difficulty, tag, debouncedSearch, limit]);
 
+  // Fetch user stats once
+  useEffect(() => {
     getMyStats()
       .then(res => {
           setUserSolved(res.totalSolved || 0);
           setUserRating(res.rating || (session?.user as any)?.rating || 1200);
       })
       .catch(() => setUserSolved(0));
-
-    return () => clearTimeout(timer);
-  }, [difficulty, tag, debouncedSearch, page, limit]);
+  }, []);
 
   return (
     <div className="min-h-screen pt-[120px] pb-20 w-full max-w-[1500px] mx-auto px-6 md:px-12 font-space-grotesk relative bg-transparent">
@@ -361,7 +451,7 @@ export default function ProblemsPage() {
                       if (d === "HARD") activeClass = "bg-[#FF5F56]/15 text-[#FF5F56] border-white/5 shadow-[0_0_15px_rgba(255,95,86,0.2)]";
 
                       return (
-                        <button key={d} onClick={() => { setDifficulty(difficulty === d ? "" : d); setPage(1); }}
+                        <button key={d} onClick={() => { setDifficulty(difficulty === d ? "" : d); }}
                            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl border text-[11px] font-geist-mono font-bold uppercase tracking-[0.1em] transition-all outline-none ${
                              difficulty === d 
                                ? activeClass 
@@ -384,7 +474,7 @@ export default function ProblemsPage() {
                   </div>
                   <div className="flex flex-wrap gap-2.5">
                     {TAGS.map((t) => (
-                      <button key={t} onClick={() => { setTag(tag === t ? "" : t); setPage(1); }}
+                      <button key={t} onClick={() => { setTag(tag === t ? "" : t); }}
                         className={`px-4 py-2 rounded-lg text-[10px] font-space-grotesk tracking-widest uppercase transition-all duration-300 border ${
                            tag === t 
                               ? "bg-[#00C2FF]/15 text-[#00C2FF] border-white/5 shadow-sm" 
@@ -404,7 +494,7 @@ export default function ProblemsPage() {
                   </div>
                   <div className="flex flex-wrap gap-3">
                     {[10, 20, 50].map((l) => (
-                      <button key={l} onClick={() => { setLimit(l); setPage(1); }}
+                      <button key={l} onClick={() => { setLimit(l); }}
                         className={`px-5 py-2 border rounded-lg text-[11px] font-geist-mono font-bold tracking-[0.1em] transition-all ${
                           limit === l 
                             ? "bg-[#00C2FF]/10 text-[#00C2FF] border-white/5 shadow-sm" 
@@ -457,9 +547,9 @@ export default function ProblemsPage() {
             <div className="w-28 sm:w-36 text-right shrink-0">ACTION</div>
          </div>
 
-         {/* Floating Card List */}
+         {/* Problem List with Infinite Scroll */}
          <div className="flex flex-col gap-3 relative z-10 w-full">
-             {loading ? (
+             {isLoading ? (
                   <div className="p-24 text-center w-full flex flex-col items-center gap-6 relative z-10 bg-[#0A0F14]/60 backdrop-blur-2xl border-[0.5px] border-white/10 rounded-3xl shadow-hacker-glow">
                     <div className="relative">
                       <div className="w-16 h-16 border-4 border-white/5 border-t-[#00C2FF] rounded-full animate-spin" />
@@ -479,100 +569,47 @@ export default function ProblemsPage() {
                        Adjust search parameters or system filters to re-establish connection to operative targets.
                      </span>
                  </div>
-            ) : problems.map((problem, i) => {
-                 const diffColors: Record<string, string> = { 
-                   EASY: "text-[#00E5B0] border-white/5 bg-[#00E5B0]/10", 
-                   MEDIUM: "text-[#FACC15] border-white/5 bg-[#FACC15]/10", 
-                   HARD: "text-[#FF5F56] border-white/5 bg-[#FF5F56]/10" 
-                 };
-                 const diffClass = diffColors[problem.difficulty.toUpperCase()] || "text-white border-white/20 bg-white/5";
-                 const paddedIndex = String((page - 1) * limit + i + 1).padStart(4, '0');
-                 
-                 return (
-                  <div key={problem.id} className="relative group/row bg-[#0A0F14]/40 border-[0.5px] border-white/10 hover:border-white/5 hover:bg-[#0A0F14]/80 rounded-xl transition-all duration-500 overflow-hidden flex items-center justify-between p-1 hover:-translate-y-[2px] shadow-sm hover:shadow-hacker-glow">
-                     
-                     {/* Dynamic Hover Gradient Sweep */}
-                     <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-[#00E5B0] to-transparent opacity-0 group-hover/row:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                     <div className="absolute inset-y-0 left-0 w-[1px] bg-gradient-to-b from-transparent via-[#00E5B0] to-transparent opacity-0 group-hover/row:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                     
-                     <div className="flex items-center gap-4 sm:gap-6 px-6 py-5 w-full bg-gradient-to-br from-white/[0.02] to-transparent rounded-lg relative z-10">
-                       
-                       {/* 1. PID (Hex Padded Index) */}
-                       <div className="w-14 sm:w-20 text-center shrink-0">
-                         <span className="text-[11px] md:text-[13px] font-geist-mono text-white/30 tracking-[0.2em] font-bold group-hover/row:text-[#00E5B0]/80 transition-colors">0x{paddedIndex}</span>
-                       </div>
+            ) : problems.map((problem, i) => (
+                <ProblemCard key={problem.id} problem={problem} index={i} />
+               ))}
 
-                       {/* 2. Title & Status */}
-                       <div className="flex-1 pl-2 truncate relative z-10 flex flex-col justify-center">
-                          <Link href={`/problems/${problem.slug}`} className="font-space-grotesk font-bold text-[18px] md:text-[20px] tracking-wide text-white/80 group-hover/row:text-white transition-all truncate block drop-shadow-sm group-hover/row:drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] capitalize">
-                            {problem.title.replace(/-/g, " ")}
-                          </Link>
-                          <div className="flex items-center gap-3 mt-1.5 opacity-60 group-hover/row:opacity-100 transition-opacity">
-                             <span className="text-[9px] font-geist-mono text-white/40 tracking-[0.2em] uppercase">Sys.Link: </span>
-                             <span className="text-[9px] font-geist-mono text-[#00E5B0] bg-[#00E5B0]/10 px-2 py-0.5 rounded-sm border border-white/5 tracking-widest uppercase flex items-center gap-1.5">
-                               <span className="w-1 h-1 rounded-full bg-[#00E5B0] shadow-[0_0_5px_#00E5B0]" /> ONLINE
-                             </span>
-                          </div>
-                       </div>
+             {/* ── IntersectionObserver Sentinel ── */}
+             {hasMore && !isLoading && (
+               <div ref={sentinelRef} className="w-full py-8 flex justify-center">
+                 {isLoadingMore ? (
+                   <div className="flex items-center gap-3">
+                     <Loader2 className="w-5 h-5 text-[#00C2FF] animate-spin" />
+                     <span className="text-[#00C2FF] font-geist-mono text-[11px] uppercase tracking-[0.2em] animate-pulse">
+                       Loading next data block...
+                     </span>
+                   </div>
+                 ) : (
+                   <div className="h-1" /> 
+                 )}
+               </div>
+             )}
 
-                       {/* 3. Threat Level */}
-                       <div className="w-24 md:w-32 text-left shrink-0 relative z-10 flex flex-col justify-center">
-                          <span className={`text-[10px] font-bold font-geist-mono tracking-[0.2em] uppercase px-3 py-1 rounded-sm border flex items-center gap-2 ${diffClass}`}>
-                             <span className="w-1 h-1 rounded-full bg-current shadow-[0_0_5px_currentColor]" />
-                             {problem.difficulty}
-                          </span>
-                       </div>
+             {/* ── End of Data Indicator ── */}
+             {!hasMore && problems.length > 0 && (
+               <div className="w-full py-6 flex justify-center">
+                 <span className="text-white/20 font-geist-mono text-[10px] uppercase tracking-[0.2em] border border-white/5 px-4 py-2 rounded-full">
+                   [ END_OF_DATA_STREAM ]
+                 </span>
+               </div>
+             )}
 
-                       {/* 4. Tags (Parameters) */}
-                       <div className="hidden lg:flex flex-1 gap-2 flex-wrap relative z-10">
-                          {(problem.tags || []).slice(0, 3).map((t) => (
-                            <span key={t} className="text-[10px] font-geist-mono text-[#00C2FF]/70 bg-[#00C2FF]/10 px-3 py-1.5 rounded-md uppercase tracking-widest whitespace-nowrap border border-white/5 group-hover/row:border-white/5 transition-colors shadow-sm">
-                              {t}
-                            </span>
-                          ))}
-                       </div>
-
-                       {/* 5. Action */}
-                       <div className="w-28 sm:w-36 text-right shrink-0 flex justify-end relative z-10">
-                         <Link href={`/problems/${problem.slug}`} 
-                           className="relative flex items-center justify-center gap-2 overflow-hidden group/btn px-6 py-2.5 rounded-lg border border-white/10 bg-white/5 text-[9px] sm:text-[11px] font-geist-mono font-bold uppercase tracking-[0.1em] text-white/80 hover:text-white hover:border-white/5 hover:bg-[#00E5B0]/10 hover:shadow-sm transition-all duration-300">
-                           <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-[#00E5B0] to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
-                           <Terminal className="w-3 h-3 group-hover/btn:-translate-x-1 group-hover/btn:text-[#00E5B0] text-white/50 transition-all" />
-                           <span>ENGAGE</span>
-                         </Link>
-                       </div>
-
-                     </div>
-                  </div>
-                 );
-               })}
+             {/* ── Error State with Retry ── */}
+             {isError && (
+               <div className="w-full py-6 flex justify-center">
+                 <button 
+                   onClick={() => reset()}
+                   className="text-[#FF5F56] font-geist-mono text-[11px] uppercase tracking-[0.2em] border border-[#FF5F56]/30 px-6 py-3 rounded-xl hover:bg-[#FF5F56]/10 transition-all"
+                 >
+                   [ RETRY_DATA_FETCH ]
+                 </button>
+               </div>
+             )}
          </div>
-
-        {/* ── Dashboard Style Pagination ── */}
-        <div className="flex justify-between items-center w-full mt-10 p-4 relative bg-[#0A0F14]/60 rounded-2xl border border-white/5 shadow-sm">
-          <button 
-            onClick={() => setPage(Math.max(1, page - 1))} 
-            disabled={page === 1} 
-            className="px-6 md:px-10 py-3.5 text-[11px] md:text-[12px] font-geist-mono font-bold uppercase tracking-[0.2em] text-[#00C2FF]/80 hover:text-[#00C2FF] bg-[#00C2FF]/5 hover:bg-[#00C2FF]/15 transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-white/5 hover:border-white/5 rounded-xl flex items-center gap-3 shadow-sm hover:shadow-sm"
-          >
-            <span className="text-[16px]">{'<'}</span> PREV_BLOCK
-          </button>
-          
-          <div className="flex flex-col items-center px-8 border-x border-white/5">
-             <span className="text-[9px] text-white/40 uppercase tracking-[0.2em] font-geist-mono mb-1 text-center">Data Sector</span>
-             <span className="text-2xl md:text-3xl font-space-grotesk font-black tracking-widest text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
-               {String(page).padStart(2, '0')} <span className="text-[#00C2FF] opacity-40 mx-2 font-light">/</span> {String(Math.max(1, Math.ceil(total / limit))).padStart(2, '0')}
-             </span>
-          </div>
-
-          <button 
-            onClick={() => setPage(page + 1)} 
-            disabled={page * limit >= total} 
-            className="px-6 md:px-10 py-3.5 text-[11px] md:text-[12px] font-geist-mono font-bold uppercase tracking-[0.2em] text-[#00E5B0]/80 hover:text-[#00E5B0] bg-[#00E5B0]/5 hover:bg-[#00E5B0]/15 transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-white/5 hover:border-white/5 rounded-xl flex items-center gap-3 shadow-sm hover:shadow-sm"
-          >
-            NEXT_BLOCK <span className="text-[16px]">{'>'}</span>
-          </button>
-        </div>
 
       </div>
     </div>

@@ -118,6 +118,24 @@ export interface Problem {
   testCases: Array<{ id: string; input: string; expected: string; order: number }>;
 }
 
+// Lightweight card DTO for list views (flat, no nested objects)
+export interface ProblemCardDTO {
+  id: string;
+  title: string;
+  slug: string;
+  difficulty: "EASY" | "MEDIUM" | "HARD";
+  tags: string[];
+  solveRate: number;
+}
+
+export interface ProblemsResponse {
+  items: ProblemCardDTO[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
 export const listProblems = (params?: { difficulty?: string; tags?: string; search?: string; page?: number; limit?: number }) => {
   const qs = new URLSearchParams();
   if (params?.difficulty) qs.set("difficulty", params.difficulty);
@@ -125,7 +143,7 @@ export const listProblems = (params?: { difficulty?: string; tags?: string; sear
   if (params?.search) qs.set("search", params.search);
   if (params?.page) qs.set("page", String(params.page));
   if (params?.limit) qs.set("limit", String(params.limit));
-  return apiGet<{ problems: Problem[]; total: number; page: number; limit: number }>(`/api/problems?${qs}`);
+  return apiGet<ProblemsResponse>(`/api/problems?${qs}`);
 };
 
 export const getProblem = (id: string) => apiGet<Problem>(`/api/problems/${id}`);
