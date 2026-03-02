@@ -41,7 +41,7 @@ async function main() {
   console.log("TESTING GENERATOR:");
   let genRes;
   try {
-     genRes = await runRawPython(p.judgeMeta.generatorCode);
+     genRes = await runRawPython(p.judgeMeta.generatorCode!);
   } catch (e) {
      console.log("Generator error:", e);
      process.exit(1);
@@ -64,7 +64,7 @@ async function main() {
         const wrapped = wrapCode(buggyCode, "python", "Solution().findMedianSortedArrays", "array");
         const formatted = formatStdin(stressInput);
         
-        const userRes = await runCode(wrapped, "python", formatted);
+        const userRes = await runCode(wrapped.code, "python", formatted);
         const single = await runSingleTest({ rawExec: userRes, expectedOutput: expected, testInput: stressInput, language: "python", judgeMode: "exact" });
         
         console.log(`[CASE ${i+1}] BUGGY CODE PRODUCED:`, single.actualOutput);

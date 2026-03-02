@@ -42,7 +42,7 @@ async function main() {
   }
 
   console.log("TESTING GENERATOR:");
-  let genRes = await runRawPython(p.judgeMeta.generatorCode);
+  let genRes = await runRawPython(p.judgeMeta.generatorCode!);
   
   if (genRes.status.id === 3 && genRes.stdout) {
      const cases = genRes.stdout.trim().split("\\n\\n").map(s => s.trim()).filter(Boolean);
@@ -56,7 +56,7 @@ async function main() {
         const expected = oracleRes.stdout!.trim();
         const wrapped = wrapCode(updatedBuggyCode, "python", "Solution().findMedianSortedArrays", "array");
         const formatted = formatStdin(stressInput);
-        const userRes = await runCode(wrapped, "python", formatted);
+        const userRes = await runCode(wrapped.code, "python", formatted);
         const single = await runSingleTest({ rawExec: userRes, expectedOutput: expected, testInput: stressInput, language: "python", judgeMode: "exact" });
         
         console.log(`[CASE ${i+1}] ORACLE EXPECTS:`, expected);

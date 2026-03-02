@@ -33,6 +33,11 @@ export function classifyVerdict(params: {
     };
   }
 
+  // 4.5️⃣ Output Limit Exceeded
+  if (exec.stdout && exec.stdout.length > 1_000_000) {
+    return { verdict: "Output Limit Exceeded", errorMessage: "OUTPUT_LIMIT_EXCEEDED: Your program printed too much data to stdout (Max 1MB)." };
+  }
+
   // 5️⃣ Wrong Answer (Execution succeeded, but output doesn't match expected)
   if (outputMatch === false || exec.judge0StatusId === 4) {
     return { verdict: "Wrong Answer" };

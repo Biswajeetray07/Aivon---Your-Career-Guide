@@ -12,7 +12,7 @@ export function wrapCode(
   problemType: string = "array",
   inputSpec?: InputField[] | null,
   outputSpec?: OutputSpec | null,
-): string {
+): { code: string; executionPath: "uas" | "legacy" } {
   let ep = entryPoint.trim();
   if (ep.startsWith("Solution().")) ep = ep.replace("Solution().", "");
 
@@ -20,7 +20,7 @@ export function wrapCode(
 
   // Only wrap Python and JavaScript — others pass through as-is
   if (lang !== "python" && lang !== "javascript") {
-    return userCode;
+    return { code: userCode, executionPath: "legacy" };
   }
 
   // ── Signature Validation (pre-execution guard) ────────────────────────────
@@ -29,9 +29,9 @@ export function wrapCode(
     if (!validation.valid) {
       // Return code that will immediately print the error
       if (lang === "python") {
-        return `import sys\nsys.stderr.write(${JSON.stringify(validation.error)})\nsys.exit(1)`;
+        return { code: `import sys\nsys.stderr.write(${JSON.stringify(validation.error)})\nsys.exit(1)`, executionPath: "uas" };
       } else {
-        return `process.stderr.write(${JSON.stringify(validation.error)}); process.exit(1);`;
+        return { code: `process.stderr.write(${JSON.stringify(validation.error)}); process.exit(1);`, executionPath: "uas" };
       }
     }
   }
@@ -46,15 +46,18 @@ export function wrapCode(
       inputSpec,
       outputSpec: safeOutputSpec,
     };
-    return assembleCode(userCode, spec, lang);
+    return { code: assembleCode(userCode, spec, lang), executionPath: "uas" };
   }
 
   // ── Legacy Path: use static template files ────────────────────────────────
   const template = getTemplate(lang, problemType);
 
-  return template
-    .replace("###USERCODE###", userCode)
-    .replace(/###ENTRYPOINT###/g, ep);
+  return {
+    code: template
+      .replace("###USERCODE###", userCode)
+      .replace(/###ENTRYPOINT###/g, ep),
+    executionPath: "legacy"
+  };
 }
 
 
@@ -258,9 +261,9 @@ function normalizeValue(val: string): string {
 // ── Legacy exports (backward compat) ─────────────────────────────────────────
 
 export function wrapPython(userCode: string, entryPoint: string): string {
-  return wrapCode(userCode, "python", entryPoint, "array");
+  return wrapCode(userCode, "python", entryPoint, "array").code;
 }
 
 export function wrapJavaScript(userCode: string, entryPoint: string): string {
-  return wrapCode(userCode, "javascript", entryPoint, "array");
+  return wrapCode(userCode, "javascript", entryPoint, "array").code;
 }

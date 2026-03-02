@@ -37,6 +37,7 @@ export const handler: any = async (req: any, { logger }: { logger: any }) => {
       user = await prisma.user.create({
         data: {
           email,
+          passwordHash: "",
           name: name || null,
           avatar: avatar || null,
           provider,
@@ -57,7 +58,8 @@ export const handler: any = async (req: any, { logger }: { logger: any }) => {
       });
     }
 
-    // Upsert the Account link
+    // Upsert the Account link (commented out as Account model is removed)
+    /*
     await prisma.account.upsert({
       where: {
         provider_providerAccountId: { provider, providerAccountId },
@@ -70,6 +72,7 @@ export const handler: any = async (req: any, { logger }: { logger: any }) => {
         providerAccountId,
       },
     });
+    */
 
     logger.info("OAuth upsert complete", { userId: user.id, provider });
     return { status: 200, body: { user: { id: user.id, email: user.email } } };

@@ -8,6 +8,7 @@ import { aggregateResults } from "../utils/judge-core/aggregateResults";
 import { safeJudge } from "../utils/judge-core/safeJudge";
 import type { JudgeMode } from "../utils/judge-core/outputComparator";
 import { analyzeError } from "../utils/error-intel/pipeline";
+import { recordJudgeMetrics } from "../utils/judge-core/judge-metrics";
 
 export const config: EventConfig = {
   type: "event",
@@ -71,6 +72,7 @@ function mapToPrismaStatus(verdict: string): any {
     case "Wrong Answer on Hidden Test": return "WRONG_ANSWER_ON_HIDDEN_TEST";
     case "Time Limit Exceeded": return "TIME_LIMIT_EXCEEDED";
     case "Memory Limit Exceeded": return "RUNTIME_ERROR"; 
+    case "Output Limit Exceeded": return "RUNTIME_ERROR";
     case "Runtime Error": return "RUNTIME_ERROR";
     case "Compile Error": return "COMPILATION_ERROR";
     default: return "INTERNAL_ERROR";
@@ -168,7 +170,7 @@ export const handler: any = async (
       entryPoint: submission.problem.entryPoint,
     });
 
-    const wrappedCode = wrapCode(
+    const wrappedOut = wrapCode(
       submission.code,
       submission.language,
       submission.problem.entryPoint,
@@ -176,8 +178,10 @@ export const handler: any = async (
       uasInputSpec,
       uasOutputSpec,
     );
+    const wrappedCode = wrappedOut.code;
+    const executionPath = wrappedOut.executionPath;
 
-    logger.info("Code wrapped", { submissionId, uasEnabled: !!(uasInputSpec && uasInputSpec.length > 0) });
+    logger.info("Code wrapped", { submissionId, executionPath, uasEnabled: !!(uasInputSpec && uasInputSpec.length > 0) });
 
     type TestResult = {
       input: string; expected: string; actual: string | null; stdout?: string | null;
@@ -401,7 +405,10 @@ export const handler: any = async (
       totalCases: testCases.length,
       totalRuntime,
       failedCaseIndex,
+      executionPath
     });
+
+    recordJudgeMetrics(overallStatus, totalRuntime, executionPath, submission.language);
 
     const finalDetails = {
       testResults,

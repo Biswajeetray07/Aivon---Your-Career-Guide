@@ -327,12 +327,12 @@ function compareExact(actual: string, expected: string): boolean {
     const pe = JSON.parse(e);
 
     if (JSON.stringify(pa) === JSON.stringify(pe)) return true;
-    if (typeof pa === "number" && typeof pe === "number") return Math.abs(pa - pe) < 1e-5;
+    if (typeof pa === "number" && typeof pe === "number") return Math.abs(pa - pe) <= 1e-5;
     if (typeof pa === "boolean" && typeof pe === "boolean") return pa === pe;
 
     if (Array.isArray(pa) && Array.isArray(pe) && pa.length === pe.length) {
       if (pa.every((v, i) => typeof v === "number" && typeof pe[i] === "number")) {
-        return pa.every((v, i) => Math.abs(v - pe[i]) < 1e-5);
+        return pa.every((v, i) => Math.abs(v - pe[i]) <= 1e-5);
       }
     }
   } catch { /* not JSON */ }
@@ -372,7 +372,7 @@ function compareFloat(actual: string, expected: string, eps = 1e-5): boolean {
   const an = Number(actual.trim());
   const en = Number(expected.trim());
   if (Number.isFinite(an) && Number.isFinite(en)) {
-    return Math.abs(an - en) < eps;
+    return Math.abs(an - en) <= eps;
   }
   // If not numbers, fall back to exact
   return compareExact(actual, expected);

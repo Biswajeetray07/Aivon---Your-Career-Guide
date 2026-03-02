@@ -65,7 +65,7 @@ export const handler: any = async (
           where: {
             userId,
             problemId: submission.problemId,
-            status: { in: ["ACCEPTED", "Accepted"] },
+            status: "ACCEPTED",
             id: { not: submissionId },
           },
         })

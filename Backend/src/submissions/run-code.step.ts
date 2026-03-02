@@ -9,6 +9,7 @@ import { runSingleTest } from "../utils/judge-core/runSingleTest";
 import { aggregateResults } from "../utils/judge-core/aggregateResults";
 import { safeJudge } from "../utils/judge-core/safeJudge";
 import type { JudgeMode } from "../utils/judge-core/outputComparator";
+import { recordJudgeMetrics } from "../utils/judge-core/judge-metrics";
 
 const bodySchema = z.object({
   problemId: z.string(),
@@ -62,6 +63,7 @@ export const config: ApiRouteConfig = {
     "../utils/judge0.ts",
     "../utils/templates.ts",
     "../utils/jwt.ts",
+    "../utils/judge-core/judge-metrics.ts",
     "../middlewares/auth.middleware.ts",
   ],
 };
@@ -121,7 +123,7 @@ export const handler: any = async (req: any, { logger }: any) => {
       entryPoint: problem.entryPoint,
       uasEnabled: !!(inputSpec && (inputSpec as any[]).length > 0)
     });
-    const wrappedCode = wrapCode(
+    const wrappedOut = wrapCode(
       code,
       language,
       problem.entryPoint,
@@ -129,6 +131,8 @@ export const handler: any = async (req: any, { logger }: any) => {
       inputSpec as any[] | null,
       outputSpec as any,
     );
+    const wrappedCode = wrappedOut.code;
+    const executionPath = wrappedOut.executionPath;
 
     type TestResult = {
       input: string; expected: string; actual: string | null; stdout?: string | null;
@@ -185,7 +189,9 @@ export const handler: any = async (req: any, { logger }: any) => {
 
     const { verdict: overallStatus } = aggregateResults(testResults as any, "run");
 
-    logger.info("Run completed", { problemId, status: overallStatus, type: effectiveProblemType });
+    logger.info("Run completed", { problemId, status: overallStatus, type: effectiveProblemType, executionPath });
+
+    recordJudgeMetrics(overallStatus, totalRuntime, executionPath, language);
 
     return {
       status: 200,
