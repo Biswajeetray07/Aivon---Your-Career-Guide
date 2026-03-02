@@ -54,7 +54,13 @@ export const handler: any = async (req: any, { logger }: { logger: any }) => {
     ]);
 
     logger.info("Problems listed", { page: pageNum, count: problems.length });
-    return { status: 200, body: { problems, total, page: pageNum, limit: limitNum } };
+    return { 
+      status: 200, 
+      headers: { 
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120"
+      },
+      body: { problems, total, page: pageNum, limit: limitNum } 
+    };
   } catch (err: any) {
     logger.error("List problems failed", { error: err.message });
     return { status: 500, body: { error: "Internal server error listing problems" } };

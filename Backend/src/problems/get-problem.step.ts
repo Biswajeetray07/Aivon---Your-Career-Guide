@@ -69,7 +69,13 @@ export const handler: any = async (req: any, { logger }: { logger: any }) => {
     };
 
     console.log(`⬅️ GET 200 OK (${Date.now() - start}ms)`);
-    return { status: 200, body: safeProblem as any };
+    return { 
+      status: 200, 
+      headers: {
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120"
+      },
+      body: safeProblem as any 
+    };
   } catch (err: any) {
     console.error("❌ getProblem FAILED:", err);
     logger.error("Get problem failed", { error: err.message, stack: err.stack });

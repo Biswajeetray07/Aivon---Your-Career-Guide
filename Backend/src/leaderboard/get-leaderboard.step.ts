@@ -58,5 +58,11 @@ export const handler: any = async (req: any, { logger }: { logger: any }) => {
 
 
   logger.info("Leaderboard generated", { count: leaderboard.length });
-  return { status: 200, body: { leaderboard } };
+  return { 
+    status: 200, 
+    headers: {
+      "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60"
+    },
+    body: { leaderboard } 
+  };
 };

@@ -30,7 +30,7 @@ export function HackerNetworkBackground() {
       drops[x] = Math.random() * -100;
     }
 
-    // Network Node properties — HALVED for performance
+    // Network Node properties — Restored density
     type Node = {
         x: number; y: number; vx: number; vy: number; radius: number; pulse: number; pulseDir: number;
     };
@@ -49,7 +49,7 @@ export function HackerNetworkBackground() {
         };
     };
 
-    const updateNode = (node: Node) => {
+    const updateNode = (node: Node, mouseX: number, mouseY: number) => {
         node.x += node.vx;
         node.y += node.vy;
         if (node.x < 0) node.x = width;
@@ -58,33 +58,56 @@ export function HackerNetworkBackground() {
         if (node.y > height) node.y = 0;
         node.pulse += node.pulseDir;
         if (node.pulse > 1 || node.pulse < 0) node.pulseDir *= -1;
+
+        // Mouse repel restored
+        if (mouseX !== -1000) {
+            const dx = mouseX - node.x;
+            const dy = mouseY - node.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 100) {
+                node.x -= (dx / dist) * 2;
+                node.y -= (dy / dist) * 2;
+            }
+        }
     };
 
-    const nodeCount = Math.floor((width * height) / 50000); // HALVED from 25000
+    const nodeCount = Math.floor((width * height) / 25000); // Restored original density
     const nodes: Node[] = [];
     for(let i = 0; i < nodeCount; i++) {
         nodes.push(createNode());
     }
 
-    // 30fps throttle
+    // Mouse interaction restored
+    const mouse = { x: -1000, y: -1000 };
+    const handleMouseMove = (e: MouseEvent) => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    };
+    const handleMouseOut = () => {
+      mouse.x = -1000;
+      mouse.y = -1000;
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseout", handleMouseOut);
+
     let animationFrameId: number;
-    let lastFrameTime = 0;
-    const FRAME_INTERVAL = 1000 / 30; // 30fps cap
 
-    const animate = (timestamp: number) => {
-      animationFrameId = requestAnimationFrame(animate);
-
-      const elapsed = timestamp - lastFrameTime;
-      if (elapsed < FRAME_INTERVAL) return;
-      lastFrameTime = timestamp - (elapsed % FRAME_INTERVAL);
-
+    const animate = () => {
       // Semi-transparent black for trailing effect
       ctx.fillStyle = "rgba(5, 7, 10, 0.2)"; 
       ctx.fillRect(0, 0, width, height);
 
-      // SKIP grid drawing — it was barely visible at 0.02 opacity
+      // Grid Overlay Drawing restored
+      ctx.strokeStyle = "rgba(0, 229, 176, 0.02)";
+      ctx.lineWidth = 1;
+      for (let y = 0; y <= height; y += gridSize) {
+         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+      }
+      for (let x = 0; x <= width; x += gridSize) {
+         ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+      }
 
-      // Matrix Rain (Subtle)
+      // Matrix Rain
       ctx.fillStyle = "rgba(0, 229, 176, 0.15)";
       ctx.font = "10px monospace";
       for (let i = 0; i < drops.length; i++) {
@@ -98,17 +121,16 @@ export function HackerNetworkBackground() {
          drops[i]++;
       }
 
-      // Network Nodes & Connections — optimized
+      // Network Nodes & Connections
       ctx.lineWidth = 1;
       for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i];
         
-        // Only check nearby nodes (reduced connection radius)
         for (let j = i + 1; j < nodes.length; j++) {
             const other = nodes[j];
             const dx = node.x - other.x;
             const dy = node.y - other.y;
-            const distSq = dx * dx + dy * dy; // Skip sqrt for performance
+            const distSq = dx * dx + dy * dy;
             
             if (distSq < 22500) { // 150² = 22500
                 const distance = Math.sqrt(distSq);
@@ -124,15 +146,30 @@ export function HackerNetworkBackground() {
             }
         }
 
-        // Draw node
         ctx.beginPath();
         ctx.arc(node.x, node.y, node.radius * (1 + (node.pulse * 0.5)), 0, Math.PI * 2);
         ctx.fillStyle = `rgba(0, 194, 255, ${0.5 + node.pulse * 0.5})`;
         ctx.fill();
         
-        updateNode(node);
+        updateNode(node, mouse.x, mouse.y);
       }
 
+      // Cursor Interaction Ring restored
+      if (mouse.x !== -1000) {
+          ctx.beginPath();
+          ctx.arc(mouse.x, mouse.y, 40, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(0, 194, 255, 0.2)";
+          ctx.lineWidth = 1;
+          
+          ctx.moveTo(mouse.x - 50, mouse.y); ctx.lineTo(mouse.x - 30, mouse.y);
+          ctx.moveTo(mouse.x + 50, mouse.y); ctx.lineTo(mouse.x + 30, mouse.y);
+          ctx.moveTo(mouse.x, mouse.y - 50); ctx.lineTo(mouse.x, mouse.y - 30);
+          ctx.moveTo(mouse.x, mouse.y + 50); ctx.lineTo(mouse.x, mouse.y + 30);
+          
+          ctx.stroke();
+      }
+
+      // NO 30FPS LIMIT - RESTORED TO NATIVE 60FPS
       animationFrameId = requestAnimationFrame(animate);
     };
 
@@ -140,6 +177,8 @@ export function HackerNetworkBackground() {
 
     return () => {
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseout", handleMouseOut);
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
