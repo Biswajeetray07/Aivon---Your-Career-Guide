@@ -22,18 +22,17 @@ export function HackerNetworkBackground() {
     // Grid properties
     const gridSize = 40;
     const columns = Math.ceil(width / gridSize);
-    const rows = Math.ceil(height / gridSize);
     
     // Matrix Rain properties
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$+-*/=%\"'#&_(),.;:?!\\|{}<>[]^~";
     const drops: number[] = [];
     for (let x = 0; x < columns; x++) {
-      drops[x] = Math.random() * -100; // Start at random negative heights
+      drops[x] = Math.random() * -100;
     }
 
-    // Network Node properties
+    // Network Node properties — HALVED for performance
     type Node = {
-        x: number; y: number; vx: number; vy: number; radius: number; connections: number[]; pulse: number; pulseDir: number;
+        x: number; y: number; vx: number; vy: number; radius: number; pulse: number; pulseDir: number;
     };
 
     const createNode = (): Node => {
@@ -45,85 +44,47 @@ export function HackerNetworkBackground() {
             vx: isHorizontal ? speed : 0,
             vy: isHorizontal ? 0 : speed,
             radius: Math.random() * 1.5 + 0.5,
-            connections: [],
             pulse: Math.random(),
             pulseDir: Math.random() > 0.5 ? 0.02 : -0.02,
         };
     };
 
-    const updateNode = (node: Node, mouseX: number, mouseY: number) => {
+    const updateNode = (node: Node) => {
         node.x += node.vx;
         node.y += node.vy;
-
-        // Wrap around
         if (node.x < 0) node.x = width;
         if (node.x > width) node.x = 0;
         if (node.y < 0) node.y = height;
         if (node.y > height) node.y = 0;
-        
-        // Pulse effect
         node.pulse += node.pulseDir;
         if (node.pulse > 1 || node.pulse < 0) node.pulseDir *= -1;
-        
-        // Mouse repel
-        if (mouseX !== -1000) {
-            const dx = mouseX - node.x;
-            const dy = mouseY - node.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < 100) {
-                node.x -= (dx / dist) * 2;
-                node.y -= (dy / dist) * 2;
-            }
-        }
     };
 
+    const nodeCount = Math.floor((width * height) / 50000); // HALVED from 25000
     const nodes: Node[] = [];
-    // Lower node count than spider web for cleaner "data flow" feel
-    const nodeCount = Math.floor((width * height) / 25000); 
-    for(let i=0; i<nodeCount; i++) {
+    for(let i = 0; i < nodeCount; i++) {
         nodes.push(createNode());
     }
 
-    // Mouse interaction
-    const mouse = { x: -1000, y: -1000 };
-    const handleMouseMove = (e: MouseEvent) => {
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
-    };
-    const handleMouseOut = () => {
-      mouse.x = -1000;
-      mouse.y = -1000;
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseout", handleMouseOut);
-
-    // Animation Loop
+    // 30fps throttle
     let animationFrameId: number;
-    const animate = () => {
-      // Semi-transparent black to create trailing effects
+    let lastFrameTime = 0;
+    const FRAME_INTERVAL = 1000 / 30; // 30fps cap
+
+    const animate = (timestamp: number) => {
+      animationFrameId = requestAnimationFrame(animate);
+
+      const elapsed = timestamp - lastFrameTime;
+      if (elapsed < FRAME_INTERVAL) return;
+      lastFrameTime = timestamp - (elapsed % FRAME_INTERVAL);
+
+      // Semi-transparent black for trailing effect
       ctx.fillStyle = "rgba(5, 7, 10, 0.2)"; 
       ctx.fillRect(0, 0, width, height);
 
-      // 1. Draw Static Grid Overlay (very faint)
-      ctx.strokeStyle = "rgba(0, 229, 176, 0.02)";
-      ctx.lineWidth = 1;
-      
-      // Horizontal lines
-      for (let y = 0; y <= height; y += gridSize) {
-         ctx.beginPath();
-         ctx.moveTo(0, y);
-         ctx.lineTo(width, y);
-         ctx.stroke();
-      }
-      // Vertical lines
-      for (let x = 0; x <= width; x += gridSize) {
-         ctx.beginPath();
-         ctx.moveTo(x, 0);
-         ctx.lineTo(x, height);
-         ctx.stroke();
-      }
+      // SKIP grid drawing — it was barely visible at 0.02 opacity
 
-      // 2. Draw Matrix Rain (Subtle)
+      // Matrix Rain (Subtle)
       ctx.fillStyle = "rgba(0, 229, 176, 0.15)";
       ctx.font = "10px monospace";
       for (let i = 0; i < drops.length; i++) {
@@ -131,42 +92,34 @@ export function HackerNetworkBackground() {
              const text = chars.charAt(Math.floor(Math.random() * chars.length));
              ctx.fillText(text, i * gridSize, drops[i] * gridSize);
          }
-         
-         // Sending the drop back to the top randomly
          if (drops[i] * gridSize > height && Math.random() > 0.975) {
              drops[i] = 0;
          }
          drops[i]++;
       }
 
-      // 3. Draw Network Nodes & Data Streams
+      // Network Nodes & Connections — optimized
       ctx.lineWidth = 1;
       for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i];
         
-        // Update connections (recalculate each frame for dynamic connections)
-        node.connections = [];
+        // Only check nearby nodes (reduced connection radius)
         for (let j = i + 1; j < nodes.length; j++) {
             const other = nodes[j];
             const dx = node.x - other.x;
             const dy = node.y - other.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
+            const distSq = dx * dx + dy * dy; // Skip sqrt for performance
             
-            if (distance < 150) { // Connect nodes that are close
-                node.connections.push(j);
-                
-                // Line opacity based on strict axis alignment (optional hacker style)
+            if (distSq < 22500) { // 150² = 22500
+                const distance = Math.sqrt(distSq);
                 const isAxisAligned = Math.abs(dx) < 10 || Math.abs(dy) < 10;
                 
-                // Draw connecting line
                 ctx.beginPath();
                 ctx.moveTo(node.x, node.y);
                 ctx.lineTo(other.x, other.y);
-                if (isAxisAligned) {
-                  ctx.strokeStyle = `rgba(0, 194, 255, ${1 - distance / 150})`; // Bright cyan for straight lines
-                } else {
-                  ctx.strokeStyle = `rgba(0, 194, 255, ${(1 - distance / 150) * 0.2})`; // Faint cyan for diagonals
-                }
+                ctx.strokeStyle = isAxisAligned 
+                  ? `rgba(0, 194, 255, ${1 - distance / 150})`
+                  : `rgba(0, 194, 255, ${(1 - distance / 150) * 0.2})`;
                 ctx.stroke();
             }
         }
@@ -174,42 +127,19 @@ export function HackerNetworkBackground() {
         // Draw node
         ctx.beginPath();
         ctx.arc(node.x, node.y, node.radius * (1 + (node.pulse * 0.5)), 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(0, 194, 255, ${0.5 + node.pulse * 0.5})`; // Spiderman Hacker Cyan Glow
+        ctx.fillStyle = `rgba(0, 194, 255, ${0.5 + node.pulse * 0.5})`;
         ctx.fill();
         
-        // Move node
-        updateNode(node, mouse.x, mouse.y);
-      }
-
-      // 4. Cursor Interaction Ring
-      if (mouse.x !== -1000) {
-          ctx.beginPath();
-          ctx.arc(mouse.x, mouse.y, 40, 0, Math.PI * 2);
-          ctx.strokeStyle = "rgba(0, 194, 255, 0.2)"; // Cobalt accent
-          ctx.lineWidth = 1;
-          
-          // Outer targeting ring
-          ctx.moveTo(mouse.x - 50, mouse.y);
-          ctx.lineTo(mouse.x - 30, mouse.y);
-          ctx.moveTo(mouse.x + 50, mouse.y);
-          ctx.lineTo(mouse.x + 30, mouse.y);
-          ctx.moveTo(mouse.x, mouse.y - 50);
-          ctx.lineTo(mouse.x, mouse.y - 30);
-          ctx.moveTo(mouse.x, mouse.y + 50);
-          ctx.lineTo(mouse.x, mouse.y + 30);
-          
-          ctx.stroke();
+        updateNode(node);
       }
 
       animationFrameId = requestAnimationFrame(animate);
     };
 
-    animate();
+    animationFrameId = requestAnimationFrame(animate);
 
     return () => {
       window.removeEventListener("resize", handleResize);
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseout", handleMouseOut);
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
@@ -218,7 +148,7 @@ export function HackerNetworkBackground() {
     <canvas
       ref={canvasRef}
       className="absolute inset-0 w-full h-full object-cover z-[-1]"
-      style={{ background: "#05070A" }}
+      style={{ background: "#05070A", willChange: "transform" }}
     />
   );
 }

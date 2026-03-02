@@ -1,8 +1,18 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { HackerNetworkBackground } from "./hacker-network-background";
-import { SpiderWebBackground } from "./spiderweb-background";
+import dynamic from "next/dynamic";
+
+// Lazy-load the heavy canvas backgrounds — they are NOT needed for initial paint
+const HackerNetworkBackground = dynamic(
+  () => import("./hacker-network-background").then(m => ({ default: m.HackerNetworkBackground })),
+  { ssr: false, loading: () => <div className="absolute inset-0 bg-[#05070A]" /> }
+);
+
+const SpiderWebBackground = dynamic(
+  () => import("./spiderweb-background").then(m => ({ default: m.SpiderWebBackground })),
+  { ssr: false, loading: () => <div className="absolute inset-0 bg-[#05070A]" /> }
+);
 
 export function GlobalBackground() {
   const pathname = usePathname();
@@ -16,10 +26,8 @@ export function GlobalBackground() {
   return (
     <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
       {isAuthPage ? (
-        // Spiderman themed for Auth Auth pages
         <SpiderWebBackground variant="default" />
       ) : (
-        // Hacker Network Matrix Rain for all other pages
         <HackerNetworkBackground />
       )}
     </div>

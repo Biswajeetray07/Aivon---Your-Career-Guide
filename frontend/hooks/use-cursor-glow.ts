@@ -1,35 +1,35 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useCallback } from "react";
 
 export function useCursorGlow() {
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isHovering, setIsHovering] = useState(false);
+  const posRef = useRef({ x: 0, y: 0 });
+  const rafRef = useRef<number | null>(null);
+  const elementRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    const updatePosition = (e: MouseEvent) => {
-      setPosition({ x: e.clientX, y: e.clientY });
-    };
-
-    const handleMouseOver = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.closest("a, button, input, [role='button'], .hover-lift")) {
-        setIsHovering(true);
-      }
-    };
-    const handleMouseOut = () => {
-      setIsHovering(false);
-    };
-
-    window.addEventListener("mousemove", updatePosition);
-    window.addEventListener("mouseover", handleMouseOver);
-    window.addEventListener("mouseout", handleMouseOut);
-
-    return () => {
-      window.removeEventListener("mousemove", updatePosition);
-      window.removeEventListener("mouseover", handleMouseOver);
-      window.removeEventListener("mouseout", handleMouseOut);
-    };
+  const updateDOM = useCallback(() => {
+    if (elementRef.current) {
+      elementRef.current.style.left = `${posRef.current.x}px`;
+      elementRef.current.style.top = `${posRef.current.y}px`;
+    }
+    rafRef.current = null;
   }, []);
 
-  return { position, isHovering };
+  useEffect(() => {
+    const handleMove = (e: MouseEvent) => {
+      posRef.current.x = e.clientX;
+      posRef.current.y = e.clientY;
+      // Batch DOM updates with rAF — no React re-renders
+      if (!rafRef.current) {
+        rafRef.current = requestAnimationFrame(updateDOM);
+      }
+    };
+
+    window.addEventListener("mousemove", handleMove, { passive: true });
+    return () => {
+      window.removeEventListener("mousemove", handleMove);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [updateDOM]);
+
+  return { elementRef, position: posRef };
 }

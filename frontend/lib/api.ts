@@ -49,7 +49,6 @@ async function apiFetch<T>(
       method,
       headers: buildHeaders(),
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-      cache: "no-store",
       signal: controller.signal,
     });
   } catch (err: any) {
