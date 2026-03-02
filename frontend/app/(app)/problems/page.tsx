@@ -110,6 +110,14 @@ export default function ProblemsPage() {
 
   const [page, setPage] = useState(1);
 
+  // ── Debounce Search Input ──────────────────────────────────────────────────
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [search]);
+
   // ── SWR Data Hook ──────────────────────────────────────────────────────────
   const filters: ProblemsFilters = {
     page,
