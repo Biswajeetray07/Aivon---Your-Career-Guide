@@ -92,6 +92,11 @@ export function detectProblemTypeFromInput(
     return "graph";
   }
 
+  // Matrix indicators: board, grid, matrix
+  if (/\b(board|grid|matrix)\b/i.test(trimmed) || /\[{2,}.*\]{2,}/.test(trimmed)) {
+    return "matrix";
+  }
+
   return problemType;
 }
 
