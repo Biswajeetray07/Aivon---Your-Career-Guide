@@ -7,14 +7,13 @@ import "dotenv/config";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { PrismaPg } from "@prisma/adapter-pg";
+
 import { PrismaClient } from "../../generated/prisma/client.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "../..");
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient({} as any);
 
 const BATCH_SIZE = 10;
 
