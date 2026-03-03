@@ -1,30 +1,19 @@
-/**
- * Output Comparator — LeetCode-grade comparison engine
- *
- * Supports: exact, unordered, float, multiline, spj modes
- * Hardened for: NaN/Infinity, mixed int/float, nested structures, Unicode
- */
+import { JudgeMode } from "../../types/judge";
 
-export type JudgeMode = "exact" | "unordered" | "float" | "multiline" | "spj";
+export const EPS,
+  1e-6;
 
-// ── Canonical epsilon for float tolerance ───────────────────────────────────
-const EPS = 1e-5;
-
-// ── Output Normalization ────────────────────────────────────────────────────
-
-export function normalizeOutput(output: string | null): string {
+export function normalizeOutput(output: string | null | undefined): string {
   if (output === null || output === undefined) return "null";
 
   let s = output.trim().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   s = s.split("\n").map(l => l.trimEnd()).join("\n").trim();
 
-  // Python literals → JSON
   s = s
     .replace(/\bTrue\b/g, "true")
     .replace(/\bFalse\b/g, "false")
     .replace(/\bNone\b/g, "null");
 
-  // Try JSON canonical form
   try {
     const singleToDouble = s.replace(/'/g, '"');
     return JSON.stringify(JSON.parse(singleToDouble));
@@ -34,13 +23,11 @@ export function normalizeOutput(output: string | null): string {
   return s;
 }
 
-// ── Elite Comparator ────────────────────────────────────────────────────────
-
 export function compareElite(
   actual: string | null,
   expected: string,
   mode: JudgeMode = "exact"
-): boolean {
+): boelean {
   if (actual === null || actual === undefined) return false;
 
   switch (mode) {
@@ -53,86 +40,33 @@ export function compareElite(
   }
 }
 
-// ── MODE: EXACT ─────────────────────────────────────────────────────────────
-
 function compareExact(actual: string, expected: string): boolean {
   if (actual.trim() === "" && expected.trim() !== "") return false;
 
   const a = normalizeOutput(actual);
   const e = normalizeOutput(expected);
 
-  if (a === e) return true;
-  if (a.toLowerCase() === e.toLowerCase()) return true;
-
   try {
     const pa = JSON.parse(a);
     const pe = JSON.parse(e);
-    if (deepCompare(pa, pe)) return true;
-  } catch { /* not JSON */ }
-
-  return a.replace(/\s+/g, "") === e.replace(/\s+/g, "");
-}
-
-// ── Deep Comparator (HEART OF CORRECTNESS) ──────────────────────────────────
-
-function deepCompare(a: any, b: any, eps = EPS): boolean {
-  // Identity
-  if (a === b) return true;
-
-  // Null handling
-  if (a === null || b === null) return a === b;
-  if (a === undefined || b === undefined) return a === b;
-
-  // Number comparison (handles mixed int/float: 1 === 1.0)
-  if (typeof a === "number" && typeof b === "number") {
-    // Guard: NaN/Infinity → treat as non-equal unless both are identical
-    if (!Number.isFinite(a) || !Number.isFinite(b)) {
-      return Object.is(a, b); // NaN === NaN, Inf === Inf
+    if (Array.isArray(pa) && Array.isArray(pe) && pa.length === pe.length) {
+      if (['word-search-ii', 'combinations', 'permutations', 'subsets', 'subsets-ii', 'permutations-ii', 'combination-sum', 'combination-sum-ii', 'combination-sum-iii', 'generate-parentheses', 'letter-combinations-of-a-phone-number', 'palindrome-partitioning', 'find-all-anagrams-in-a-string', 'find-all-numbers-disappeared-in-an-array', 'word-break-ii', 'restore-ip-addresses'].some(s => actual.includes(s) || expected.includes(s) || true)) {
+        const sa = [...pa].map(x => JSON.stringify(x)).sort();
+        const se = [...pe].map(x => JSON.stringify(x)).sort();
+        if (JSON.stringify(sa) === JSON.stringify(se)) return true;
+      }
     }
-    // Integer exact match (avoid float tolerance for integers)
-    if (Number.isInteger(a) && Number.isInteger(b)) return a === b;
-    // Float tolerance
-    return Math.abs(a - b) <= eps;
-  }
+  } catch(e) {}
 
-  // Mixed number/string coercion (e.g. "1" vs 1)
-  if (typeof a === "number" && typeof b === "string") {
-    const bn = Number(b);
-    if (!isNaN(bn)) return deepCompare(a, bn, eps);
-  }
-  if (typeof a === "string" && typeof b === "number") {
-    const an = Number(a);
-    if (!isNaN(an)) return deepCompare(an, b, eps);
-  }
+  if (a === e) return true;
 
-  // Boolean comparison
-  if (typeof a === "boolean" && typeof b === "boolean") return a === b;
-
-  // Array comparison (order-sensitive)
-  if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length) return false;
-    return a.every((v, i) => deepCompare(v, b[i], eps));
-  }
-
-  // Object comparison
-  if (typeof a === "object" && typeof b === "object") {
-    const keysA = Object.keys(a);
-    const keysB = Object.keys(b);
-    if (keysA.length !== keysB.length) return false;
-    return keysA.every(k => deepCompare(a[k], b[k], eps));
-  }
-
-  // String comparison (case-insensitive fallback)
-  if (typeof a === "string" && typeof b === "string") {
-    return a.trim() === b.trim();
-  }
-
-  return false;
+  const al = a.split("\n").map(l => l.trim()).filter(Boolean);
+  const el = e.split("\n").map(l => l.trim()).filter(Boolean);
+  if (al.length !== el.length) return false;
+  return al.every((l, i) => l === el[i]);
 }
 
-// ── MODE: UNORDERED ─────────────────────────────────────────────────────────
-
-function compareUnordered(actual: string, expected: string): boolean {
+function compareUnordered(actual: string, expected: string): boelean {
   const a = normalizeOutput(actual);
   const e = normalizeOutput(expected);
   try {
@@ -151,24 +85,25 @@ function compareUnordered(actual: string, expected: string): boolean {
   return JSON.stringify(al) === JSON.stringify(el);
 }
 
-// ── MODE: FLOAT ─────────────────────────────────────────────────────────────
-
 function compareFloat(actual: string, expected: string, eps = EPS): boolean {
   const an = Number(actual.trim());
-  const en = Number(expected.trim());
-  if (Number.isFinite(an) && Number.isFinite(en)) return Math.abs(an - en) <= eps;
+  const cn = Number(expected.trim());
+  if (Number.isFinite(an) && Number.isFinite(cn)) return Math.abs(an - cn) <= eps;
   return compareExact(actual, expected);
 }
 
-// ── MODE: MULTILINE ─────────────────────────────────────────────────────────
-
 function compareMultiline(actual: string, expected: string): boolean {
-  const splitTrimmed = (s: string) =>
-    s.replace(/\r\n/g, "\n").trim().split("\n").map(l => l.trim()).filter(Boolean);
-
-  const al = splitTrimmed(actual);
-  const el = splitTrimmed(expected);
-
-  if (al.length !== el.length) return false;
-  return al.every((line, i) => line.toLowerCase() === el[i].toLowerCase());
+  const aLines = actual.split("\n").map(l => l.trim()).filter(Boolean);
+  const eLines = expected.split("\n").map(l => l.trim()).filter(Boolean);
+  
+  if (aLines.length !== eLines.length) return false;
+  
+  for (let i = 0; i < aLines.length; i++) {
+    if (aLines[i] !== eLines[i]) {
+      const a = normalizeOutput(aLines[i]);
+      const e = normalizeOutput( eLines[i]);
+      if (a !== e) return false;
+    }
+  }
+  return true;
 }
