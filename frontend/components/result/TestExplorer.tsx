@@ -38,98 +38,10 @@ const CODE_BG = "#060D10";
 export default function TestExplorer({ testResults, mode, visibleCount, activeIndex, onSelect, progressCurrent: serverProgress, progressTotal: serverTotal }: TestExplorerProps) {
   const [internalIdx, setInternalIdx] = useState(0);
   const [tab, setTab] = useState<Tab>("detail");
-  const [localProgress, setLocalProgress] = useState(0);
-  // Use controlled index if provided, else internal
   const activeIdx = activeIndex !== undefined ? activeIndex : internalIdx;
   const setActiveIdx = (i: number) => { setInternalIdx(i); onSelect?.(i); };
 
-  const isRunning = ["RUNNING", "PENDING", "QUEUED", "RUN", "SUBMIT"].includes(mode?.toUpperCase() || "");
-
-  // Simulated compilation pulse
-  useEffect(() => {
-    if (isRunning && (!testResults || testResults.length === 0)) {
-       setLocalProgress(0);
-       const target = serverTotal && serverTotal > 0 ? serverTotal : (mode === "submit" ? 10 : 3);
-       
-       const interval = setInterval(() => {
-         setLocalProgress(p => {
-           if (p < target) return p + 1;
-           return p; // Stick at target until results load
-         });
-       }, 600);
-       
-       return () => clearInterval(interval);
-    }
-  }, [isRunning, testResults?.length, mode, serverTotal]);
-
   if (!testResults || testResults.length === 0) {
-    if (isRunning) {
-       const mockTotal = serverTotal && serverTotal > 0 ? serverTotal : mode === "submit" ? 10 : 3;
-       // Prefer server progress if available, otherwise fallback to local simulated ticking
-       const currentProgress = typeof serverProgress === 'number' ? serverProgress : localProgress;
-       const pts = Array.from({ length: mockTotal }).map((_, i) => i);
-       
-       return (
-        <div style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%", overflow: "hidden" }}>
-          <style>{`
-            .test-cases-scrollbar::-webkit-scrollbar { height: 6px; }
-            .test-cases-scrollbar::-webkit-scrollbar-track { background: transparent; }
-            .test-cases-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
-            .test-cases-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
-          `}</style>
-          <div 
-            className="test-cases-scrollbar"
-            style={{
-            display: "flex", gap: 6, padding: "12px 20px", height: "56px",
-            overflowX: "auto", overflowY: "hidden", borderBottom: "1px solid rgba(255,255,255,0.06)",
-            scrollbarWidth: "auto", scrollbarColor: "rgba(255,255,255,0.15) transparent",
-            width: "100%", flexShrink: 0
-          }}>
-            {pts.map((i) => {
-              const passed = i < currentProgress;
-              const executing = i === currentProgress;
-              const pending = i > currentProgress;
-              
-              return (
-                <div
-                  key={i}
-                  style={{
-                    flexShrink: 0, padding: "6px 14px", borderRadius: 2, fontSize: 11, fontWeight: 800,
-                    fontFamily: "'Geist Mono', monospace", whiteSpace: "nowrap",
-                    background: executing ? "rgba(0,194,255,0.1)" : passed ? "rgba(0,229,176,0.1)" : "rgba(255,255,255,0.02)",
-                    border: `1px solid ${executing ? "rgba(0,194,255,0.5)" : passed ? "rgba(0,229,176,0.3)" : "rgba(255,255,255,0.1)"}`,
-                    color: executing ? "#00C2FF" : passed ? "#00E5B0" : "rgba(255,255,255,0.4)",
-                    textTransform: "uppercase", letterSpacing: "0.1em",
-                    opacity: pending ? 0.5 : 1,
-                    display: "flex", alignItems: "center", gap: 6,
-                  }}
-                >
-                  {executing ? (
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", border: "2px solid rgba(0,194,255,0.3)", borderTopColor: "#00C2FF", animation: "spin 1s linear infinite" }} />
-                  ) : passed ? (
-                    <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#00E5B0", boxShadow: "0 0 5px #00E5B0" }} />
-                  ) : (
-                     <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "rgba(255,255,255,0.2)" }} />
-                  )}
-                  CASE.0{i + 1}
-                </div>
-              );
-            })}
-          </div>
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
-            <div style={{ width: 40, height: 40, borderRadius: "50%", border: "2px solid rgba(0,194,255,0.1)", borderTopColor: "#00C2FF", animation: "spin 1s linear infinite" }} />
-            <div style={{ color: "#00C2FF", fontFamily: "'Geist Mono', monospace", fontSize: 12, letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 800 }}>
-               SYS.STATUS // EXECUTING<span className="typing-cursor">_</span>
-            </div>
-            {currentProgress !== undefined && (
-              <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.1em" }}>
-                 COMPILING CASE {Math.min(currentProgress + 1, mockTotal)} OF {mockTotal}
-              </div>
-            )}
-          </div>
-        </div>
-       );
-    }
     return (
       <div style={{ padding: 32, textAlign: "center", color: "#4a4a6a", fontSize: 14 }}>
         No test results yet.

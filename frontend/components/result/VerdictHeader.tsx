@@ -138,7 +138,26 @@ export default function VerdictHeader({
         </div>
       )}
 
+      {/* Progress bar — RUNNING state */}
+      {!done && (progressTotal ?? 0) > 0 && (
+        <div style={{ marginTop: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "#8b8ca7" }}>
+            <span>{progressMessage || "Running test cases…"}</span>
+            <span>{progressCurrent ?? 0} / {progressTotal}</span>
+          </div>
+          <div style={{ height: 6, background: "rgba(255,255,255,0.07)", borderRadius: 99, overflow: "hidden" }}>
+            <div style={{
+              height: "100%", width: `${pct}%`, borderRadius: 99,
+              background: `linear-gradient(90deg, #00E5FF, #3b82f6)`,
+              transition: "width 300ms cubic-bezier(0.2, 0.8, 0.2, 1)",
+              boxShadow: "0 0 8px rgba(124,58,237,0.6)",
+            }} />
+          </div>
+        </div>
+      )}
+
       <style>{`
+        @keyframes panelFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes shimmerSlide { 100% { transform: translateX(400%); } }
       `}</style>
