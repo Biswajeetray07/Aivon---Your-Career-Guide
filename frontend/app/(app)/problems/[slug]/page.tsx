@@ -235,9 +235,10 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
   async function handleRun() {
     if (!problem) return;
     setRunning(true);
-    setResult(null);
+    setResult({ status: "RUNNING", runtime: null, memory: null, testResults: [], passedCases: 0, totalCases: 0 } as any);
     setResultMode("run");
     setActiveTestIndex(0);
+    setTerminalOpen(true);
     setFloatingMode(null);
     try {
       const runRes = await runCodeApi(problem.id, language, code);
@@ -261,9 +262,10 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
   async function handleSubmit() {
     if (!problem) return;
     setSubmitting(true);
-    setResult(null);
+    setResult({ id: "pending", status: "RUNNING", runtime: null, memory: null, details: null } as any);
     setResultMode("submit");
     setActiveTestIndex(0);
+    setTerminalOpen(true);
     setFloatingMode(null);
     try {
       const { submissionId } = await createSubmission(problem.id, language, code);

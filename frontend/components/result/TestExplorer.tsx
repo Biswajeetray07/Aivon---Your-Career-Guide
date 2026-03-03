@@ -41,6 +41,16 @@ export default function TestExplorer({ testResults, mode, visibleCount, activeIn
   const setActiveIdx = (i: number) => { setInternalIdx(i); onSelect?.(i); };
 
   if (!testResults || testResults.length === 0) {
+    if (["RUNNING", "PENDING", "QUEUED"].includes(mode?.toUpperCase() || "")) {
+       return (
+        <div style={{ padding: 40, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 16 }}>
+          <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(0,194,255,0.1)", border: "2px solid rgba(0,194,255,0.3)", borderTopColor: "#00C2FF", animation: "spin 1s linear infinite" }} />
+          <div style={{ color: "#00C2FF", fontFamily: "'Geist Mono', monospace", fontSize: 12, letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 800 }}>
+             SYS.STATUS // EXECUTING<span className="typing-cursor">_</span>
+          </div>
+        </div>
+       );
+    }
     return (
       <div style={{ padding: 32, textAlign: "center", color: "#4a4a6a", fontSize: 14 }}>
         No test results yet.
