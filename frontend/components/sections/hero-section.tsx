@@ -98,20 +98,22 @@ export function HeroSection() {
       <div className="relative z-10 w-full max-w-2xl mx-auto lg:mx-0 stagger-5 animate-fade-in-up mt-12 lg:mt-0 flex justify-end">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-[#00E5B0]/10 blur-[120px] rounded-full pointer-events-none" />
         
-        <div className="flex-1 border border-white/5 bg-[#0A0F14] shadow-2xl relative flex flex-col rounded-sm group transform transition-transform duration-700 hover:scale-[1.02] w-full max-w-[600px] overflow-hidden">
+        <div className="border border-white/5 rounded-xl overflow-hidden shadow-lg relative bg-[#060D10]/80 w-full max-w-[600px] flex flex-col transition-transform duration-700 hover:scale-[1.02] group">
           
           {/* Top Tech Bar */}
-          <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between bg-[#060D10] relative z-10 w-full">
+          <div className="flex items-center justify-between h-14 px-4 border-b border-white/5 bg-[#0A0F14]/90 shrink-0 relative z-10 w-full">
             <div className="flex items-center gap-3">
-              <div className="w-2.5 h-2.5 rounded-sm bg-[#00E5B0] animate-pulse shadow-[0_0_8px_#00E5B0]" />
-              <span className="text-[10px] sm:text-[11px] font-geist-mono text-[#00E5B0] tracking-widest uppercase">
-                terminal://aivon
-              </span>
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-black/50 rounded-sm border border-white/5">
+                <div className="w-1.5 h-1.5 rounded-sm bg-[#00E5B0] animate-pulse shadow-[0_0_5px_#00E5B0]" />
+                <div className="w-1.5 h-1.5 rounded-sm bg-white/20" />
+                <div className="w-1.5 h-1.5 rounded-sm bg-white/20" />
+              </div>
             </div>
-            <div className="flex gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#FF5F56]/80" />
-              <div className="w-1.5 h-1.5 rounded-full bg-[#FFBD2E]/80" />
-              <div className="w-1.5 h-1.5 rounded-full bg-[#27C93F]/80" />
+            <span className="absolute left-1/2 -translate-x-1/2 text-[9px] font-geist-mono text-[#00E5B0]/50 tracking-[0.2em] uppercase">
+              terminal://aivon
+            </span>
+            <div className="flex gap-4">
+              <span className="text-[#00E5B0]/40 text-[10px] uppercase font-bold tracking-widest hidden sm:inline-block">SYS.RDY</span>
             </div>
           </div>
           

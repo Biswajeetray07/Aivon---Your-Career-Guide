@@ -264,23 +264,25 @@ export default function ProfilePage() {
 
       {/* ── User Header (Operative Dossier) ── */}
       {user && (
-        <div className="flex-1 border border-white/5 bg-[#0A0F14] shadow-2xl relative flex flex-col rounded-sm mb-12 stagger-1 animate-fade-in-up">
+        <div className="border border-white/5 rounded-xl overflow-hidden shadow-lg relative bg-[#060D10]/80 w-full flex flex-col mb-12 stagger-1 animate-fade-in-up transition-colors duration-500">
           {/* Top Tech Bar */}
-          <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between bg-[#060D10] relative z-10 w-full">
+          <div className="flex items-center justify-between h-14 px-4 border-b border-white/5 bg-[#0A0F14]/90 shrink-0 relative z-10 w-full">
             <div className="flex items-center gap-3">
-              <div className="w-2.5 h-2.5 rounded-sm bg-[#00E5B0] animate-pulse shadow-[0_0_8px_#00E5B0]" />
-              <span className="text-[10px] font-geist-mono text-[#00E5B0] tracking-widest uppercase">
-                SYS_AUTH: {stats && stats.totalSubmissions > 0 ? "VETERAN OPERATIVE" : "ROOKIE OPERATIVE"}
-              </span>
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-black/50 rounded-sm border border-white/5">
+                <div className="w-1.5 h-1.5 rounded-sm bg-[#00E5B0] animate-pulse shadow-[0_0_5px_#00E5B0]" />
+                <div className="w-1.5 h-1.5 rounded-sm bg-white/20" />
+                <div className="w-1.5 h-1.5 rounded-sm bg-white/20" />
+              </div>
             </div>
-            <div className="flex gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#FF5F56]/80" />
-              <div className="w-1.5 h-1.5 rounded-full bg-[#FFBD2E]/80" />
-              <div className="w-1.5 h-1.5 rounded-full bg-[#27C93F]/80" />
+            <span className="absolute left-1/2 -translate-x-1/2 text-[9px] font-geist-mono text-[#00E5B0]/50 tracking-[0.2em] uppercase">
+              {stats && stats.totalSubmissions > 0 ? "VETERAN OPERATIVE" : "ROOKIE OPERATIVE"}
+            </span>
+            <div className="flex gap-4">
+              <span className="text-[#00E5B0]/40 text-[10px] uppercase font-bold tracking-widest hidden sm:inline-block">SYS.RDY</span>
             </div>
           </div>
           
-          <div className="p-8 md:p-10 relative z-10 flex flex-col md:flex-row items-center md:items-center gap-8 border-l-4 border-[#00C2FF] bg-[#060D10]/80">
+          <div className="p-8 md:p-10 relative z-10 flex flex-col md:flex-row items-center md:items-center gap-8">
             <div className="absolute top-0 right-0 w-64 h-64 bg-[conic-gradient(from_0deg,transparent_0deg,rgba(0,194,255,0.05)_90deg,transparent_90deg)] animate-[spin_10s_linear_infinite] pointer-events-none mix-blend-screen opacity-50 block" />
             <div className="absolute inset-0 bg-[linear-gradient(rgba(0,194,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,194,255,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
 
@@ -359,11 +361,20 @@ export default function ProfilePage() {
                 </span>
               </div>
 
-              {/* Typography Title */}
+              {/* Typography Title (With Hover Glitch Effect & VT323 profile font matching Global Nexus) */}
               <div className="relative group inline-block mb-3">
-                <h1 className="text-4xl md:text-5xl lg:text-5xl font-geist-mono font-black tracking-widest uppercase m-0 leading-none text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] relative z-10 flex items-center">
-                  <span className="text-[#00C2FF] mr-3 font-medium opacity-80">]</span>
-                  <span>{user.name || user.email.split("@")[0]}</span>
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-vt323 uppercase tracking-widest mb-1 text-transparent bg-clip-text bg-[linear-gradient(180deg,#FFFFFF_0%,#A1A1AA_100%)] drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] relative z-10 group-hover:text-white transition-colors">
+                  <span className="text-[#00C2FF] mr-2 opacity-50 group-hover:opacity-100 transition-opacity">]</span>
+                  {user.name || user.email.split("@")[0]}
+                </h1>
+                {/* Glitch Pseudo-elements on hovering container */}
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-vt323 uppercase tracking-widest mb-1 text-[#00E5B0] absolute top-0 left-[-2px] opacity-0 group-hover:opacity-70 group-hover:animate-[glitch_0.3s_linear_infinite] mix-blend-screen pointer-events-none select-none z-0">
+                  <span className="text-transparent mr-2">]</span>
+                  {user.name || user.email.split("@")[0]}
+                </h1>
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-vt323 uppercase tracking-widest mb-1 text-[#FF1493] absolute top-[2px] left-[2px] opacity-0 group-hover:opacity-70 group-hover:animate-[glitch_0.4s_linear_infinite_reverse] mix-blend-screen pointer-events-none select-none z-0">
+                  <span className="text-transparent mr-2">]</span>
+                  {user.name || user.email.split("@")[0]}
                 </h1>
               </div>
               <p className="text-[#00C2FF] text-[10px] sm:text-xs font-geist-mono tracking-[0.2em] flex flex-col sm:flex-row items-center sm:items-start gap-3 mt-4">

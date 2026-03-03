@@ -85,20 +85,22 @@ export default function LeaderboardPage() {
         <div className="w-full mb-12 stagger-1 animate-fade-in-up flex flex-col xl:flex-row gap-8 items-stretch relative z-10">
           
           {/* Global Nexus Operative Dossier Header (Matching VerdictHeader Style) */}
-          <div className="flex-1 border border-white/5 bg-[#0A0F14] shadow-2xl relative flex flex-col rounded-sm">
+          <div className="border border-white/5 rounded-xl overflow-hidden shadow-lg relative bg-[#060D10]/80 w-full flex flex-col transition-colors duration-500">
             
             {/* Top Tech Bar */}
-            <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between bg-[#060D10] relative z-10 w-full">
+            <div className="flex items-center justify-between h-14 px-4 border-b border-white/5 bg-[#0A0F14]/90 shrink-0 relative z-10 w-full">
               <div className="flex items-center gap-3">
-                <div className={`w-2.5 h-2.5 rounded-sm ${connected ? 'bg-[#00E5B0] animate-pulse shadow-[0_0_8px_#00E5B0]' : 'bg-[#FACC15] shadow-[0_0_8px_#FACC15]'}`} />
-                <span className="text-[10px] sm:text-[11px] font-geist-mono text-[#00C2FF] tracking-widest uppercase">
-                  NEXUS_UPLINK: {connected ? 'LIVE CONNECTION' : 'CONNECTING...'}
-                </span>
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-black/50 rounded-sm border border-white/5">
+                  <div className={`w-1.5 h-1.5 rounded-sm ${connected ? 'bg-[#00E5B0] animate-pulse shadow-[0_0_5px_#00E5B0]' : 'bg-[#FF5F56] shadow-[0_0_5px_#FF5F56]'}`} />
+                  <div className="w-1.5 h-1.5 rounded-sm bg-white/20" />
+                  <div className="w-1.5 h-1.5 rounded-sm bg-white/20" />
+                </div>
               </div>
-              <div className="flex gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#FF5F56]/80" />
-                <div className="w-1.5 h-1.5 rounded-full bg-[#FFBD2E]/80" />
-                <div className="w-1.5 h-1.5 rounded-full bg-[#27C93F]/80" />
+              <span className="absolute left-1/2 -translate-x-1/2 text-[9px] font-geist-mono text-[#00E5B0]/50 tracking-[0.2em] uppercase">
+                GLOBAL NEXUS
+              </span>
+              <div className="flex gap-4">
+                <span className="text-[#00E5B0]/40 text-[10px] uppercase font-bold tracking-widest hidden sm:inline-block">SYS.RDY</span>
               </div>
             </div>
             
@@ -120,9 +122,18 @@ export default function LeaderboardPage() {
 
                 {/* Typography Title */}
                 <div className="relative group inline-block mb-3">
-                  <h1 className="text-4xl md:text-5xl lg:text-5xl font-geist-mono font-black tracking-widest uppercase m-0 leading-none text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] relative z-10 flex items-center">
-                    <span className="text-[#00C2FF] mr-3 font-medium opacity-80">]</span>
-                    <span>GLOBAL NEXUS</span>
+                  <h1 className="text-5xl md:text-6xl lg:text-7xl font-vt323 uppercase tracking-widest mb-1 text-transparent bg-clip-text bg-[linear-gradient(180deg,#FFFFFF_0%,#A1A1AA_100%)] drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] relative z-10 group-hover:text-white transition-colors">
+                    <span className="text-[#00C2FF] mr-2 opacity-50 group-hover:opacity-100 transition-opacity">]</span>
+                    GLOBAL NEXUS
+                  </h1>
+                  {/* Glitch Pseudo-elements on hovering container */}
+                  <h1 className="text-5xl md:text-6xl lg:text-7xl font-vt323 uppercase tracking-widest mb-1 text-[#00E5B0] absolute top-0 left-[-2px] opacity-0 group-hover:opacity-70 group-hover:animate-[glitch_0.3s_linear_infinite] mix-blend-screen pointer-events-none select-none z-0">
+                    <span className="text-transparent mr-2">]</span>
+                    GLOBAL NEXUS
+                  </h1>
+                  <h1 className="text-5xl md:text-6xl lg:text-7xl font-vt323 uppercase tracking-widest mb-1 text-[#FF1493] absolute top-[2px] left-[2px] opacity-0 group-hover:opacity-70 group-hover:animate-[glitch_0.4s_linear_infinite_reverse] mix-blend-screen pointer-events-none select-none z-0">
+                    <span className="text-transparent mr-2">]</span>
+                    GLOBAL NEXUS
                   </h1>
                 </div>
                 

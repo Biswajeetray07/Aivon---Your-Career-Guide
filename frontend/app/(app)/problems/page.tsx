@@ -188,18 +188,24 @@ export default function ProblemsPage() {
       {/* ── Unified Tactical HUD (Header + Stats) ── */}
       <div className="w-full mb-12 stagger-1 animate-fade-in-up flex flex-col xl:flex-row gap-8 items-stretch relative z-10">
         
-        {/* Global Nexus Operative Dossier Header (Matching VerdictHeader Style) */}
-        <div className="flex-1 border border-white/5 bg-[#0A0F14] shadow-2xl relative flex flex-col rounded-sm">
+        {/* Target Matrix Header (Matching Dashboard Terminal Style) */}
+        <div className="border border-white/5 rounded-xl overflow-hidden shadow-lg relative bg-[#060D10]/80 w-full flex flex-col transition-colors duration-500">
           
           {/* Top Tech Bar — Aivon Terminal Style */}
-          <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between bg-[#060D10] relative z-10 w-full">
+          <div className="flex items-center justify-between h-14 px-4 border-b border-white/5 bg-[#0A0F14]/90 shrink-0 relative z-10 w-full">
             <div className="flex items-center gap-3">
-              <div className="w-2 h-2 bg-[#00E5B0] animate-pulse" />
-              <div className="w-2 h-2 bg-[#00C2FF]" />
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-black/50 rounded-sm border border-white/5">
+                <div className="w-1.5 h-1.5 rounded-sm bg-[#00E5B0] animate-pulse shadow-[0_0_5px_#00E5B0]" />
+                <div className="w-1.5 h-1.5 rounded-sm bg-white/20" />
+                <div className="w-1.5 h-1.5 rounded-sm bg-white/20" />
+              </div>
             </div>
-            <span className="text-[10px] font-geist-mono text-[#00E5B0] tracking-[0.2em] font-bold">
-              terminal://aivon/targets
+            <span className="absolute left-1/2 -translate-x-1/2 text-[9px] font-geist-mono text-[#00E5B0]/50 tracking-[0.2em] uppercase">
+              TARGET_MATRIX
             </span>
+            <div className="flex gap-4">
+              <span className="text-[#00E5B0]/40 text-[10px] uppercase font-bold tracking-widest hidden sm:inline-block">SYS.RDY</span>
+            </div>
           </div>
           
           <div className="p-8 md:p-10 relative z-10 flex flex-col md:flex-row justify-between items-center gap-6 h-full flex-grow border-l-4 border-[#00C2FF] bg-[#060D10]/80">
@@ -235,19 +241,19 @@ export default function ProblemsPage() {
 
               {/* Glitch Typography Title */}
               <div className="relative group inline-block mb-3">
-                <h1 className="text-4xl md:text-5xl lg:text-5xl font-geist-mono font-black tracking-widest uppercase m-0 leading-none text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] relative z-10 flex items-center">
-                  <span className="text-[#00C2FF] mr-3 font-medium opacity-80">]</span>
-                  <span>TARGET MATRIX</span>
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-vt323 uppercase tracking-widest mb-1 text-transparent bg-clip-text bg-[linear-gradient(180deg,#FFFFFF_0%,#A1A1AA_100%)] drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] relative z-10 group-hover:text-white transition-colors">
+                  <span className="text-[#00C2FF] mr-2 opacity-50 group-hover:opacity-100 transition-opacity">]</span>
+                  TARGET MATRIX
                 </h1>
                 
                 {/* Glitch Pseudo-elements */}
-                <h1 className="text-5xl md:text-6xl lg:text-7xl flex items-center font-vt323 tracking-widest uppercase m-0 leading-none text-[#00E5B0] absolute top-0 left-[-2px] opacity-0 group-hover:opacity-70 group-hover:animate-[glitch_0.3s_linear_infinite] mix-blend-screen pointer-events-none select-none z-0">
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-vt323 tracking-widest uppercase mb-1 text-[#00E5B0] absolute top-0 left-[-2px] opacity-0 group-hover:opacity-70 group-hover:animate-[glitch_0.3s_linear_infinite] mix-blend-screen pointer-events-none select-none z-0">
                   <span className="text-transparent mr-2">]</span>
-                  <span>TARGET MATRIX</span>
+                  TARGET MATRIX
                 </h1>
-                <h1 className="text-5xl md:text-6xl lg:text-7xl flex items-center font-vt323 tracking-widest uppercase m-0 leading-none text-[#FF1493] absolute top-[2px] left-[2px] opacity-0 group-hover:opacity-70 group-hover:animate-[glitch_0.4s_linear_infinite_reverse] mix-blend-screen pointer-events-none select-none z-0">
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-vt323 tracking-widest uppercase mb-1 text-[#FF1493] absolute top-[2px] left-[2px] opacity-0 group-hover:opacity-70 group-hover:animate-[glitch_0.4s_linear_infinite_reverse] mix-blend-screen pointer-events-none select-none z-0">
                   <span className="text-transparent mr-2">]</span>
-                  <span>TARGET MATRIX</span>
+                  TARGET MATRIX
                 </h1>
               </div>
               
