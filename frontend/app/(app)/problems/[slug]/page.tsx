@@ -757,6 +757,13 @@ export default function ProblemPage({ params }: { params: Promise<{ slug: string
                           activeIndex={activeTestIndex}
                           onSelect={setActiveTestIndex}
                         />
+                      ) : ["RUNNING", "PENDING", "QUEUED"].includes(currentStatus) ? (
+                        <TestExplorer
+                          testResults={[]}
+                          mode={resultMode ?? undefined}
+                          progressCurrent={(result as { progress?: { current: number } })?.progress?.current}
+                          progressTotal={(result as { progress?: { total: number } })?.progress?.total}
+                        />
                       ) : null}
                     </div>
                   </>
