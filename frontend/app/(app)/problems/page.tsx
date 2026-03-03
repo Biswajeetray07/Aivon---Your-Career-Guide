@@ -188,11 +188,11 @@ export default function ProblemsPage() {
       {/* ── Unified Tactical HUD (Header + Stats) ── */}
       <div className="w-full mb-12 stagger-1 animate-fade-in-up flex flex-col xl:flex-row gap-8 items-stretch relative z-10">
         
-        {/* Global Nexus Operative Dossier Header */}
-          <div className="flex-1 glass border border-[#00E5B0]/30 bg-[#060D10]/80 rounded-xl overflow-hidden shadow-[0_0_40px_rgba(0,229,176,0.1)] relative flex flex-col backdrop-blur-2xl">
+        {/* Global Nexus Operative Dossier Header (Matching VerdictHeader Style) */}
+        <div className="flex-1 border border-white/5 bg-[#0A0F14] shadow-2xl relative flex flex-col rounded-sm">
           
           {/* Top Tech Bar — Aivon Terminal Style */}
-          <div className="px-5 py-4 border-b border-[#00E5B0]/20 flex items-center justify-between bg-[#05070A]/90 relative z-10 w-full">
+          <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between bg-[#060D10] relative z-10 w-full">
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 bg-[#00E5B0] animate-pulse" />
               <div className="w-2 h-2 bg-[#00C2FF]" />
@@ -202,7 +202,7 @@ export default function ProblemsPage() {
             </span>
           </div>
           
-          <div className="p-8 md:p-10 relative z-10 flex flex-col md:flex-row justify-between items-center gap-6 h-full flex-grow">
+          <div className="p-8 md:p-10 relative z-10 flex flex-col md:flex-row justify-between items-center gap-6 h-full flex-grow border-l-4 border-[#00C2FF] bg-[#060D10]/80">
             <div className="absolute top-0 right-0 w-64 h-64 bg-[conic-gradient(from_0deg,transparent_0deg,rgba(0,194,255,0.05)_90deg,transparent_90deg)] animate-[spin_10s_linear_infinite] pointer-events-none mix-blend-screen opacity-50 block" />
             <div className="absolute inset-0 bg-[linear-gradient(rgba(0,194,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,194,255,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
 
@@ -224,7 +224,7 @@ export default function ProblemsPage() {
             <div className="flex-1 text-center sm:text-left relative z-10 flex flex-col justify-center h-full sm:pl-4">
               {/* Terminal Logging Subtext */}
               <div className="text-[#00E5B0] text-[9px] font-geist-mono uppercase tracking-[0.3em] mb-4 flex items-center justify-center sm:justify-start gap-4 opacity-70">
-                <span><span className="text-white/30 mr-1 text-[8px]">DIR:</span>/MISSIONS/TARGET_MATRIX</span>
+                <span><span className="text-white/30 mr-1 text-[8px]">SYS.DIR // </span>MISSIONS/TARGET_MATRIX</span>
                 <span className="hidden sm:inline text-white/10">|</span>
                 <span className="hidden sm:flex items-center gap-1">
                   <span className="w-1 h-3 bg-[#00E5B0] animate-pulse" />
@@ -235,8 +235,8 @@ export default function ProblemsPage() {
 
               {/* Glitch Typography Title */}
               <div className="relative group inline-block mb-3">
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-vt323 tracking-widest uppercase m-0 leading-none text-transparent bg-clip-text bg-[linear-gradient(180deg,#FFFFFF_0%,#A1A1AA_100%)] drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] relative z-10 group-hover:text-white transition-colors flex items-center">
-                  <span className="text-[#00C2FF] mr-2 opacity-50 group-hover:opacity-100 transition-opacity">]</span>
+                <h1 className="text-4xl md:text-5xl lg:text-5xl font-geist-mono font-black tracking-widest uppercase m-0 leading-none text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] relative z-10 flex items-center">
+                  <span className="text-[#00C2FF] mr-3 font-medium opacity-80">]</span>
                   <span>TARGET MATRIX</span>
                 </h1>
                 
@@ -251,14 +251,13 @@ export default function ProblemsPage() {
                 </h1>
               </div>
               
-              <p className="text-[#00C2FF] text-xs font-geist-mono tracking-[0.2em] flex flex-col sm:flex-row items-center sm:items-start gap-3 mt-2">
-                <span className="lowercase bg-[#00C2FF]/10 border border-white/5 px-2 py-0.5 rounded-sm text-white/80">root@aivon</span> 
+              <p className="text-[#00C2FF] text-xs font-geist-mono tracking-[0.2em] flex flex-col sm:flex-row items-center sm:items-start gap-3 mt-4">
+                <span className="lowercase bg-[#00C2FF]/10 border border-[#00C2FF]/20 px-2.5 py-1 rounded-sm text-[#00C2FF]">root@aivon</span> 
                 <span className="hidden sm:inline text-white/20">/</span> 
-                <span className="flex items-center justify-center gap-2 text-white/60 uppercase">
+                <span className="flex items-center justify-center gap-2 text-[#00E5B0] uppercase font-bold">
                   <span className="w-2 h-2 rounded-full bg-[#00E5B0] shadow-[0_0_8px_#00E5B0] animate-pulse" />
                   ACCESS_GRANTED
                 </span>
-                <span className="hidden sm:inline text-[#00C2FF]/30 text-[10px] sm:ml-auto">0x{mounted ? hexTime : "00000000"}</span>
               </p>
             </div>
             

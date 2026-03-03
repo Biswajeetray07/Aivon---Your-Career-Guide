@@ -98,21 +98,25 @@ export function HeroSection() {
       <div className="relative z-10 w-full max-w-2xl mx-auto lg:mx-0 stagger-5 animate-fade-in-up mt-12 lg:mt-0 flex justify-end">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-[#00E5B0]/10 blur-[120px] rounded-full pointer-events-none" />
         
-        <div className="glass border border-[#00E5B0]/30 rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(0,229,176,0.1)] relative group transform transition-transform duration-700 hover:scale-[1.02] w-full max-w-[600px] bg-[#060D10]/80 backdrop-blur-2xl">
+        <div className="flex-1 border border-white/5 bg-[#0A0F14] shadow-2xl relative flex flex-col rounded-sm group transform transition-transform duration-700 hover:scale-[1.02] w-full max-w-[600px] overflow-hidden">
           
-          {/* Cyber Header */}
-          <div className="px-5 py-4 border-b border-[#00E5B0]/20 flex items-center justify-between bg-[#05070A]/90 relative z-10">
-            <div className="flex gap-2">
-              <div className="w-2 h-2 bg-[#00E5B0] animate-pulse" />
-              <div className="w-2 h-2 bg-[#00C2FF]" />
+          {/* Top Tech Bar */}
+          <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between bg-[#060D10] relative z-10 w-full">
+            <div className="flex items-center gap-3">
+              <div className="w-2.5 h-2.5 rounded-sm bg-[#00E5B0] animate-pulse shadow-[0_0_8px_#00E5B0]" />
+              <span className="text-[10px] sm:text-[11px] font-geist-mono text-[#00E5B0] tracking-widest uppercase">
+                terminal://aivon
+              </span>
             </div>
-            <span className="text-[10px] font-geist-mono text-[#00E5B0] tracking-[0.2em] font-bold">
-              terminal://aivon
-            </span>
+            <div className="flex gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#FF5F56]/80" />
+              <div className="w-1.5 h-1.5 rounded-full bg-[#FFBD2E]/80" />
+              <div className="w-1.5 h-1.5 rounded-full bg-[#27C93F]/80" />
+            </div>
           </div>
           
           {/* Terminal Body */}
-          <div className="p-8 md:p-10 font-geist-mono text-sm sm:text-[15px] text-white leading-tight whitespace-pre overflow-x-auto relative">
+          <div className="p-8 md:p-10 font-geist-mono text-sm sm:text-[15px] text-white leading-tight whitespace-pre overflow-x-auto relative border-l-4 border-[#00E5B0] bg-[#060D10]/80 flex-grow">
 {`    ___    _____    __  __   ____    _   __ 
    /   |  /  _/  | / / / __ \\ / | / /
   / /| |  / /   \\ V / / / / //  |/ / 

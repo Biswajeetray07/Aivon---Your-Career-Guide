@@ -264,9 +264,9 @@ export default function ProfilePage() {
 
       {/* ── User Header (Operative Dossier) ── */}
       {user && (
-        <div className="bg-[#05070A]/80 border-[0.5px] border-white/5 rounded-xl overflow-hidden shadow-hacker-glow backdrop-blur-lg mb-12 relative flex flex-col stagger-1 animate-fade-in-up">
+        <div className="flex-1 border border-white/5 bg-[#0A0F14] shadow-2xl relative flex flex-col rounded-sm mb-12 stagger-1 animate-fade-in-up">
           {/* Top Tech Bar */}
-          <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between bg-[#0A0F14] relative z-10 w-full">
+          <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between bg-[#060D10] relative z-10 w-full">
             <div className="flex items-center gap-3">
               <div className="w-2.5 h-2.5 rounded-sm bg-[#00E5B0] animate-pulse shadow-[0_0_8px_#00E5B0]" />
               <span className="text-[10px] font-geist-mono text-[#00E5B0] tracking-widest uppercase">
@@ -280,9 +280,9 @@ export default function ProfilePage() {
             </div>
           </div>
           
-          <div className="p-8 md:p-10 relative z-10 flex flex-col md:flex-row items-center md:items-center gap-8">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-[conic-gradient(from_0deg,transparent_0deg,rgba(0,229,176,0.05)_90deg,transparent_90deg)] animate-[spin_10s_linear_infinite] pointer-events-none mix-blend-screen opacity-50 block" />
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(0,229,176,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,229,176,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
+          <div className="p-8 md:p-10 relative z-10 flex flex-col md:flex-row items-center md:items-center gap-8 border-l-4 border-[#00C2FF] bg-[#060D10]/80">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[conic-gradient(from_0deg,transparent_0deg,rgba(0,194,255,0.05)_90deg,transparent_90deg)] animate-[spin_10s_linear_infinite] pointer-events-none mix-blend-screen opacity-50 block" />
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(0,194,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,194,255,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
 
             {/* Faceted Crosshair Avatar Block */}
             <div className="relative group shrink-0">
@@ -348,41 +348,28 @@ export default function ProfilePage() {
             </div>
             
             <div className="flex-1 text-center md:text-left relative z-10 flex flex-col justify-center">
-              {/* Faux Metadata Above Name */}
-              <div className="text-[#00C2FF] text-[9px] font-geist-mono uppercase tracking-[0.3em] mb-2 flex items-center justify-center md:justify-start gap-4 opacity-70">
-                <span><span className="text-white/30 mr-1 text-[8px]">ID:</span>Aivon-{mounted ? randHex1 : "0000"}</span>
-                <span className="hidden md:inline text-white/10">|</span>
-                <span className="hidden md:inline"><span className="text-white/30 mr-1 text-[8px]">SYS_LATENCY:</span>14MS</span>
-                <span className="hidden md:inline text-white/10">|</span>
+              {/* Terminal Logging Subtext */}
+              <div className="text-[#00C2FF] text-[9px] font-geist-mono uppercase tracking-[0.3em] mb-4 flex items-center justify-center sm:justify-start gap-4 opacity-70">
+                <span><span className="text-white/30 mr-1 text-[8px]">SYS.DIR // </span>OPERATIVE_DOSSIER: {mounted ? randHex1 : "0000"}</span>
+                <span className="hidden sm:inline text-white/10">|</span>
                 <span className="hidden sm:flex items-center gap-1">
-                  <span className="w-1 h-3 bg-[#00E5B0] animate-pulse" />
-                  <span className="w-1 h-3 bg-[#00E5B0]/40 animate-pulse delay-75" />
-                  <span className="w-1 h-3 bg-[#00E5B0]/10 animate-pulse delay-150" />
+                  <span className="w-1 h-3 bg-[#00C2FF] animate-pulse" />
+                  <span className="w-1 h-3 bg-[#00C2FF]/40 animate-pulse delay-75" />
+                  <span className="w-1 h-3 bg-[#00C2FF]/10 animate-pulse delay-150" />
                 </span>
               </div>
 
-              {/* Glitch Typography Name */}
-              <div className="relative group inline-block">
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-vt323 uppercase tracking-widest mb-1 text-transparent bg-clip-text bg-[linear-gradient(180deg,#FFFFFF_0%,#A1A1AA_100%)] drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] relative z-10 group-hover:text-white transition-colors">
-                  <span className="text-[#00C2FF] mr-2 opacity-50 group-hover:opacity-100 transition-opacity">]</span>
-                  {user.name || user.email.split("@")[0]}
-                </h1>
-                {/* Glitch Pseudo-elements on hovering container */}
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-vt323 uppercase tracking-widest mb-1 text-[#00E5B0] absolute top-0 left-[-2px] opacity-0 group-hover:opacity-70 group-hover:animate-[glitch_0.3s_linear_infinite] mix-blend-screen pointer-events-none select-none z-0">
-                  <span className="text-transparent mr-2">]</span>
-                  {user.name || user.email.split("@")[0]}
-                </h1>
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-vt323 uppercase tracking-widest mb-1 text-[#FF1493] absolute top-[2px] left-[2px] opacity-0 group-hover:opacity-70 group-hover:animate-[glitch_0.4s_linear_infinite_reverse] mix-blend-screen pointer-events-none select-none z-0">
-                  <span className="text-transparent mr-2">]</span>
-                  {user.name || user.email.split("@")[0]}
+              {/* Typography Title */}
+              <div className="relative group inline-block mb-3">
+                <h1 className="text-4xl md:text-5xl lg:text-5xl font-geist-mono font-black tracking-widest uppercase m-0 leading-none text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] relative z-10 flex items-center">
+                  <span className="text-[#00C2FF] mr-3 font-medium opacity-80">]</span>
+                  <span>{user.name || user.email.split("@")[0]}</span>
                 </h1>
               </div>
-
-              {/* Terminal Logging Subtext */}
-              <p className="text-[#00E5B0] text-xs font-geist-mono tracking-[0.2em] flex flex-col md:flex-row items-center gap-3 mt-2">
-                <span className="lowercase bg-[#00E5B0]/10 border border-white/5 px-2 py-0.5 rounded-sm">{user.email}</span> 
-                <span className="hidden md:inline text-white/20">/</span> 
-                <span className="flex items-center gap-2 text-white/60 uppercase">
+              <p className="text-[#00C2FF] text-[10px] sm:text-xs font-geist-mono tracking-[0.2em] flex flex-col sm:flex-row items-center sm:items-start gap-3 mt-4">
+                <span className="lowercase bg-[#00C2FF]/10 border border-[#00C2FF]/20 px-2.5 py-1 rounded-sm text-[#00C2FF]">{user.email}</span> 
+                <span className="hidden sm:inline text-white/20">/</span> 
+                <span className="flex items-center justify-center gap-2 text-[#00E5B0] font-bold uppercase">
                   <span className="w-2 h-2 rounded-full bg-[#00E5B0] shadow-[0_0_8px_#00E5B0] animate-pulse" />
                   AUTH_START: {new Date(user.createdAt).toLocaleDateString()}
                 </span>

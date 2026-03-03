@@ -24,7 +24,7 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const [problems, setProblems] = useState<ProblemCardDTO[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<{ totalSolved: number; totalSubmissions: number; accuracy: number; streak: number; byDifficulty: { EASY: number; MEDIUM: number; HARD: number }; recentActivity: SubmissionHistoryItem[] } | null>(null);
+  const [stats, setStats] = useState<{ totalSolved: number; totalSubmissions: number; accuracy: number; streak: number; byDifficulty: { EASY: number; MEDIUM: number; HARD: number }; recentActivity: SubmissionHistoryItem[]; resumeTarget?: any; pathMode?: string } | null>(null);
   const [submissions, setSubmissions] = useState<SubmissionHistoryItem[]>([]);
   const [liveEvents, setLiveEvents] = useState<string[]>([]);
   const router = useRouter();
@@ -237,8 +237,8 @@ export default function DashboardPage() {
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10"
         >
           {[
-            { tag: "[PRIORITY]", title: "Resume Target", desc: "Two Sum (Array)", color: "#FF5F56", link: "/problems/two-sum" },
-            { tag: "[PATH]", title: "Learning Node", desc: "Binary Search Tree", color: "#00E5B0", link: "/problems" },
+            { tag: "[PRIORITY]", title: "Resume Target", desc: stats?.resumeTarget ? `${stats.resumeTarget.title} (${stats.resumeTarget.difficulty})` : "Binary Search", color: "#FF5F56", link: stats?.resumeTarget?.slug ? `/problems/${stats.resumeTarget.slug}` : "/problems" },
+            { tag: "[PATH]", title: "Learning Node", desc: stats?.pathMode ? stats.pathMode : "Array Fundamentals", color: "#00E5B0", link: "/problems" },
             { tag: "[ORACLE]", title: "Ask Aivon AI", desc: "Analyze weak spots", color: "#8A2BE2", link: "/chat" },
             { tag: "[COMBAT]", title: "Enter Arena", desc: "Enter the competitive battleground", color: "#00C2FF", link: "/arena" }
           ].map((action, i) => (
@@ -246,7 +246,7 @@ export default function DashboardPage() {
               <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-current to-transparent opacity-10 rounded-bl-full pointer-events-none" style={{ color: action.color }} />
               <span className="text-[10px] font-geist-mono font-bold tracking-widest" style={{ color: action.color }}>{action.tag}</span>
               <span className="text-sm font-bold text-white uppercase tracking-wide">{action.title}</span>
-              <span className="text-xs font-geist-mono text-[var(--text-muted)]">{action.desc}</span>
+              <span className="text-xs font-geist-mono text-[var(--text-muted)] truncate block whitespace-nowrap">{action.desc}</span>
             </Link>
           ))}
         </motion.div>
