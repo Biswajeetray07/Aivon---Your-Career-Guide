@@ -1,4 +1,5 @@
 "use client";
+import { useState, useEffect } from "react";
 
 export type VerdictStatus =
   | "ACCEPTED" | "WRONG_ANSWER" | "TIME_LIMIT_EXCEEDED" | "MEMORY_LIMIT_EXCEEDED"
@@ -53,6 +54,20 @@ export default function VerdictHeader({
   const v = getVerdict(status);
   const done = isTerminal(status);
   const pct = progressTotal ? Math.round(((progressCurrent ?? 0) / progressTotal) * 100) : 0;
+  
+  const [localCurrent, setLocalCurrent] = useState(0);
+  const localTotal = progressTotal && progressTotal > 0 ? progressTotal : (mode === "submit" ? 10 : 3);
+  const localPct = Math.round((localCurrent / localTotal) * 100);
+
+  useEffect(() => {
+    if (!done && !progressTotal) {
+       setLocalCurrent(0);
+       const interval = setInterval(() => {
+         setLocalCurrent(p => (p < localTotal ? p + 1 : p));
+       }, 600);
+       return () => clearInterval(interval);
+    }
+  }, [done, progressTotal, localTotal]);
 
   return (
     <div style={{
@@ -121,33 +136,15 @@ export default function VerdictHeader({
       )}
 
       {/* Progress bar — RUNNING state */}
-      {!done && (progressTotal ?? 0) > 0 && (
+      {!done && (
         <div style={{ marginTop: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "#8b8ca7" }}>
             <span>{progressMessage || "Running test cases…"}</span>
-            <span>{progressCurrent ?? 0} / {progressTotal}</span>
+            <span>{localCurrent} / {localTotal}</span>
           </div>
           <div style={{ height: 6, background: "rgba(255,255,255,0.07)", borderRadius: 99, overflow: "hidden" }}>
             <div style={{
-              height: "100%", width: `${pct}%`, borderRadius: 99,
-              background: `linear-gradient(90deg, #00E5FF, #3b82f6)`,
-              transition: "width 300ms cubic-bezier(0.2, 0.8, 0.2, 1)",
-              boxShadow: "0 0 8px rgba(124,58,237,0.6)",
-            }} />
-          </div>
-        </div>
-      )}
-
-      {/* Progress bar — RUNNING state */}
-      {!done && (progressTotal ?? 0) > 0 && (
-        <div style={{ marginTop: 12 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "#8b8ca7" }}>
-            <span>{progressMessage || "Running test cases…"}</span>
-            <span>{progressCurrent ?? 0} / {progressTotal}</span>
-          </div>
-          <div style={{ height: 6, background: "rgba(255,255,255,0.07)", borderRadius: 99, overflow: "hidden" }}>
-            <div style={{
-              height: "100%", width: `${pct}%`, borderRadius: 99,
+              height: "100%", width: `${progressTotal ? pct : localPct}%`, borderRadius: 99,
               background: `linear-gradient(90deg, #00E5FF, #3b82f6)`,
               transition: "width 300ms cubic-bezier(0.2, 0.8, 0.2, 1)",
               boxShadow: "0 0 8px rgba(124,58,237,0.6)",
