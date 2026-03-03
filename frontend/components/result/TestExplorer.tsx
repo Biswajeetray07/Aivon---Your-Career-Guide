@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ErrorPanel, type ErrorIntelData } from "../error/ErrorPanel";
 
 export interface TestResult {
@@ -35,17 +35,40 @@ type Tab = "detail" | "console";
 
 const CODE_BG = "#060D10";
 
-export default function TestExplorer({ testResults, mode, visibleCount, activeIndex, onSelect, progressCurrent, progressTotal }: TestExplorerProps) {
+export default function TestExplorer({ testResults, mode, visibleCount, activeIndex, onSelect, progressCurrent: serverProgress, progressTotal: serverTotal }: TestExplorerProps) {
   const [internalIdx, setInternalIdx] = useState(0);
   const [tab, setTab] = useState<Tab>("detail");
+  const [localProgress, setLocalProgress] = useState(0);
   // Use controlled index if provided, else internal
   const activeIdx = activeIndex !== undefined ? activeIndex : internalIdx;
   const setActiveIdx = (i: number) => { setInternalIdx(i); onSelect?.(i); };
 
+  const isRunning = ["RUNNING", "PENDING", "QUEUED"].includes(mode?.toUpperCase() || "");
+
+  // Simulated compilation pulse
+  useEffect(() => {
+    if (isRunning && (!testResults || testResults.length === 0)) {
+       setLocalProgress(0);
+       const target = serverTotal && serverTotal > 0 ? serverTotal : (mode === "submit" ? 10 : 3);
+       
+       const interval = setInterval(() => {
+         setLocalProgress(p => {
+           if (p < target) return p + 1;
+           return p; // Stick at target until results load
+         });
+       }, 600);
+       
+       return () => clearInterval(interval);
+    }
+  }, [isRunning, testResults?.length, mode, serverTotal]);
+
   if (!testResults || testResults.length === 0) {
-    if (["RUNNING", "PENDING", "QUEUED"].includes(mode?.toUpperCase() || "")) {
-       const mockTotal = progressTotal && progressTotal > 0 ? progressTotal : mode === "run" ? 3 : 10;
+    if (isRunning) {
+       const mockTotal = serverTotal && serverTotal > 0 ? serverTotal : mode === "submit" ? 10 : 3;
+       // Prefer server progress if available, otherwise fallback to local simulated ticking
+       const currentProgress = typeof serverProgress === 'number' ? serverProgress : localProgress;
        const pts = Array.from({ length: mockTotal }).map((_, i) => i);
+       
        return (
         <div style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%", overflow: "hidden" }}>
           <style>{`
@@ -63,9 +86,9 @@ export default function TestExplorer({ testResults, mode, visibleCount, activeIn
             width: "100%", flexShrink: 0
           }}>
             {pts.map((i) => {
-              const passed = progressCurrent !== undefined && i < progressCurrent;
-              const executing = progressCurrent !== undefined && i === progressCurrent;
-              const pending = progressCurrent !== undefined && i > progressCurrent;
+              const passed = i < currentProgress;
+              const executing = i === currentProgress;
+              const pending = i > currentProgress;
               
               return (
                 <div
@@ -98,9 +121,9 @@ export default function TestExplorer({ testResults, mode, visibleCount, activeIn
             <div style={{ color: "#00C2FF", fontFamily: "'Geist Mono', monospace", fontSize: 12, letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 800 }}>
                SYS.STATUS // EXECUTING<span className="typing-cursor">_</span>
             </div>
-            {progressTotal !== undefined && progressCurrent !== undefined && (
+            {currentProgress !== undefined && (
               <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.1em" }}>
-                 COMPILING CASE {progressCurrent + 1} OF {progressTotal}
+                 COMPILING CASE {Math.min(currentProgress + 1, mockTotal)} OF {mockTotal}
               </div>
             )}
           </div>
