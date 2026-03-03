@@ -146,7 +146,8 @@ export const handler: any = async (req: any, { logger }: any) => {
     let maxMemory = 0;
 
     for (const tc of problem.testCases) {
-      const formattedInput = formatStdin(tc.input);
+      const fieldNames = (inputSpec && Array.isArray(inputSpec)) ? (inputSpec as any[]).map((f: any) => f.name) : undefined;
+      const formattedInput = formatStdin(tc.input, fieldNames);
 
       logger.info("Running test case", { input: tc.input.slice(0, 80) });
       const result = await safeExec(runCode(wrappedCode, language, formattedInput), 20000);

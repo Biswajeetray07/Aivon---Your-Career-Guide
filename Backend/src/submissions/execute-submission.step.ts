@@ -199,6 +199,8 @@ export const handler: any = async (
 
     logger.info(`Starting batched execution for submission ${submissionId}`);
 
+    const fieldNames = (uasInputSpec && Array.isArray(uasInputSpec)) ? uasInputSpec.map((f: any) => f.name) : undefined;
+
     for (let i = 0; i < submission.problem.testCases.length; i++) {
       const tc = submission.problem.testCases[i];
       await pushUpdate({
@@ -209,7 +211,7 @@ export const handler: any = async (
 
       logger.info(`Running case ${i + 1}/${submission.problem.testCases.length}`);
       try {
-        const formattedInput = formatStdin(tc.input);
+        const formattedInput = formatStdin(tc.input, fieldNames);
 
         logger.info("Running test case", { submissionId, caseIndex: i, input: tc.input.slice(0, 60) });
         const result = await safeExec(runCode(wrappedCode, submission.language, formattedInput), 20000);
@@ -342,7 +344,7 @@ export const handler: any = async (
                         message: `Differential verification on randomized hidden case ${stressIdx + 1}...`,
                      });
 
-                     const formattedStressInput = formatStdin(stressInput);
+                     const formattedStressInput = formatStdin(stressInput, fieldNames);
                      const userRes = await safeExec(runCode(wrappedCode, submission.language, formattedStressInput), 20000);
 
                      const singleResult = await runSingleTest({

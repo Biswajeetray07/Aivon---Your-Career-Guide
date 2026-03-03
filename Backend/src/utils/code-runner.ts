@@ -105,36 +105,187 @@ export function detectProblemTypeFromInput(
 /**
  * Converts a test case input string to the one-arg-per-line JSON format.
  *
- * Handles:
- *   1. Already one-per-line JSON: "[1,2,3]\n9" → unchanged
- *   2. key=value on same line: "nums = [1,2,3], target = 9" → "[1,2,3]\n9"
- *   3. key=value on separate lines: "nums = [1,2,3]\ntarget = 9" → "[1,2,3]\n9"
- *   4. Single bare value: "[1,2,3]" → "[1,2,3]"
+ * The optional `fieldNames` parameter (from inputSpec) allows the parser to
+ * know exactly which keys to extract and how many arguments to expect.
  *
- * Uses bracket-depth-aware parsing so arrays with commas are not split.
+ * Parsing order:
+ *   1. Already one-per-line JSON → pass through
+ *   2. Single JSON dict → extract values by fieldNames
+ *   3. State-machine key=value splitting (bracket + string aware)
+ *   4. Bare value fallback
  */
-export function formatStdin(input: string): string {
+export function formatStdin(input: string, fieldNames?: string[]): string {
   const trimmed = input.trim();
   if (!trimmed) return "";
 
-  // Phase 1: check if each line is already valid JSON (new format)
+  // Phase 1: check if each line is already valid JSON
   const lines = trimmed.split("\n").map((l) => l.trim()).filter(Boolean);
   if (lines.every((line) => isValidJson(line))) {
+    // If we got the right number of lines for the fieldNames, use it directly
+    if (!fieldNames || lines.length === fieldNames.length) {
+      return lines.join("\n");
+    }
+    // Special case: single JSON dict line with fieldNames
+    if (lines.length === 1 && fieldNames.length > 1) {
+      try {
+        const parsed = JSON.parse(lines[0]);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          const dictResult = extractFromDict(parsed, fieldNames);
+          if (dictResult) return dictResult;
+        }
+      } catch { /* fall through */ }
+    }
     return lines.join("\n");
   }
 
-  // Phase 2: try bracket-aware key=value extraction
-  // First, collapse multi-line key=value into a single line
+  // Phase 2: JSON dict extraction (e.g. {"board": [...], "word": "..."})
+  if (trimmed.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && fieldNames) {
+        const dictResult = extractFromDict(parsed, fieldNames);
+        if (dictResult) return dictResult;
+      }
+    } catch { /* fall through to key=value parsing */ }
+  }
+
+  // Phase 3: State-machine key=value extraction
   const collapsed = collapseMultilineInput(trimmed);
-  const values = extractKeyValueValues(collapsed);
+  const values = smExtractKeyValues(collapsed, fieldNames);
 
   if (values.length > 0) {
-    // Normalize each extracted value to valid JSON
     return values.map(normalizeValue).join("\n");
   }
 
-  // Phase 3: single bare value fallback
+  // Phase 4: single bare value fallback
   return normalizeValue(trimmed);
+}
+
+// ── JSON Dict Extraction ─────────────────────────────────────────────────────
+
+/**
+ * Extracts values from a JSON dict using the fieldNames order.
+ * Also handles the nested `{"args": {...}}` pattern.
+ */
+function extractFromDict(obj: Record<string, unknown>, fieldNames: string[]): string | null {
+  // Handle nested {"args": {...}} wrapper
+  const dict = (obj.args && typeof obj.args === "object" && !Array.isArray(obj.args))
+    ? obj.args as Record<string, unknown>
+    : obj;
+
+  const values: string[] = [];
+  for (const name of fieldNames) {
+    if (!(name in dict)) return null; // missing key → can't extract
+    values.push(JSON.stringify(dict[name]));
+  }
+  return values.join("\n");
+}
+
+// ── State Machine Key=Value Splitter ─────────────────────────────────────────
+
+/**
+ * Robust state-machine parser for "key1 = value1, key2 = value2" format.
+ *
+ * Properly tracks:
+ *  - Bracket depth ([], {}, ())
+ *  - String literals (both " and ', with escape handling)
+ *  - Only splits on commas at depth 0 that precede a known key
+ */
+function smExtractKeyValues(input: string, fieldNames?: string[]): string[] {
+  // Step 1: Find all key positions using a regex scan
+  const keyPattern = /\b(\w+)\s*=/g;
+  const keyPositions: Array<{ key: string; eqEnd: number; matchStart: number }> = [];
+  let m;
+  while ((m = keyPattern.exec(input)) !== null) {
+    keyPositions.push({
+      key: m[1],
+      eqEnd: m.index + m[0].length,
+      matchStart: m.index,
+    });
+  }
+
+  if (keyPositions.length === 0) return [];
+
+  // If fieldNames are provided, filter to only known keys (preserving order)
+  let filteredPositions = keyPositions;
+  if (fieldNames && fieldNames.length > 0) {
+    const nameSet = new Set(fieldNames);
+    filteredPositions = keyPositions.filter((kp) => nameSet.has(kp.key));
+    // If we don't find all expected field names, fall back to all found keys
+    if (filteredPositions.length < fieldNames.length) {
+      filteredPositions = keyPositions;
+    }
+  }
+
+  if (filteredPositions.length === 0) return [];
+
+  // Step 2: Extract values between key positions using bracket/string-aware scanning
+  const values: string[] = [];
+
+  for (let i = 0; i < filteredPositions.length; i++) {
+    const valueStart = filteredPositions[i].eqEnd;
+    const scanEnd = i + 1 < filteredPositions.length
+      ? filteredPositions[i + 1].matchStart
+      : input.length;
+
+    // Scan from valueStart to scanEnd, stripping the trailing ", " separator
+    const rawValue = smExtractSingleValue(input, valueStart, scanEnd);
+    if (rawValue !== null) {
+      values.push(rawValue);
+    }
+  }
+
+  return values;
+}
+
+/**
+ * Extracts a single value from `input[start..end)` using bracket/string-aware scanning.
+ * Strips any trailing comma + whitespace that separates from the next key.
+ */
+function smExtractSingleValue(input: string, start: number, end: number): string | null {
+  // Find the actual end of the value by scanning backwards from `end`
+  // to strip the trailing ", key" part. The value ends at the last position
+  // where brackets are balanced and we hit a comma at depth 0.
+
+  let depth = 0;
+  let inString = false;
+  let stringChar = "";
+  let lastBalancedComma = -1;
+
+  for (let i = start; i < end; i++) {
+    const ch = input[i];
+    const prev = i > 0 ? input[i - 1] : "";
+
+    if (inString) {
+      if (ch === stringChar && prev !== "\\") inString = false;
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") { inString = true; stringChar = ch; continue; }
+    if (ch === "[" || ch === "(" || ch === "{") { depth++; continue; }
+    if (ch === "]" || ch === ")" || ch === "}") { depth--; continue; }
+
+    if (depth === 0 && ch === ",") {
+      lastBalancedComma = i;
+    }
+  }
+
+  // The actual value end: if there was a trailing comma at depth 0
+  // that leads to a key= pattern, use the comma position.
+  // Otherwise use `end`.
+  let valueEnd = end;
+  if (lastBalancedComma > start) {
+    // Check if the text after the last comma contains a key= pattern
+    const afterComma = input.slice(lastBalancedComma + 1, end).trim();
+    if (/^\w+\s*=/.test(afterComma)) {
+      valueEnd = lastBalancedComma;
+    }
+  }
+
+  const value = input.slice(start, valueEnd).trim();
+  // Strip any residual trailing comma
+  const cleaned = value.replace(/,\s*$/, "").trim();
+  return cleaned || null;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -144,122 +295,36 @@ function isValidJson(s: string): boolean {
 }
 
 /**
- * Collapses a multi-line key=value input to a single line.
- * "nums = [1,2,3]\ntarget = 9" → "nums = [1,2,3], target = 9"
+ * Collapses multi-line key=value input to a single line.
  */
 function collapseMultilineInput(input: string): string {
   const lines = input.split("\n").map((l) => l.trim()).filter(Boolean);
-
-  // If each line looks like "key = value", join with ", "
   const keyValueLine = /^\w+\s*=/;
   if (lines.every((l) => keyValueLine.test(l))) {
     return lines.join(", ");
   }
-
   return input;
 }
 
 /**
- * Extracts values from a comma-separated key=value string.
- * Uses bracket-depth counting so commas inside [] {} () are not treated as separators.
- *
- * "nums = [2,7,11,15], target = 9"
- *   → ["[2,7,11,15]", "9"]
- *
- * "s1 = \"hello\", s2 = \"world\""
- *   → ["\"hello\"", "\"world\""]
- */
-function extractKeyValueValues(input: string): string[] {
-  // Find all key=value pairs using bracket-aware splitting
-  // First split on "word_chars whitespace = " while respecting brackets
-  const pairs = splitKeyValuePairs(input);
-  return pairs.map(([, val]) => val.trim());
-}
-
-/**
- * Splits "k1 = v1, k2 = v2" into [["k1","v1"], ["k2","v2"]]
- * without breaking on commas inside nested brackets.
- */
-function splitKeyValuePairs(input: string): Array<[string, string]> {
-  const pairs: Array<[string, string]> = [];
-
-  // Find positions where "key =" starts
-  const keyPattern = /\b(\w+)\s*=/g;
-  const keyPositions: Array<{ key: string; valueStart: number }> = [];
-  let m;
-  while ((m = keyPattern.exec(input)) !== null) {
-    keyPositions.push({ key: m[1], valueStart: m.index + m[0].length });
-  }
-
-  for (let i = 0; i < keyPositions.length; i++) {
-    const { key, valueStart } = keyPositions[i];
-    const valueEnd = i + 1 < keyPositions.length
-      ? findValueEnd(input, valueStart, keyPositions[i + 1].valueStart - keyPositions[i + 1].key.length - 3) // subtract "key ="
-      : input.length;
-    const value = input.slice(valueStart, valueEnd).trim().replace(/,\s*$/, "");
-    if (value) pairs.push([key, value]);
-  }
-
-  return pairs;
-}
-
-/**
- * Finds where a value ends before the next key=value pair.
- * Respects bracket depth so we don't cut inside a nested structure.
- */
-function findValueEnd(input: string, start: number, nextKeyApprox: number): number {
-  let depth = 0;
-  let inString = false;
-  let stringChar = "";
-
-  for (let i = start; i < input.length; i++) {
-    const ch = input[i];
-
-    if (inString) {
-      if (ch === stringChar && input[i - 1] !== "\\") inString = false;
-      continue;
-    }
-
-    if (ch === '"' || ch === "'") { inString = true; stringChar = ch; continue; }
-    if (ch === "[" || ch === "(" || ch === "{") { depth++; continue; }
-    if (ch === "]" || ch === ")" || ch === "}") { depth--; continue; }
-
-    // At depth 0, a comma followed by "word =" is a key separator
-    if (depth === 0 && ch === "," && i >= nextKeyApprox - 5) {
-      return i;
-    }
-  }
-
-  return input.length;
-}
-
-/**
- * Normalizes a raw extracted value to JSON.
- * - Handles Python-style quotes: 'abc' → "abc"
- * - Handles Python True/False/None
- * - Leaves valid JSON unchanged
+ * Normalizes a raw extracted value to valid JSON.
  */
 function normalizeValue(val: string): string {
   let s = val.trim();
 
-  // Remove surrounding single quotes and replace with double quotes
   if (s.startsWith("'") && s.endsWith("'")) {
     s = '"' + s.slice(1, -1).replace(/"/g, '\\"') + '"';
   }
 
-  // Python literals
   s = s.replace(/\bTrue\b/g, "true")
        .replace(/\bFalse\b/g, "false")
        .replace(/\bNone\b/g, "null");
 
-  // If it's valid JSON, re-serialize for compaction (removes spaces like [1000, 1000])
   if (isValidJson(s)) return JSON.stringify(JSON.parse(s));
 
-  // Replace single-quoted strings in arrays/objects
   s = s.replace(/'/g, '"');
   if (isValidJson(s)) return JSON.stringify(JSON.parse(s));
 
-  // Return as double-quoted string
   return JSON.stringify(val.trim());
 }
 
