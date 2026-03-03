@@ -43,7 +43,7 @@ export default function TestExplorer({ testResults, mode, visibleCount, activeIn
   const activeIdx = activeIndex !== undefined ? activeIndex : internalIdx;
   const setActiveIdx = (i: number) => { setInternalIdx(i); onSelect?.(i); };
 
-  const isRunning = ["RUNNING", "PENDING", "QUEUED"].includes(mode?.toUpperCase() || "");
+  const isRunning = ["RUNNING", "PENDING", "QUEUED", "RUN", "SUBMIT"].includes(mode?.toUpperCase() || "");
 
   // Simulated compilation pulse
   useEffect(() => {
