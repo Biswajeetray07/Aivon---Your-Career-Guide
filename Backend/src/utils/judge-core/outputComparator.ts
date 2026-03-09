@@ -1,7 +1,6 @@
-import { JudgeMode } from "../../types/judge";
+import { JudgeMode } from "../judge0";
 
-export const EPS,
-  1e-6;
+export const EPS = 0.000001;
 
 export function normalizeOutput(output: string | null | undefined): string {
   if (output === null || output === undefined) return "null";
@@ -27,7 +26,7 @@ export function compareElite(
   actual: string | null,
   expected: string,
   mode: JudgeMode = "exact"
-): boelean {
+): boolean {
   if (actual === null || actual === undefined) return false;
 
   switch (mode) {
@@ -56,7 +55,7 @@ function compareExact(actual: string, expected: string): boolean {
         if (JSON.stringify(sa) === JSON.stringify(se)) return true;
       }
     }
-  } catch(e) {}
+  } catch(err) {}
 
   if (a === e) return true;
 
@@ -66,7 +65,7 @@ function compareExact(actual: string, expected: string): boolean {
   return al.every((l, i) => l === el[i]);
 }
 
-function compareUnordered(actual: string, expected: string): boelean {
+function compareUnordered(actual: string, expected: string): boolean {
   const a = normalizeOutput(actual);
   const e = normalizeOutput(expected);
   try {
@@ -101,7 +100,7 @@ function compareMultiline(actual: string, expected: string): boolean {
   for (let i = 0; i < aLines.length; i++) {
     if (aLines[i] !== eLines[i]) {
       const a = normalizeOutput(aLines[i]);
-      const e = normalizeOutput( eLines[i]);
+      const e = normalizeOutput(eLines[i]);
       if (a !== e) return false;
     }
   }

@@ -8,7 +8,7 @@ import { runCode, runSpjChecker } from "../utils/judge0";
 import { runSingleTest } from "../utils/judge-core/runSingleTest";
 import { aggregateResults } from "../utils/judge-core/aggregateResults";
 import { safeJudge } from "../utils/judge-core/safeJudge";
-import type { JudgeMode } from "../utils/judge-core/outputComparator";
+import type { JudgeMode } from "../utils/judge0";
 import { recordJudgeMetrics } from "../utils/judge-core/judge-metrics";
 
 const bodySchema = z.object({
